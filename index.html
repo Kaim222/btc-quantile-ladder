@@ -917,19 +917,17 @@ function BTCPowerLaw() {
     const qStr = quantilePct != null ? 'Quantile ' + quantilePct.toFixed(1) + '%' : '';
     lines.push([priceStr, qStr].filter(Boolean).join('  ·  '));
     lines.push('');
-    lines.push('');
 
     // Active position
     lines.push('<b>Active Position</b>');
     if (splitName && splitSz > 0) {
       const t = LADDER.find(l=>l.name===tierName);
       const s = LADDER.find(l=>l.name===splitName);
-      // split is riskier (lower qMin) = it's scaling out; primary (safer) is scaling in
       const splitIsRiskier = s && t && s.qMin < t.qMin;
-      lines.push(`${pad(displayName(tierName), 16)}  <b>${sz}%</b>${splitIsRiskier ? '  <i>scaling in</i>' : ''}`);
-      lines.push(`${pad(displayName(splitName), 16)}  <b>${splitSz}%</b>${splitIsRiskier ? '  <i>scaling out</i>' : '  <i>scaling in</i>'}`);
+      lines.push(`${displayName(tierName)}  <b>${sz}%</b>${splitIsRiskier ? '  <i>scaling in</i>' : ''}`);
+      lines.push(`${displayName(splitName)}  <b>${splitSz}%</b>${splitIsRiskier ? '  <i>scaling out</i>' : '  <i>scaling in</i>'}`);
     } else {
-      lines.push(`${pad(displayName(tierName), 16)}  <b>${sz}%</b>`);
+      lines.push(`${displayName(tierName)}  <b>${sz}%</b>`);
     }
     lines.push('');
 
@@ -966,7 +964,7 @@ function BTCPowerLaw() {
         const actionStr = action === 'Initiate'
           ? '<b>Initiate</b>'
           : '<b>Roll</b>   ';
-        lines.push(`${pad(name, 14)}  ${actionStr}  Δ${delta}  ·  ${expiry}`);
+        lines.push(`${name}  ${actionStr}  Δ${delta}  ·  ${expiry}`);
       });
     }
 

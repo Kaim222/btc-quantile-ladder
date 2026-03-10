@@ -930,7 +930,8 @@ function BTCPowerLaw() {
     parts.push(posLines.join('\n'));
 
     // Short leg
-    const primaryScalingIn = sz < 100 && splitName && (() => {
+    // At 100% with no split = fully in = Initiate. Only "Roll" when scaling out (size < 100, split is riskier)
+    const primaryScalingIn = !splitName || sz === 100 || (() => {
       const t = LADDER.find(l=>l.name===tierName);
       const s = LADDER.find(l=>l.name===splitName);
       return s && t && s.qMin < t.qMin;

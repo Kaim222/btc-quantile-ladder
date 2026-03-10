@@ -1266,7 +1266,7 @@ function BTCPowerLaw() {
           {/* Short Leg Guidance */}
           {(() => {
             const rows = [];
-            const primaryScalingIn = size < 100 && splitTier && splitTier.qMin < tier.qMin;
+            const primaryScalingIn = !splitTier || size === 100 || splitTier.qMin < tier.qMin;
             if (SHORT_LEG[tier.name]) {
               const cfg = primaryScalingIn
                 ? SHORT_LEG[tier.name][0]

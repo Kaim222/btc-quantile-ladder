@@ -984,7 +984,7 @@ function BTCPowerLaw() {
       const title = prevTier !== tier.name
         ? `${displayName(prevTier)} → ${displayName(tier.name)}`
         : `${displayName(tier.name)}: ${prevSize}% → ${size}%`;
-      const message = buildAlertMessage(tier.name, size, splitName, splitSz, btcPrice, quantile);
+      const message = buildAlertMessage(tier.name, size, splitName, splitSz, price, q);
       // Call Pushover API directly (supports CORS)
       const formData = new FormData();
       formData.append('token',   'a954fkhqk7cyphb64kyt6eikbmgpau');

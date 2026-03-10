@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BTC Quantile Ladder</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #020817; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #020817; }
+    ::-webkit-scrollbar-thumb { background: #162840; border-radius: 3px; }
+    input[type=range] { -webkit-appearance: none; appearance: none; background: transparent; }
+    input[type=range]::-webkit-slider-runnable-track { height: 3px; background: transparent; }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #22d3ee; margin-top: -5.5px; cursor: pointer;
+      border: 2px solid #020817;
+      box-shadow: 0 0 0 1px #22d3ee88, 0 0 8px #22d3ee66;
+    }
+    input[type=range]::-moz-range-track { height: 3px; background: transparent; }
+    input[type=range]::-moz-range-thumb {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #22d3ee; border: 2px solid #020817; cursor: pointer;
+      box-shadow: 0 0 0 1px #22d3ee88;
+    }
+    input[type=range]:focus { outline: none; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useRef } = React;
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// KAIM POWER LAW MODEL — CALIBRATION
+//
+// Coefficients: A=5.82, B=-17.029
+// Verified: FV = $118,006 on Mar 7 2026
+//
+// Band offsets (log10 scale from fair value):
+//   99.9th → $282K  offset= +0.3783
+//   95th   → $246K  offset= +0.3190
+//   85th   → $167K  offset= +0.1508
+//   50th   → $118K  offset=  0.0000  (fair value)
+//   15th   → $ 72.9K offset= -0.2092
+//   0.1st  → $ 53.9K offset= -0.3403
+//
+// Forward verification vs JV's table (1yr = Mar 2027):
+//   50th=$163K ✓  85th=$231K ✓  15th=$101K ✓  95th=$340K ✓
+// ─────────────────────────────────────────────────────────────────────────────
+
+const GENESIS = new Date("2009-01-03T00:00:00Z");
+const GENESIS_MS = GENESIS.getTime();
+const JV_A = 5.82;
+const JV_B = -17.029;
+
+// BTC monthly price history (seed data for EMA regression)
+const BTC_HISTORY = [
+  {days:558,price:0.08},{days:589,price:0.07},{days:620,price:0.06},{days:650,price:0.12},{days:681,price:0.25},{days:711,price:0.30},
+  {days:742,price:0.31},{days:773,price:0.82},{days:801,price:0.90},{days:832,price:1.40},{days:862,price:8.0},{days:893,price:17.5},
+  {days:923,price:13.9},{days:954,price:11.1},{days:985,price:5.0},{days:1015,price:3.5},{days:1046,price:2.5},{days:1076,price:4.25},
+  {days:1107,price:6.5},{days:1138,price:4.9},{days:1167,price:4.9},{days:1198,price:5.0},{days:1228,price:5.1},{days:1259,price:6.6},
+  {days:1289,price:8.0},{days:1320,price:10.0},{days:1351,price:12.4},{days:1381,price:10.9},{days:1412,price:12.3},{days:1442,price:13.5},
+  {days:1473,price:20.4},{days:1504,price:28.3},{days:1532,price:91.0},{days:1563,price:135.0},{days:1593,price:128.0},{days:1624,price:97.0},
+  {days:1654,price:88.0},{days:1685,price:115.0},{days:1716,price:123.0},{days:1746,price:195.0},{days:1777,price:1075.0},{days:1807,price:732.0},
+  {days:1838,price:800.0},{days:1869,price:556.0},{days:1897,price:480.0},{days:1928,price:450.0},{days:1958,price:630.0},{days:1989,price:593.0},
+  {days:2019,price:587.0},{days:2050,price:504.0},{days:2081,price:392.0},{days:2111,price:340.0},{days:2142,price:375.0},{days:2172,price:319.0},
+  {days:2203,price:217.0},{days:2234,price:254.0},{days:2262,price:246.0},{days:2293,price:234.0},{days:2323,price:236.0},{days:2354,price:263.0},
+  {days:2384,price:277.0},{days:2415,price:230.0},{days:2446,price:236.0},{days:2476,price:314.0},{days:2507,price:378.0},{days:2537,price:430.0},
+  {days:2568,price:380.0},{days:2599,price:437.0},{days:2628,price:415.0},{days:2659,price:448.0},{days:2689,price:535.0},{days:2720,price:675.0},
+  {days:2750,price:630.0},{days:2781,price:573.0},{days:2812,price:607.0},{days:2842,price:700.0},{days:2873,price:735.0},{days:2903,price:963.0},
+  {days:2934,price:920.0},{days:2965,price:1190.0},{days:2993,price:1070.0},{days:3024,price:1347.0},{days:3054,price:2300.0},{days:3085,price:2500.0},
+  {days:3115,price:2900.0},{days:3146,price:4700.0},{days:3177,price:4200.0},{days:3207,price:6200.0},{days:3238,price:10900.0},{days:3268,price:14156.0},
+  {days:3299,price:10000.0},{days:3330,price:10500.0},{days:3358,price:7000.0},{days:3389,price:9200.0},{days:3419,price:7500.0},{days:3450,price:6200.0},
+  {days:3480,price:8200.0},{days:3511,price:7000.0},{days:3542,price:6600.0},{days:3572,price:6300.0},{days:3603,price:4350.0},{days:3633,price:3600.0},
+  {days:3664,price:3500.0},{days:3695,price:3800.0},{days:3723,price:4100.0},{days:3754,price:5300.0},{days:3784,price:8700.0},{days:3815,price:10800.0},
+  {days:3845,price:10100.0},{days:3876,price:9600.0},{days:3907,price:8300.0},{days:3937,price:9200.0},{days:3968,price:7500.0},{days:3998,price:7200.0},
+  {days:4029,price:9350.0},{days:4060,price:8700.0},{days:4089,price:6400.0},{days:4120,price:8750.0},{days:4150,price:9450.0},{days:4181,price:9140.0},
+  {days:4211,price:11350.0},{days:4242,price:11660.0},{days:4273,price:10800.0},{days:4303,price:13800.0},{days:4334,price:19700.0},{days:4364,price:29300.0},
+  {days:4395,price:33000.0},{days:4426,price:46000.0},{days:4454,price:59000.0},{days:4485,price:57800.0},{days:4515,price:37300.0},{days:4546,price:35000.0},
+  {days:4576,price:41500.0},{days:4607,price:47100.0},{days:4638,price:43800.0},{days:4668,price:61300.0},{days:4699,price:57000.0},{days:4729,price:46200.0},
+  {days:4760,price:38300.0},{days:4791,price:43200.0},{days:4819,price:45500.0},{days:4850,price:37600.0},{days:4880,price:31800.0},{days:4911,price:19800.0},
+  {days:4941,price:23300.0},{days:4972,price:20000.0},{days:5003,price:19500.0},{days:5033,price:20500.0},{days:5064,price:16600.0},{days:5094,price:16500.0},
+  {days:5125,price:23100.0},{days:5156,price:23400.0},{days:5184,price:28500.0},{days:5215,price:29300.0},{days:5245,price:27700.0},{days:5276,price:30500.0},
+  {days:5306,price:29300.0},{days:5337,price:26000.0},{days:5368,price:26900.0},{days:5398,price:34600.0},{days:5429,price:37700.0},{days:5459,price:42500.0},
+  {days:5490,price:42500.0},{days:5521,price:62200.0},{days:5550,price:71300.0},{days:5581,price:60600.0},{days:5611,price:67500.0},{days:5642,price:62700.0},
+  {days:5672,price:66000.0},{days:5703,price:59000.0},{days:5734,price:63300.0},{days:5764,price:72700.0},{days:5795,price:97500.0},{days:5825,price:93400.0},
+  {days:5856,price:102400.0},{days:5887,price:84500.0},{days:5915,price:82400.0},{days:5946,price:94200.0},{days:5976,price:103000.0},{days:6007,price:107000.0},
+  {days:6037,price:118000.0},{days:6068,price:95000.0},{days:6099,price:88000.0},{days:6129,price:98000.0},{days:6160,price:97000.0},{days:6190,price:105000.0},
+  {days:6221,price:105000.0},{days:6252,price:85000.0},{days:6280,price:67250.0},
+];
+
+// Fit EMA-weighted power law regression. halfLifeDays=Infinity → Kaim fixed.
+function fitEMA(halfLifeDays) {
+  if (!halfLifeDays || halfLifeDays >= 1e9) return { A: JV_A, B: JV_B };
+  const todayDays = (Date.now() - GENESIS_MS) / 86400000;
+  let sw=0, swx=0, swy=0, swxx=0, swxy=0;
+  for (const {days, price} of BTC_HISTORY) {
+    const age = todayDays - days;
+    const w = Math.exp(-Math.LN2 * age / halfLifeDays);
+    const x = Math.log10(days);
+    const y = Math.log10(price);
+    sw   += w;
+    swx  += w * x;
+    swy  += w * y;
+    swxx += w * x * x;
+    swxy += w * x * y;
+  }
+  const denom = sw * swxx - swx * swx;
+  if (Math.abs(denom) < 1e-12) return { A: JV_A, B: JV_B };
+  const A = (sw * swxy - swx * swy) / denom;
+  const B = (swy - A * swx) / sw;
+  return { A, B };
+}
+
+function daysFromGenesis(ts) {
+  return (ts - GENESIS_MS) / 86400000;
+}
+function fairValueAt(ts, A=JV_A, B=JV_B) {
+  const d = daysFromGenesis(ts);
+  return d > 0 ? Math.pow(10, A * Math.log10(d) + B) : 0;
+}
+
+// Band offsets — upper bands decay linearly over time (empirical fit)
+// offset(days) = m * days + c  for 99.9%, 95%, 85%
+// constant for 50%, 15%, 0.1%
+function bandOffset(mSlope, cIntercept, ts) {
+  // ts is milliseconds since epoch; convert to days since genesis
+  const GENESIS_MS = Date.UTC(2009, 0, 3);
+  const days = (ts - GENESIS_MS) / 86400000;
+  return mSlope * days + cIntercept;
+}
+
+const BAND_DEFS = [
+  { q: 99.9, m: -0.0000756204, c:  0.849329, label: "99.9%", color: "#b91c1c", dash: "6,3", w: 1   },
+  { q: 95,   m: -0.0000583518, c:  0.683930, label: "95%",   color: "#dc2626", dash: "5,3", w: 1   },
+  { q: 85,   m: -0.0000516698, c:  0.473869, label: "85%",   color: "#f97316", dash: "",    w: 1.2 },
+  { q: 50,   m:  0,            c: -0.000400, label: "50%",   color: "#22d3ee", dash: "",    w: 1.8 },
+  { q: 15,   m:  0,            c: -0.209200, label: "15%",   color: "#22c55e", dash: "",    w: 1.2 },
+  { q: 0.1,  m:  0,            c: -0.340300, label: "0.1%",  color: "#6366f1", dash: "5,3", w: 1   },
+];
+
+// BANDS with offset computed at current time (for gauge/quantile calc)
+const BANDS = BAND_DEFS.map(b => ({ ...b, offset: bandOffset(b.m, b.c, Date.now()) }));
+
+function bandPriceAt(ts, bandDef, A=JV_A, B=JV_B) {
+  const offset = bandOffset(bandDef.m, bandDef.c, ts);
+  return fairValueAt(ts, A, B) * Math.pow(10, offset);
+}
+
+function priceToQuantile(price, ts, A=JV_A, B=JV_B) {
+  const fv = fairValueAt(ts, A, B);
+  if (!fv || price <= 0) return 50;
+  const res = Math.log10(price / fv);
+  // Interpolate between calibration points
+  for (let i = 0; i < BANDS.length - 1; i++) {
+    const hi = BANDS[i], lo = BANDS[i + 1];
+    if (res <= hi.offset && res >= lo.offset) {
+      const t = (res - lo.offset) / (hi.offset - lo.offset);
+      return lo.q + t * (hi.q - lo.q);
+    }
+  }
+  if (res > BANDS[0].offset) {
+    // Above 99.9th — extrapolate
+    const slope = (BANDS[0].q - BANDS[1].q) / (BANDS[0].offset - BANDS[1].offset);
+    return Math.min(99.99, BANDS[0].q + slope * (res - BANDS[0].offset));
+  }
+  // Below 0.1st — extrapolate
+  const slope = (BANDS[BANDS.length-2].q - BANDS[BANDS.length-1].q) /
+                (BANDS[BANDS.length-2].offset - BANDS[BANDS.length-1].offset);
+  return Math.max(0.01, BANDS[BANDS.length-1].q + slope * (res - BANDS[BANDS.length-1].offset));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INSTRUMENT LADDER
+// ─────────────────────────────────────────────────────────────────────────────
+const SHORT_LEG = {
+  "IBIT Shares": [
+    { size:100, delta:"0.15", expiry:"24+ mo", action:"Initiate",  note:"Sell OTM covered call at 0.15Δ matching shares expiry. Converts to a capped upside position at full allocation — maximises premium capture at peak conviction." },
+    { size:75,  delta:"0.30", expiry:"~12 mo",              action:"Roll",      note:"Roll short call down and forward to 0.30Δ / 12-month expiry. Reduced allocation signals rising quantile — tighten the cap, increase theta." },
+    { size:50,  delta:"0.45", expiry:"~6 mo",               action:"Roll",      note:"Roll to 0.45Δ / 6-month expiry. Position is at half size; shorter tenor and higher delta extracts meaningful premium relative to remaining exposure." },
+    { size:25,  delta:"0.60", expiry:"~3 mo",               action:"Roll",      note:"Roll to 0.60Δ / 3-month expiry. Near-money, short-dated call at minimal allocation — maximise theta capture as position approaches full exit." },
+  ],
+  "IBIT LEAPs": [
+    { size:100, delta:"0.15", expiry:"24+ mo", action:"Initiate",  note:"Sell OTM call at 0.15Δ with identical expiry to the long leg, forming a debit call spread. At full allocation this structure reduces net premium paid and defines maximum risk." },
+    { size:75,  delta:"0.30", expiry:"~12 mo",              action:"Roll",      note:"Roll short leg down to 0.30Δ and forward to ~12-month expiry. Rising quantile warrants a tighter cap; rolling forward preserves time value and avoids early assignment risk." },
+    { size:50,  delta:"0.45", expiry:"~6 mo",               action:"Roll",      note:"Roll to 0.45Δ / 6-month expiry. Closer-to-money strike with shorter tenor accelerates premium realisation as conviction moderates." },
+    { size:25,  delta:"0.60", expiry:"~3 mo",               action:"Roll",      note:"Roll to 0.60Δ / 3-month expiry. High-delta, short-duration short call maximises theta at minimum position size — effectively pre-positioning for full exit." },
+  ],
+  "MSTR LEAPs": [
+    { size:100, delta:"0.15", expiry:"24+ mo", action:"Initiate",  note:"Sell 0.15Δ call at identical expiry to form a debit spread. At full MSTR allocation, the spread structure caps upside while significantly reducing the net debit paid on the long leg." },
+    { size:75,  delta:"0.30", expiry:"~12 mo",              action:"Roll",      note:"Roll short leg down to 0.30Δ / ~12-month expiry. Partial allocation reduction signals the quantile is rising — roll down and forward to recapture premium while widening the spread." },
+    { size:50,  delta:"0.45", expiry:"~6 mo",               action:"Roll",      note:"Roll to 0.45Δ / 6-month expiry. Mid-cycle position; near-money strike with a 6-month window accelerates theta accrual against the remaining long exposure." },
+    { size:25,  delta:"0.60", expiry:"~3 mo",               action:"Roll",      note:"Roll to 0.60Δ / 3-month expiry. Near-ATM short call on a quarter-sized position drives maximum premium efficiency as MSTR allocation approaches full exit." },
+  ],
+  "MSTX LEAPs": [
+    { size:100, delta:"0.15", expiry:"24+ mo", action:"Initiate",  note:"Sell 0.15Δ call at identical expiry to form a debit call spread. The 2× leveraged structure amplifies both the premium received and the cost of the long leg — the spread materially reduces net exposure at full allocation." },
+    { size:75,  delta:"0.30", expiry:"~12 mo",              action:"Roll",      note:"Roll short leg down to 0.30Δ / ~12-month expiry. Moving from peak allocation, the roll-down and forward captures incremental premium while the tighter cap reflects reduced upside conviction." },
+    { size:50,  delta:"0.45", expiry:"~6 mo",               action:"Roll",      note:"Roll to 0.45Δ / 6-month expiry. With half the allocation remaining, a closer-to-money 6-month call accelerates premium recovery and continues to partially offset the cost of the leveraged long leg." },
+    { size:25,  delta:"0.60", expiry:"~3 mo",               action:"Roll",      note:"Roll to 0.60Δ / 3-month expiry. Near-ATM, short-dated call at minimum allocation — peak theta extraction as MSTX position is wound down. Monitor closely: 2× leverage can cause rapid strike breach." },
+  ],
+};
+
+const LADDER = [
+  { name:"EPD",         color:"#3b82f6", darkBg:"#050f1f", qMin:95,  qMax:100, debt:"< 4% APR",    desc:"Cycle top. High STRC demand likely compresses its yield — EPD holds rate.",        sizes:[100],          typeNote:"equity" },
+  { name:"STRC",        color:"#22c55e", darkBg:"#071a0f", qMin:80,  qMax:95,  debt:"< 6% APR",   desc:"Perpetual preferred, 10%+ variable yield on $100 par.",    sizes:[100,75,50,25], typeNote:"equity" },
+  { name:"IBIT Shares", color:"#22d3ee", darkBg:"#0c1e26", qMin:60,  qMax:80,  debt:"< 8% APR",   desc:"Spot BTC ETF. ~1× beta.",             sizes:[100,75,50,25], typeNote:"equity" },
+  { name:"IBIT LEAPs",  color:"#eab308", darkBg:"#1c1700", qMin:35,  qMax:60,  debt:"< 10% APR",   desc:"Deep ITM calls on spot BTC ETF. ~2× beta.",          sizes:[100,75,50,25], typeNote:"0.80+ delta · 24+ mo to expiry" },
+  { name:"MSTR LEAPs",  color:"#f97316", darkBg:"#1c0e00", qMin:15,  qMax:35,  debt:"< 12% APR",   desc:"Deep ITM calls on Strategy (MSTR). ~4× beta.",           sizes:[100,75,50,25], typeNote:"0.80+ delta · 24+ mo to expiry" },
+  { name:"MSTX LEAPs",  color:"#ef4444", darkBg:"#1c0505", qMin:0,   qMax:15,  debt:"< 14% APR",   desc:"Deep ITM calls on 2× levered Strategy ETF. ~8× beta.",        sizes:[100,75,50,25], typeNote:"0.80+ delta · 24+ mo to expiry" },
+];
+
+function getTierAndSize(q) {
+  const tierIdx = LADDER.findIndex(t => q >= t.qMin && q < t.qMax);
+  const idx = tierIdx >= 0 ? tierIdx : LADDER.length - 1;
+  const tier = LADDER[idx];
+  const pos = Math.max(0, Math.min(0.9999, (q - tier.qMin) / (tier.qMax - tier.qMin)));
+  const size = tier.sizes[Math.min(tier.sizes.length - 1, Math.floor(pos * tier.sizes.length))];
+  // Remainder goes to next rung UP (lower index = higher in ladder)
+  const remainder = 100 - size;
+  const splitTier = remainder > 0 && idx > 0 ? LADDER[idx - 1] : null;
+  // If split has larger allocation, promote it to primary
+  if (splitTier && remainder > size) {
+    return { tier: splitTier, size: remainder, remainder: size, splitTier: tier };
+  }
+  return { tier, size, remainder, splitTier };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// FORMATTING
+// ─────────────────────────────────────────────────────────────────────────────
+function fmt(n) {
+  if (n >= 1e6) return "$" + (n/1e6).toFixed(2) + "M";
+  if (n >= 1e3) return "$" + Math.round(n/1e3) + "K";
+  return "$" + Math.round(n);
+}
+function fmtFull(n) { return "$" + Math.round(n).toLocaleString(); }
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// QUANTILE GAUGE
+// ─────────────────────────────────────────────────────────────────────────────
+function QuantileGauge({ q, todayTs, tierColor }) {
+  // Pad top/bottom so extreme labels (99.9%, 0.1%) don't clip
+  // Inner bar sits between PAD and GH-PAD, labels map proportionally into that range
+  const GH = 280;
+  const PAD = 10; // px padding top and bottom inside the bar area
+  const BAR_H = GH - PAD * 2;
+  const clr = tierColor || (() => { const {tier:t}=getTierAndSize(q); return t.color; })();
+  const filled = BAR_H * (Math.min(100,Math.max(0,q))/100);
+
+  // Map a quantile 0–100 to a top pixel within the GH container
+  // 100 → PAD (top), 0 → GH-PAD (bottom)
+  const qToTop = pct => PAD + BAR_H * (1 - Math.min(100,Math.max(0,pct)) / 100);
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"8px",paddingTop:"44px"}}>
+      <div style={{fontSize:"12px",color:"#8aaac8",textTransform:"uppercase",letterSpacing:"0.1em"}}>Rank</div>
+      <div style={{position:"relative",width:"32px",height:`${GH}px`}}>
+        {/* Bar track */}
+        <div style={{position:"absolute",top:`${PAD}px`,bottom:`${PAD}px`,left:"8px",right:"8px",
+          background:"#070f1f",border:"1px solid #162840",borderRadius:"3px",overflow:"hidden"}}>
+          <div style={{position:"absolute",bottom:0,left:0,right:0,
+            height:`${filled}px`,background:clr,opacity:0.9,
+            transition:"height 0.5s cubic-bezier(0.4,0,0.2,1)"}}/>
+        </div>
+        {/* Needle — sharp tick at exact current quantile */}
+        <div style={{position:"absolute",left:"4px",right:"-4px",
+          top:`${qToTop(q)}px`,transform:"translateY(-50%)",
+          pointerEvents:"none",zIndex:2}}>
+          <div style={{height:"2px",background:`linear-gradient(90deg,${clr},${clr}bb,transparent)`,
+            borderRadius:"1px",boxShadow:`0 0 5px ${clr}88`}}/>
+        </div>
+        {/* Band tick marks — proportionally placed */}
+        {BANDS.map(b=>{
+          const bp = bandPriceAt(todayTs, b);
+          const instrColor = getTierAndSize(b.q).tier.color;
+          return (
+            <div key={b.q} style={{position:"absolute",left:0,right:"-92px",
+              top:`${qToTop(b.q)}px`,display:"flex",alignItems:"center",gap:"3px",
+              transform:"translateY(-50%)"}}>
+              <div style={{width:"8px",height:"1px",background:instrColor,opacity:0.9}}/>
+              <div style={{width:"16px"}}/>
+              <span style={{fontSize:"10px",color:instrColor,opacity:1,whiteSpace:"nowrap"}}>
+                {b.label} {fmt(bp)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{fontSize:"26px",fontWeight:700,color:clr,marginTop:"4px"}}>
+        {q.toFixed(1)}<span style={{fontSize:"13px",color:clr,opacity:0.7}}>%</span>
+      </div>
+    </div>
+  );
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INCOME CONVERTER
+// Given a position in any instrument, compute equivalent STRC/EPD income
+// Chain: Position Value → BTC equivalent → STRC shares → Annual Income
+// Beta multipliers: IBIT=1x, IBIT LEAPs=2x, MSTR LEAPs=4x, MSTX LEAPs=8x
+// ─────────────────────────────────────────────────────────────────────────────
+const INCOME_INSTRUMENTS = [
+  { name:"MSTX LEAPs",   beta:8,  color:"#ef4444", hint:"~8× BTC beta" },
+  { name:"MSTR LEAPs",   beta:4,  color:"#f97316", hint:"~4× BTC beta" },
+  { name:"IBIT LEAPs",   beta:2,  color:"#eab308", hint:"~2× BTC beta" },
+  { name:"IBIT Shares",  beta:1,  color:"#22d3ee", hint:"~1,750 shares ≈ 1 BTC" },
+];
+
+const STRC_PAR    = 100;   // STRC trades near $100 par
+const STRC_YIELD  = 0.115; // 11.5% current rate
+const EPD_PAR     = 1;     // EPD is a regular stock ~$20s
+const EPD_PRICE   = 40;    // approximate
+const EPD_YIELD   = 0.10;  // ~7% yield
+
+function IncomeConverter({ btcPrice, fairValue, activeTier }) {
+  // Map active ladder tier → closest income instrument
+  const tierToInstrument = (t) => {
+    if (t === "MSTX LEAPs")  return "MSTX LEAPs";
+    if (t === "MSTR LEAPs")  return "MSTR LEAPs";
+    if (t === "IBIT LEAPs")  return "IBIT LEAPs";
+    return "IBIT Shares"; // IBIT Shares, STRC, EPD → IBIT Shares as most relevant
+  };
+  const [instrument, setInstrument]   = useState(() => tierToInstrument(activeTier));
+
+  // Sync to active tier when it changes (but don't override manual selection)
+  const [userPicked, setUserPicked] = React.useState(false);
+  React.useEffect(() => {
+    if (!userPicked) setInstrument(tierToInstrument(activeTier));
+  }, [activeTier, userPicked]);
+  const [posValue,   setPosValue]     = useState("100000");
+  const [strcPrice,  setStrcPrice]    = useState("100");
+  const [strcRate,   setStrcRate]     = useState("11.5");
+  const [epdPrice,   setEpdPrice]     = useState("40");
+  const [epdYield,   setEpdYield]     = useState("10.0");
+  const [marginPct,  setMarginPct]    = useState("50");    // % of position on margin
+  const [marginRate, setMarginRate]   = useState("4.5");   // margin interest rate %
+  const [callReq,    setCallReq]      = useState("60");    // margin call requirement %
+  const [target,     setTarget]       = useState("STRC");
+
+  const inst      = INCOME_INSTRUMENTS.find(i => i.name === instrument) || INCOME_INSTRUMENTS[0];
+  const posVal    = parseFloat(posValue.replace(/[^0-9.]/g,"")) || 0;
+  const strcPx    = parseFloat(strcPrice)  || 100;
+  const strcRt    = parseFloat(strcRate)   / 100 || 0.115;
+  const epdPx     = parseFloat(epdPrice)   || 40;
+  const epdYld    = parseFloat(epdYield)   / 100 || 0.10;
+
+  // Step 1: BTC-equivalent value (beta-adjusted notional)
+  const btcEquiv  = posVal * inst.beta;
+
+  // Step 2: # of BTC equivalent
+  const btcCount  = btcPrice > 0 ? btcEquiv / btcPrice : 0;
+
+  // Step 3: STRC conversion — use beta-adjusted notional (btcEquiv)
+  const strcShares       = strcPx > 0 ? btcEquiv / strcPx : 0;
+  const strcAnnualIncome = strcShares * strcPx * strcRt;
+  const strcMonthly      = strcAnnualIncome / 12;
+
+  // Step 4: EPD conversion — use beta-adjusted notional (btcEquiv)
+  const epdShares        = epdPx > 0 ? btcEquiv / epdPx : 0;
+  const epdAnnualIncome  = epdShares * epdPx * epdYld;
+  const epdMonthly       = epdAnnualIncome / 12;
+
+  // Fair Value gain calculation
+  // When price >= FV, treat as already at FV with 1× beta (no leverage upside to model)
+  const aboveFV     = btcPrice > 0 && fairValue > 0 && btcPrice >= fairValue;
+  const effectiveBeta = aboveFV ? 1 : inst.beta;
+  const btcToFvPct  = btcPrice > 0 && fairValue > 0 ? (fairValue / btcPrice - 1) : 0;
+  const posGainPct  = aboveFV ? 0 : btcToFvPct * inst.beta;
+  const posGainVal  = posVal * posGainPct;
+  const fvPosValue  = aboveFV ? posVal : Math.max(0, posVal + posGainVal);
+  // How many income shares at FV position value
+  const fvStrcShares   = strcPx > 0 ? fvPosValue / strcPx : 0;
+  const fvEpdShares    = epdPx  > 0 ? fvPosValue / epdPx  : 0;
+  const fvStrcIncome   = fvStrcShares * strcPx * strcRt;
+  const fvEpdIncome    = fvEpdShares  * epdPx  * epdYld;
+
+  const isSTRC = target === "STRC";
+  const incomeShares  = isSTRC ? strcShares  : epdShares;
+  const annualIncome  = isSTRC ? strcAnnualIncome : epdAnnualIncome;
+  const monthlyIncome = isSTRC ? strcMonthly : epdMonthly;
+  const tgtPx         = isSTRC ? strcPx : epdPx;
+  const tgtYield      = isSTRC ? strcRt : epdYld;
+  const tgtColor      = isSTRC ? "#22c55e" : "#3b82f6";
+
+  const fmtD = n => "$" + Math.round(n).toLocaleString();
+  const fmtN = n => n >= 1000 ? (n/1000).toFixed(1)+"K" : Math.round(n).toLocaleString();
+
+  const steps = [
+    {
+      label: "Position Value",
+      value: fmtD(posVal),
+      sub: `${inst.beta}× BTC beta`,
+      color: inst.color,
+    },
+    {
+      label: "BTC-Adj. Notional",
+      value: fmtD(btcEquiv),
+      sub: `${inst.beta}× notional on ${fmtD(posVal)}`,
+      color: inst.color,
+      arrow: true,
+    },
+    
+    {
+      label: `${target} Shares`,
+      value: fmtN(incomeShares),
+      sub: `@ ${fmtD(tgtPx)} par`,
+      color: tgtColor,
+      arrow: true,
+    },
+    {
+      label: "Annual Income",
+      value: fmtD(annualIncome),
+      sub: `${fmtD(monthlyIncome)}/mo · ${(tgtYield*100).toFixed(1)}% yield`,
+      color: tgtColor,
+      highlight: true,
+      arrow: true,
+    },
+  ];
+
+  // FV gain card — separate from chain
+  // Income from total deployed capital (equity + margin) at FV
+  // marginDebt is already defined below but we need it here — compute inline
+  const _marginDebt  = fvPosValue * (parseFloat(marginPct) / 100 || 0);
+  const totalCapital = fvPosValue + _marginDebt;  // equity + borrowed
+  const fvIncomeStrc = strcPx > 0 ? (totalCapital / strcPx) * strcPx * strcRt : 0;
+  const fvIncomeEpd  = epdPx  > 0 ? (totalCapital / epdPx)  * epdPx  * epdYld : 0;
+  const fvIncome     = isSTRC ? fvIncomeStrc : fvIncomeEpd;
+
+  // Margin calculations (income sleeve only — STRC/EPD)
+  const marginFrac     = parseFloat(marginPct)  / 100 || 0;
+  const marginRateFrac = parseFloat(marginRate) / 100 || 0;
+  const callReqFrac    = parseFloat(callReq)    / 100 || 0;
+  const marginDebt     = fvPosValue * marginFrac;                     // $ borrowed at FV position value
+  const marginCarry    = marginDebt * marginRateFrac;                // annual interest $
+  const marginCallPx   = (1 - callReqFrac) > 0 ? (marginDebt / (1 - callReqFrac)) / ((fvPosValue + marginDebt) / tgtPx) : 0;
+  const marginCallVal  = marginCallPx > 0 ? (marginCallPx / tgtPx) * fvPosValue : 0; // position value at call price
+  const incomeCoversCarry = annualIncome > 0 && marginCarry > 0;
+  const coverageRatio  = marginCarry > 0 ? fvIncome / marginCarry : null;
+  const netAnnualIncome = fvIncome - marginCarry;  // full FV position income minus carry on borrowed portion
+  const netMonthlyIncome = netAnnualIncome / 12;
+
+  const gainShares = isSTRC ? fvStrcShares : fvEpdShares;
+  const gainIncome = isSTRC ? fvStrcIncome : fvEpdIncome;
+
+  const inputStyle = {
+    background:"#070f1f", border:"1px solid #0f2a42", borderRadius:"4px",
+    color:"#facc15", fontSize:"13px", fontFamily:"inherit", fontWeight:600,
+    padding:"4px 8px", width:"90px", outline:"none", textAlign:"right",
+  };
+
+  return (
+    <div style={{background:"#040c1a",border:"1px solid #0a1628",borderRadius:"5px",padding:"16px 18px",marginBottom:"12px"}}>
+      <div style={{fontSize:"12px",color:"#7ab8d8",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:"14px",fontWeight:600}}>
+        Income Converter
+      </div>
+
+      {/* Controls row */}
+      <div style={{display:"flex",gap:"16px",flexWrap:"wrap",marginBottom:"16px",alignItems:"flex-end"}}>
+
+        {/* Instrument selector */}
+        <div>
+          <div style={{fontSize:"11px",color:"#8aaac8",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:"5px"}}>instrument</div>
+          <div style={{display:"flex",gap:"4px",flexWrap:"wrap",overflowX:"visible",paddingBottom:"0"}}>
+            {INCOME_INSTRUMENTS.map(i=>(
+              <button key={i.name} onClick={()=>{ setInstrument(i.name); setUserPicked(true); }} style={{
+                background: i.name===instrument ? i.color+"22" : "transparent",
+                border:`1px solid ${i.name===instrument ? i.color : i.color+"33"}`,
+                borderRadius:"3px", color: i.name===instrument ? i.color : i.color+"99",
+                fontSize:"10px", fontFamily:"inherit", fontWeight: i.name===instrument?700:400,
+                padding:"4px 9px", cursor:"pointer",
+              }}>
+                {i.name} <span style={{opacity:0.6}}>{i.beta}×</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Position value */}
+        <div>
+          <div style={{fontSize:"11px",color:"#8aaac8",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:"5px"}}>position value</div>
+          <div style={{position:"relative",display:"inline-block"}}>
+            <span style={{position:"absolute",left:"8px",top:"50%",transform:"translateY(-50%)",color:"#7a8fa8",fontSize:"13px"}}>$</span>
+            <input value={posValue} onChange={e=>setPosValue(e.target.value.replace(/[^0-9]/g,""))}
+              style={{...inputStyle, paddingLeft:"20px", width:"120px", textAlign:"left"}}/>
+          </div>
+        </div>
+
+        {/* Target income instrument */}
+        <div>
+          <div style={{fontSize:"11px",color:"#8aaac8",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:"5px"}}>convert to</div>
+          <div style={{display:"flex",gap:"4px"}}>
+            {["STRC","EPD"].map(t=>(
+              <button key={t} onClick={()=>setTarget(t)} style={{
+                background: t===target ? (t==="STRC"?"#22c55e22":"#3b82f622") : "transparent",
+                border:`1px solid ${t===target?(t==="STRC"?"#22c55e":"#3b82f6"):(t==="STRC"?"#22c55e33":"#3b82f633")}`,
+                borderRadius:"3px", color: t===target?(t==="STRC"?"#22c55e":"#3b82f6"):(t==="STRC"?"#22c55eaa":"#3b82f6aa"),
+                fontSize:"10px", fontFamily:"inherit", fontWeight:t===target?700:400,
+                padding:"4px 12px", cursor:"pointer",
+              }}>{t}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Yield inputs */}
+        <div>
+          <div style={{fontSize:"11px",color:"#8aaac8",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:"5px"}}>
+            {isSTRC ? "STRC Price / Rate" : "EPD Price / Yield"}
+          </div>
+          <div style={{display:"flex",gap:"6px",alignItems:"center"}}>
+            <div style={{position:"relative",display:"inline-block"}}>
+              <span style={{position:"absolute",left:"8px",top:"50%",transform:"translateY(-50%)",color:"#7a8fa8",fontSize:"13px"}}>$</span>
+              <input value={isSTRC?strcPrice:epdPrice}
+                onChange={e=>isSTRC?setStrcPrice(e.target.value.replace(/[^0-9.]/g,"")):setEpdPrice(e.target.value.replace(/[^0-9.]/g,""))}
+                style={{...inputStyle,paddingLeft:"20px"}}/>
+            </div>
+            <div style={{position:"relative",display:"inline-block"}}>
+              <input value={isSTRC?strcRate:epdYield}
+                onChange={e=>isSTRC?setStrcRate(e.target.value.replace(/[^0-9.]/g,"")):setEpdYield(e.target.value.replace(/[^0-9.]/g,""))}
+                style={inputStyle}/>
+              <span style={{position:"absolute",right:"8px",top:"50%",transform:"translateY(-50%)",color:"#7a8fa8",fontSize:"13px"}}>%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Chain visualization */}
+      <div style={{display:"flex",alignItems:"stretch",gap:"0px",flexWrap:"wrap",gap:"2px"}}>
+        {steps.map((s,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center",gap:"2px",flex:"1 1 auto",minWidth:"120px"}}>
+            <div style={{
+              flex:1, background: s.highlight ? s.color+"18" : "#070f1f",
+              border:`1px solid ${s.highlight ? s.color+"66" : "#0a1628"}`,
+              borderRadius:"5px", padding:"12px 14px",
+              borderLeft: s.highlight ? `3px solid ${s.color}` : undefined,
+            }}>
+              <div style={{fontSize:"11px",color:"#8aaac8",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:"4px"}}>{s.label}</div>
+              <div style={{fontSize:"16px",fontWeight:700,color:s.color,lineHeight:1}}>{s.value}</div>
+              <div style={{fontSize:"11px",color:"#7a9ab8",marginTop:"3px"}}>{s.sub}</div>
+            </div>
+            {i < steps.length-1 && (
+              <div style={{fontSize:"16px",color:"#5a8fc0",flexShrink:0,padding:"0 2px"}}>→</div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Fair Value Gain Panel */}
+      {btcPrice > 0 && fairValue > 0 && (
+        <div style={{marginTop:"10px",background:"#070f1f",border:"1px solid #0a1628",borderRadius:"5px",padding:"12px 14px"}}>
+          <div style={{fontSize:"12px",color:"#8aaac8",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:"10px",display:"flex",alignItems:"center",gap:"8px",fontWeight:600}}>
+            {aboveFV ? (
+              <>
+                <span>At current price</span>
+                <span style={{color:"#facc15",fontWeight:700}}>{fmtD(btcPrice)}</span>
+                <span style={{color:"#8aaac8"}}>above fair value</span>
+                <span style={{color:"#ef4444",fontWeight:700,fontSize:"13px"}}>
+                  ({(btcToFvPct*100).toFixed(1)}% to FV)
+                </span>
+              </>
+            ) : (
+              <>
+                <span>At fair value</span>
+                <span style={{color:"#22d3ee",fontWeight:700}}>{fmtD(fairValue)}</span>
+                <span style={{color:"#8aaac8"}}>from {fmtD(btcPrice)}</span>
+                <span style={{color:"#22c55e",fontWeight:700,fontSize:"13px"}}>
+                  (+{(btcToFvPct*100).toFixed(1)}% BTC)
+                </span>
+              </>
+            )}
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:"8px"}}>
+            {[
+              {
+                label: aboveFV ? "above fair value" : "position gain",
+                value: aboveFV ? fmtD(0) : fmtD(posGainVal),
+                sub: aboveFV ? "already at or above FV" : `${posGainPct>=0?"+":""}${(posGainPct*100).toFixed(0)}% · ${inst.beta}× beta`,
+                color: aboveFV ? "#334155" : "#22c55e",
+              },
+              {
+                label: aboveFV ? "position value" : "value at FV",
+                value: fmtD(fvPosValue),
+                sub: aboveFV ? "1× beta assumed" : `up from ${fmtD(posVal)}`,
+                color:"#f1f5f9",
+              },
+              {
+                label: aboveFV ? "BTC equiv." : "BTC equiv. at FV",
+                value: (aboveFV ? btcPrice : fairValue) > 0 ? (fvPosValue / (aboveFV ? btcPrice : fairValue)).toFixed(3) + " BTC" : "—",
+                sub: aboveFV ? "at current price" : "fair value price",
+                color:"#f7931a",
+              },
+              {
+                label:`${target} Shares`,
+                value: fmtN(gainShares),
+                sub:`${fmtD(fvPosValue)} ÷ ${fmtD(tgtPx)} par`,
+                color: tgtColor,
+              },
+              {
+                label: aboveFV ? "annual income" : "Annual income at FV",
+                value: fmtD(gainIncome),
+                sub:`${fmtD(gainIncome/12)}/mo`,
+                color: tgtColor,
+              },
+            ].map((c,i)=>(
+              <div key={i} style={{background:"#040c1a",border:`1px solid ${c.color}22`,borderRadius:"4px",padding:"8px 10px"}}>
+                <div style={{fontSize:"11px",color:"#8aaac8",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:"4px"}}>{c.label}</div>
+                <div style={{fontSize:"17px",fontWeight:700,color:c.color,lineHeight:1}}>{c.value}</div>
+                <div style={{fontSize:"11px",color:"#7a9ab8",marginTop:"3px"}}>{c.sub}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Margin Panel — income sleeve only */}
+      {(target === "STRC" || target === "EPD") && posVal > 0 && (
+        <div style={{marginTop:"10px",background:"#070f1f",border:"1px solid #0f1e32",borderRadius:"6px",padding:"14px 16px"}}>
+          <div style={{fontSize:"12px",color:"#7ab8d8",textTransform:"uppercase",letterSpacing:"0.08em",
+            marginBottom:"12px",display:"flex",alignItems:"center",gap:"10px",fontWeight:600}}>
+            <span style={{color:"#8aaac8"}}>Margin Analysis</span>
+            <span style={{color:"#334a5e",fontWeight:400}}>·</span>
+            <span style={{color:"#8aaac8",fontWeight:400,fontSize:"11px"}}>Income Sleeve</span>
+          </div>
+          {/* Inputs row */}
+          <div style={{display:"flex",gap:"10px",marginBottom:"14px",flexWrap:"wrap"}}>
+            {[
+              { label:"Margin %", val:marginPct, set:setMarginPct },
+              { label:"Rate %",   val:marginRate, set:setMarginRate },
+              { label:"Call Req %", val:callReq, set:setCallReq },
+            ].map(f=>(
+              <div key={f.label} style={{display:"flex",flexDirection:"column",gap:"5px"}}>
+                <div style={{fontSize:"11px",color:"#8aaac8",textTransform:"uppercase",
+                  letterSpacing:"0.06em",fontWeight:600}}>{f.label}</div>
+                <div style={{display:"flex",alignItems:"center",background:"#040c1a",
+                  border:"1px solid #162840",borderRadius:"4px",padding:"5px 10px",gap:"3px"}}>
+                  <input value={f.val} onChange={e=>f.set(e.target.value.replace(/[^0-9.]/g,""))}
+                    style={{background:"transparent",border:"none",outline:"none",color:"#e2e8f0",
+                      fontSize:"14px",fontFamily:"inherit",fontWeight:700,width:"52px",textAlign:"right"}}/>
+                  <span style={{fontSize:"12px",color:"#5a7fa0"}}>%</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* Stats row */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:"8px"}}>
+            {[
+              {
+                label:"Margin Debt",
+                value: fmtD(marginDebt),
+                sub:`${marginPct}% of ${fmtD(fvPosValue)}`,
+                color:"#f1f5f9",
+              },
+              {
+                label:"Annual Carry",
+                value: fmtD(marginCarry),
+                sub:`${fmtD(marginCarry/12)}/mo interest`,
+                color:"#ef4444",
+              },
+              {
+                label:`Call @ ${callReq}%`,
+                value: marginCallVal >= fvPosValue * 0.90 ? "⚠ TOO CLOSE" : fmtD(marginCallPx),
+                sub: marginCallVal >= fvPosValue * 0.90
+                  ? `strike ${fmtD(marginCallPx)} — within 10% of FV`
+                  : `triggers at ${fmtD(marginCallVal)}`,
+                color: marginCallVal >= fvPosValue * 0.90 ? "#ef4444" : "#f97316",
+              },
+              {
+                label:`${target} w/ Margin`,
+                value: fmtN(totalCapital / tgtPx),
+                sub:`${fmtD(totalCapital)} total`,
+                color: tgtColor,
+              },
+              {
+                label:"Net Annual Income",
+                value: fmtD(netAnnualIncome),
+                sub:`${fmtD(fvIncome)} − ${fmtD(marginCarry)} carry`,
+                color: netAnnualIncome >= 0 ? "#22c55e" : "#ef4444",
+              },
+            ].map((c,i)=>(
+              <div key={i} style={{background:"#040c1a",border:`1px solid ${c.color}22`,
+                borderRadius:"5px",padding:"10px 12px"}}>
+                <div style={{fontSize:"11px",color:"#8aaac8",textTransform:"uppercase",
+                  letterSpacing:"0.06em",marginBottom:"5px"}}>{c.label}</div>
+                <div style={{fontSize:"17px",fontWeight:700,color:c.color,lineHeight:1}}>{c.value}</div>
+                <div style={{fontSize:"11px",color:"#7a9ab8",marginTop:"4px"}}>{c.sub}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* Beta reference — 2 rows */}
+      <div style={{marginTop:"12px",display:"flex",flexDirection:"column",gap:"5px"}}>
+        {[[0,1],[2,3]].map((pair,ri)=>(
+          <div key={ri} style={{display:"flex",gap:"20px",flexWrap:"wrap"}}>
+            {pair.map(idx=>{
+              const i=INCOME_INSTRUMENTS[idx];
+              return (
+                <div key={i.name} style={{display:"flex",alignItems:"center",gap:"5px"}}>
+                  <div style={{width:"8px",height:"8px",borderRadius:"50%",background:i.color,opacity:0.7}}/>
+                  <span style={{fontSize:"11px",color:"#8b9db0"}}>{i.name}</span>
+                  <span style={{fontSize:"11px",color:i.color,fontWeight:700}}>{i.beta}×</span>
+                  <span style={{fontSize:"11px",color:"#8aaac8"}}>{i.hint}</span>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FORWARD PROJECTION TABLE
+// ─────────────────────────────────────────────────────────────────────────────
+function ForwardTable({ todayTs, modelA=JV_A, modelB=JV_B }) {
+  const cols = [
+    { label:"1yr ago",  ts: new Date(new Date().setFullYear(new Date().getFullYear()-1)).getTime() },
+    { label:"6mo ago",  ts: new Date(new Date().setMonth(new Date().getMonth()-6)).getTime() },
+    { label:"Today",    ts: todayTs },
+    { label:"3mo",      ts: new Date(new Date().setMonth(new Date().getMonth()+3)).getTime() },
+    { label:"6mo",      ts: new Date(new Date().setMonth(new Date().getMonth()+6)).getTime() },
+    { label:"1yr",      ts: new Date(new Date().setFullYear(new Date().getFullYear()+1)).getTime() },
+    { label:"2yr",      ts: new Date(new Date().setFullYear(new Date().getFullYear()+2)).getTime() },
+    { label:"3yr",      ts: new Date(new Date().setFullYear(new Date().getFullYear()+3)).getTime() },
+    { label:"4yr",      ts: new Date(new Date().setFullYear(new Date().getFullYear()+4)).getTime() },
+    { label:"5yr",      ts: new Date(new Date().setFullYear(new Date().getFullYear()+5)).getTime() },
+    { label:"10yr",     ts: new Date(new Date().setFullYear(new Date().getFullYear()+10)).getTime() },
+  ];
+
+  const displayBands = [99.9, 95, 85, 50, 15, 0.1];
+
+  return (
+    <div style={{background:"#040c1a",border:"1px solid #0a1628",borderRadius:"5px",padding:"12px 14px"}}>
+      <div style={{fontSize:"12px",color:"#7ab8d8",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:"12px",fontWeight:600}}>
+        Forward Price Projections
+      </div>
+      <div style={{overflowX:"auto"}}>
+        <div style={{display:"grid",
+          gridTemplateColumns:`60px repeat(${cols.length}, 1fr)`,
+          fontSize:"12px",minWidth:"480px"}}>
+          {/* header */}
+          <div style={{padding:"4px 7px",fontSize:"11px",color:"#5a8fc0"}}></div>
+          {cols.map(c=>(
+            <div key={c.label} style={{padding:"4px 7px",fontSize:"11px",
+              color:c.label==="1yr ago"||c.label==="6mo ago"?"#4a6a80":"#a0b8cc",
+              textAlign:"center",fontWeight:600,letterSpacing:"0.06em",textTransform:"uppercase"}}>
+              {c.label}
+            </div>
+          ))}
+          {/* rows */}
+          {displayBands.map(q=>{
+            const band = BANDS.find(b=>b.q===q);
+            const isFV = q===50;
+            const rowColor = getTierAndSize(q).tier.color;
+            return [
+              <div key={q+"label"} style={{padding:"5px 6px",borderBottom:"1px solid #070f1f",
+                color:rowColor,fontWeight:700,fontSize:"13px"}}>{band.label}</div>,
+              ...cols.map(c=>{
+                const p = bandPriceAt(c.ts, band, modelA, modelB);
+                const isPast = c.label==="1yr ago"||c.label==="6mo ago";
+                return (
+                  <div key={q+c.label} style={{padding:"5px 6px",borderBottom:"1px solid #070f1f",
+                    textAlign:"center",
+                    color: isPast?"#3a5a70" : isFV?"#38bdf8":"#7a9ab8",
+                    background: isFV&&!isPast?"#061628":"transparent",
+                    fontWeight: isFV&&!isPast?600:400}}>
+                    {fmt(p)}
+                  </div>
+                );
+              })
+            ];
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN
+// ─────────────────────────────────────────────────────────────────────────────
+function BTCPowerLaw() {
+  const today   = useMemo(()=>new Date(),[]);
+  const todayTs = today.getTime();
+
+
+  const [priceStr,  setPriceStr]  = useState("85000");
+  const [livePrice, setLivePrice] = useState(null);
+  const [liveFetch, setLiveFetch] = useState("fetching…");
+  const [liveHistory, setLiveHistory] = useState(null);
+
+  // EMA model: halfLifeYears=0 means Kaim fixed model
+  const [halfLifeYears, setHalfLifeYears] = useState(0);
+  const { A: modelA, B: modelB } = useMemo(() => {
+    if (halfLifeYears === 0) return { A: JV_A, B: JV_B };
+    return fitEMA(halfLifeYears * 365);
+  }, [halfLifeYears]);
+  const isJV = halfLifeYears === 0;
+
+  // Fetch live BTC price + history
+  useEffect(()=>{
+    async function fetchPrice(){
+      try {
+        const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd");
+        if(!res.ok) throw new Error();
+        const j = await res.json();
+        const p = j?.bitcoin?.usd;
+        if(p){
+          setLivePrice(p);
+          setPriceStr(Math.round(p).toString());
+          setLiveFetch("live");
+        }
+      } catch(_){
+        setLiveFetch("unavailable");
+      }
+    }
+    async function fetchHistory(){
+      try {
+        const res = await fetch("https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=365&interval=daily");
+        if(!res.ok) throw new Error();
+        const j = await res.json();
+        if(j?.prices?.length > 100){
+          // Merge: seed covers pre-2024, live covers last 365 days
+          const liveStart = j.prices[0][0];
+          const seedOld = SEED_PRICES.map(([ym,p])=>[new Date(ym+"-01").getTime(),p]).filter(([ts])=>ts < liveStart);
+          setLiveHistory([...seedOld, ...j.prices]);
+        }
+      } catch(_){ /* fall back to seed */ }
+    }
+    fetchPrice();
+    fetchHistory();
+  },[]);
+
+  const price = parseFloat(priceStr.replace(/[^0-9.]/g,""))||0;
+  const fv    = fairValueAt(todayTs, modelA, modelB);
+  const q     = priceToQuantile(price, todayTs, modelA, modelB);
+  const {tier, size, remainder, splitTier} = getTierAndSize(q);
+  const displayName = (name) => name === "STRC" ? "STRC Shares" : name === "EPD" ? "EPD Shares" : name;
+
+  // ─── Alerts (Pushover) ────────────────────────────────────────────────────
+  const [alertsOn,  setAlertsOn]  = useState(false);
+  const [alertSent, setAlertSent] = useState(false);
+  const [lightMode,  setLightMode]  = useState(false);
+
+  // Inject/remove light mode CSS override on <head>
+  useEffect(() => {
+    const id = 'lm';
+    let s = document.getElementById(id);
+    if (!lightMode) { if (s) s.remove(); return; }
+    if (s) return;
+    s = document.createElement('style');
+    s.id = id;
+    // Map structural dark colors → light equivalents
+    // Instrument accent colors (red/orange/yellow/cyan/green/blue) are untouched
+    s.textContent = `
+      body { background: #f0f4f8 !important; }
+      /* Page / outer wrapper */
+      #root [style*="background: rgb(2, 8, 23)"],
+      #root [style*="background: rgb(2,8,23)"]          { background: #f0f4f8 !important; }
+      /* Primary card bg #070f1f */
+      #root [style*="background: rgb(7, 15, 31)"]        { background: #e4ecf4 !important; }
+      /* Inner card #040c1a */
+      #root [style*="background: rgb(4, 12, 26)"]        { background: #dde7f2 !important; }
+      /* Alt row #050d1c */
+      #root [style*="background: rgb(5, 13, 28)"]        { background: #d8e2ed !important; }
+      /* Header strip #060e1a */
+      #root [style*="background: rgb(6, 14, 26)"]        { background: #cfd9e8 !important; }
+      /* Stat card bg fallback */
+      #root [style*="background: rgb(7, 15, 31)"]        { background: #e4ecf4 !important; }
+      /* Scrollbar */
+      ::-webkit-scrollbar-track                          { background: #f0f4f8 !important; }
+      ::-webkit-scrollbar-thumb                          { background: #b0c4d8 !important; }
+      /* Borders */
+      #root [style*="border: 1px solid rgb(10, 22, 40)"]  { border-color: #b8cce0 !important; }
+      #root [style*="border: 1px solid rgb(13, 30, 48)"]  { border-color: #aac0d8 !important; }
+      #root [style*="border-bottom: 1px solid rgb(5, 12, 24)"] { border-bottom-color: #c0d0e0 !important; }
+      /* Muted text colors */
+      #root [style*="color: rgb(138, 170, 200)"]         { color: #2a5070 !important; }
+      #root [style*="color: rgb(122, 184, 216)"]         { color: #1a6080 !important; }
+      #root [style*="color: rgb(90, 143, 192)"]          { color: #1a5070 !important; }
+      #root [style*="color: rgb(74, 122, 148)"]          { color: #1a4a64 !important; }
+      #root [style*="color: rgb(58, 90, 112)"]           { color: #0a3a54 !important; }
+      #root [style*="color: rgb(74, 106, 128)"]          { color: #1a4060 !important; }
+      #root [style*="color: rgb(148, 184, 208)"]         { color: #1a5070 !important; }
+      #root [style*="color: rgb(148, 163, 184)"]         { color: #445566 !important; }
+      #root [style*="color: rgb(138, 184, 216)"]         { color: #1a5070 !important; }
+      /* Bright text */
+      #root [style*="color: rgb(241, 245, 249)"]         { color: #0f1e2d !important; }
+      #root [style*="color: rgb(226, 232, 240)"]         { color: #1a2a3a !important; }
+      #root [style*="color: rgb(200, 216, 232)"]         { color: #1a3a50 !important; }
+      /* Price input bg */
+      #root input[style*="background: rgb(7, 15, 31)"]   { background: #e4ecf4 !important; color: #1a2a3a !important; }
+      #root input[style*="background: rgb(4, 12, 26)"]   { background: #dde7f2 !important; color: #1a2a3a !important; }
+    `;
+    document.head.appendChild(s);
+  }, [lightMode]);
+  const prevTierRef = useRef(null);
+  const prevSizeRef = useRef(null);
+
+  // Build the full notification message including short leg guidance
+  const buildAlertMessage = (tierName, sz, splitName, splitSz, btcPrice, quantilePct) => {
+    const lines = [];
+    const pad = (s, n) => s + ' '.repeat(Math.max(0, n - s.length));
+
+    // Market snapshot
+    const priceStr = btcPrice ? 'Bitcoin $' + Math.round(btcPrice).toLocaleString() : '';
+    const qStr = quantilePct != null ? 'Quantile ' + quantilePct.toFixed(1) + '%' : '';
+    lines.push([priceStr, qStr].filter(Boolean).join('  ·  '));
+    lines.push('');
+    lines.push('');
+
+    // Active position
+    lines.push('<b>Active Position</b>');
+    if (splitName && splitSz > 0) {
+      const t = LADDER.find(l=>l.name===tierName);
+      const s = LADDER.find(l=>l.name===splitName);
+      // split is riskier (lower qMin) = it's scaling out; primary (safer) is scaling in
+      const splitIsRiskier = s && t && s.qMin < t.qMin;
+      lines.push(`${pad(displayName(tierName), 16)}  <b>${sz}%</b>${splitIsRiskier ? '  <i>scaling in</i>' : ''}`);
+      lines.push(`${pad(displayName(splitName), 16)}  <b>${splitSz}%</b>${splitIsRiskier ? '  <i>scaling out</i>' : '  <i>scaling in</i>'}`);
+    } else {
+      lines.push(`${pad(displayName(tierName), 16)}  <b>${sz}%</b>`);
+    }
+    lines.push('');
+
+    // Short leg
+    const primaryScalingIn = sz < 100 && splitName && (() => {
+      const t = LADDER.find(l=>l.name===tierName);
+      const s = LADDER.find(l=>l.name===splitName);
+      return s && t && s.qMin < t.qMin;
+    })();
+
+    const shortLegRows = [];
+    const collectShortLeg = (name, alloc, scalingIn) => {
+      if (!SHORT_LEG[name]) return;
+      const cfg = scalingIn
+        ? SHORT_LEG[name][0]
+        : SHORT_LEG[name].find(s=>s.size===alloc)
+          || SHORT_LEG[name].reduce((a,b)=>Math.abs(b.size-alloc)<Math.abs(a.size-alloc)?b:a);
+      const action = scalingIn ? 'Initiate' : 'Roll';
+      shortLegRows.push({ name, action, delta: cfg.delta, expiry: cfg.expiry });
+    };
+
+    collectShortLeg(tierName, sz, primaryScalingIn);
+    if (splitName && splitSz > 0 && SHORT_LEG[splitName]) {
+      const t = LADDER.find(l=>l.name===tierName);
+      const s = LADDER.find(l=>l.name===splitName);
+      const splitIn = s && t && s.qMin > t.qMin;
+      collectShortLeg(splitName, splitSz, splitIn);
+    }
+
+    if (shortLegRows.length > 0) {
+      lines.push('');
+      lines.push('<b>Short Leg</b>');
+      shortLegRows.forEach(({name, action, delta, expiry}) => {
+        const actionStr = action === 'Initiate'
+          ? '<b>Initiate</b>'
+          : '<b>Roll</b>   ';
+        lines.push(`${pad(name, 14)}  ${actionStr}  Δ${delta}  ·  ${expiry}`);
+      });
+    }
+
+    return lines.join('\n');
+  };
+
+  useEffect(() => {
+    if (!alertsOn) return;
+    const prevTier = prevTierRef.current;
+    const prevSize = prevSizeRef.current;
+    const changed  = prevTier !== null && (prevTier !== tier.name || prevSize !== size);
+    if (changed) {
+      const splitName = splitTier?.name || null;
+      const splitSz   = remainder || 0;
+      const title = prevTier !== tier.name
+        ? `${displayName(prevTier)} → ${displayName(tier.name)}`
+        : `${displayName(tier.name)}: ${prevSize}% → ${size}%`;
+      const message = buildAlertMessage(tier.name, size, splitName, splitSz, btcPrice, quantile);
+      // Call Pushover API directly (supports CORS)
+      const formData = new FormData();
+      formData.append('token',   'a954fkhqk7cyphb64kyt6eikbmgpau');
+      formData.append('user',    'ub8xj2eks26ewu6dv9hubmri5rqswv');
+      formData.append('title',   '🪜 ' + title);
+      formData.append('message', message);
+      formData.append('sound',   'cashregister');
+      formData.append('html',    '1');
+      fetch('https://api.pushover.net/1/messages.json', {
+        method: 'POST',
+        body: formData,
+      }).then(r => r.json()).then(d => { if (d.status===1) setAlertSent(true); });
+    }
+    prevTierRef.current = tier.name;
+    prevSizeRef.current = size;
+  }, [tier.name, size, alertsOn]);
+
+  const toggleAlerts = () => {
+    if (!alertsOn) {
+      setAlertsOn(true);
+      prevTierRef.current = tier.name;
+      prevSizeRef.current = size;
+    } else {
+      setAlertsOn(false);
+    }
+  };
+  const devPct = (price>0&&fv>0)?((price/fv-1)*100).toFixed(1):"0.0";
+
+  const PRESETS = useMemo(()=>{
+    const base=[];
+    for(let p=62500;p<=250000;p+=12500) base.push(p);
+    return base;
+  },[]);
+
+  const bandRows = BANDS.map(b=>{
+    const bp=bandPriceAt(todayTs, b, modelA, modelB);
+    return {...b,bprice:bp,above:bp>price,
+      pctAway:price>0?((bp/price-1)*100).toFixed(1):"—"};
+  });
+
+  // Highlight only the single nearest band above and nearest band below current price
+  const bandsAbove = bandRows.filter(b=>b.above).sort((a,b)=>a.bprice-b.bprice);
+  const bandsBelow = bandRows.filter(b=>!b.above).sort((a,b)=>b.bprice-a.bprice);
+  const nearestAboveQ = bandsAbove.length > 0 ? bandsAbove[0].q : null;
+  const nearestBelowQ = bandsBelow.length > 0 ? bandsBelow[0].q : null;
+
+  return (
+    <div style={{background:"#020817",minHeight:"100vh",
+      fontFamily:"'DM Mono','Courier New',monospace",
+      color:"#e2e8f0",padding:"20px 16px 32px",maxWidth:"960px",margin:"0 auto"}}>
+
+      {/* HEADER */}
+      <div style={{marginBottom:"14px"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:"8px"}}>
+          <div>
+            <div style={{display:"flex",alignItems:"baseline",gap:"12px"}}>
+              <h1 style={{margin:0,fontSize:"22px",fontWeight:700,letterSpacing:"0.12em",
+                color:"#f1f5f9",textTransform:"uppercase"}}>BTC Quantile Ladder</h1>
+              <span style={{fontSize:"12px",color:"#8ab8d8",letterSpacing:"0.08em"}}>
+                Kaim Power Law Model
+              </span>
+            </div>
+            <div style={{height:"1px",
+              background:"linear-gradient(90deg,#22d3ee,#eab308 40%,transparent 75%)",marginTop:"6px"}}/>
+          </div>
+          <div style={{display:"flex",gap:"8px",alignItems:"center",flexWrap:"wrap"}}>
+            <span style={{fontSize:"11px",padding:"2px 8px",borderRadius:"3px",
+              background:liveFetch==="live"?"#052e16":"#1c1700",
+              color:liveFetch==="live"?"#22c55e":"#eab308",
+              border:`1px solid ${liveFetch==="live"?"#14532d":"#3d2e00"}`}}>
+              {liveFetch==="live"?"● LIVE PRICE":"⚠ PRICE MANUAL"}
+            </span>
+            <span style={{fontSize:"12px",color:"#8ac0d8"}}>
+              {today.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}
+            </span>
+          </div>
+        </div>
+
+        {/* EMA MODEL SELECTOR */}
+        <div style={{marginTop:"10px",display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap"}}>          <span style={{fontSize:"11px",color:"#94b8d0",textTransform:"uppercase",letterSpacing:"0.1em",marginRight:"2px"}}>Model</span>
+          {[["standard",0],["weighted",isJV?1:halfLifeYears]].map(([label,val])=>(
+            <button key={label} onClick={()=>setHalfLifeYears(val)} style={{
+              fontSize:"11px",fontFamily:"inherit",fontWeight:700,letterSpacing:"0.06em",
+              textTransform:"uppercase",padding:"4px 10px",borderRadius:"4px",cursor:"pointer",
+              background:(label==="standard"?isJV:!isJV)?"#0c2040":"transparent",
+              border:`1px solid ${(label==="standard"?isJV:!isJV)?"#1e5f8a":"#0f2133"}`,
+              color:(label==="standard"?isJV:!isJV)?"#7dd3fc":"#334155"}}>{label}</button>
+          ))}
+          {!isJV && (
+            <div style={{display:"flex",alignItems:"center",gap:"8px",marginLeft:"4px"}}>
+              <span style={{fontSize:"10px",color:"#8aaac8",whiteSpace:"nowrap"}}>
+                FV <span style={{color:"#22d3ee",fontWeight:700}}>{fmt(fv)}</span>
+                <span style={{color:"#3a5a78",fontSize:"10px"}}> vs Standard </span>
+                <span style={{color:"#22d3ee",fontWeight:700,opacity:0.55}}>{fmt(fairValueAt(todayTs,JV_A,JV_B))}</span>
+              </span>
+              <div style={{display:"flex",alignItems:"center",gap:"10px",background:"#040c1a",
+                border:"1px solid #1a3a5c",borderRadius:"6px",padding:"5px 12px"}}>
+                <span style={{fontSize:"11px",color:"#8aaac8",whiteSpace:"nowrap",fontWeight:500}}>Recent</span>
+                <div style={{position:"relative",display:"flex",alignItems:"center",width:"120px",height:"20px"}}>
+                  <div style={{position:"absolute",left:0,right:0,height:"3px",
+                    background:"#0d1e30",borderRadius:"3px"}}/>
+                  <div style={{position:"absolute",left:0,
+                    width:`${((halfLifeYears-1)/16)*100}%`,
+                    height:"3px",background:"#22d3ee",borderRadius:"3px",opacity:0.75}}/>
+                  <input type="range" min="1" max="17" step="1" value={halfLifeYears}
+                    onChange={e=>setHalfLifeYears(parseInt(e.target.value))}
+                    style={{position:"absolute",left:0,right:0,width:"100%",
+                      appearance:"none",WebkitAppearance:"none",
+                      background:"transparent",cursor:"pointer",margin:0,height:"20px"}}/>
+                </div>
+                <span style={{fontSize:"11px",color:"#8aaac8",whiteSpace:"nowrap",fontWeight:500}}>Historical</span>
+                <span style={{fontSize:"12px",color:"#22d3ee",fontWeight:700,
+                  minWidth:"28px",textAlign:"right",letterSpacing:"0.04em"}}>
+                  {halfLifeYears}yr
+                </span>
+              </div>
+            </div>
+          )}
+          {/* Alert bell + theme toggle */}
+          <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:"4px"}}>
+            <button onClick={()=>setLightMode(m=>!m)}
+              title={lightMode?"Switch to dark mode":"Switch to light mode"}
+              style={{background:"transparent",border:"none",cursor:"pointer",
+                padding:"4px 6px",fontSize:"16px",lineHeight:1,opacity:0.75,
+                transition:"opacity 0.2s"}}>
+              {lightMode ? "🌙" : "☀️"}
+            </button>
+            <button onClick={toggleAlerts}
+              title={alertsOn ? "Push alerts ON — tap to disable" : "Enable push alerts to phone"}
+              style={{background:"transparent",border:"none",cursor:"pointer",
+                padding:"4px 6px",fontSize:"18px",lineHeight:1,
+                opacity:alertsOn?1:0.3,transition:"opacity 0.2s"}}>
+              🔔
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* PRICE INPUT */}
+      <div style={{marginBottom:"16px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"10px",flexWrap:"wrap"}}>
+          <span style={{fontSize:"13px",color:"#a0b8cc",textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:600}}>Price</span>
+          {/* −5K button */}
+          <button onClick={()=>setPriceStr(p=>String(Math.max(1000,(parseInt(p)||0)-5000)))}
+            style={{background:"#070f1f",border:"1px solid #0f2a42",borderRadius:"4px",
+              color:"#8aaac8",fontSize:"15px",fontFamily:"inherit",fontWeight:700,
+              padding:"6px 12px",cursor:"pointer",lineHeight:1}}>−5K</button>
+          <div style={{position:"relative"}}>
+            <span style={{position:"absolute",left:"10px",top:"50%",transform:"translateY(-50%)",
+              color:"#7a8fa8",fontSize:"16px"}}>$</span>
+            <input value={priceStr} onChange={e=>setPriceStr(e.target.value.replace(/[^0-9]/g,""))}
+              style={{background:"#070f1f",border:"1px solid #0f2a42",borderRadius:"4px",
+                color:"#facc15",fontSize:"22px",fontFamily:"inherit",fontWeight:700,
+                padding:"7px 12px 7px 24px",width:"140px",outline:"none"}}/>
+          </div>
+          {/* +5K button */}
+          <button onClick={()=>setPriceStr(p=>String((parseInt(p)||0)+5000))}
+            style={{background:"#070f1f",border:"1px solid #0f2a42",borderRadius:"4px",
+              color:"#8aaac8",fontSize:"15px",fontFamily:"inherit",fontWeight:700,
+              padding:"6px 12px",cursor:"pointer",lineHeight:1}}>+5K</button>
+          {livePrice&&(
+            <button onClick={()=>setPriceStr(Math.round(livePrice).toString())} style={{
+              background:"#052e16",border:"1px solid #14532d",borderRadius:"3px",
+              color:"#22c55e",fontSize:"12px",fontFamily:"inherit",padding:"6px 10px",cursor:"pointer"}}>
+              ● Live {fmt(livePrice)}
+            </button>
+          )}
+        </div>
+        {/* Preset buttons */}
+        <div style={{display:"flex",gap:"4px",flexWrap:"wrap",overflowX:"visible",paddingBottom:"0"}}>
+          {PRESETS.map(p=>(
+            <button key={p} onClick={()=>setPriceStr(String(p))} style={{
+              background:Math.abs(price-p)<500?"#0c2040":"transparent",
+              border:`1px solid ${Math.abs(price-p)<500?"#1e5f8a":"#162840"}`,
+              borderRadius:"3px",color:Math.abs(price-p)<500?"#7dd3fc":"#4a7a9b",
+              fontSize:"12px",fontFamily:"inherit",padding:"4px 8px",cursor:"pointer"}}>
+              {fmt(p)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* MAIN GRID */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"14px",marginBottom:"14px"}}>
+        <div style={{display:"flex",flexDirection:"column",gap:"11px"}}>
+
+          {/* 4 stat cards */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"8px"}}>
+            {[
+              {label:"price", value:fmtFull(price||0),                              color:"#facc15"},
+              {label:"fair value",value:fmtFull(fv),                                    color:"#22d3ee"},
+              {label:"vs fair value", value:`${parseFloat(devPct)>0?"+":""}${devPct}%`,      color:parseFloat(devPct)>0?"#ef4444":"#22c55e"},
+              {label:"quantile",      value:`${q.toFixed(1)}%`,                             color:tier.color},
+            ].map(s=>(
+              <div key={s.label} style={{
+                background: s.label==="vs fair value" ? (parseFloat(devPct)>0?"#150404":"#041209") : s.label==="quantile" ? tier.darkBg : "#070f1f",
+                border: s.label==="vs fair value" ? `1px solid ${parseFloat(devPct)>0?"#2d0808":"#0a2518"}` : s.label==="quantile" ? `1px solid ${tier.color}30` : "1px solid #0f2035",
+                borderRadius:"5px",padding:"11px 13px"}}>
+                <div style={{fontSize:"11px",color:"#6aa0d0",textTransform:"uppercase",
+                  letterSpacing:"0.1em",marginBottom:"4px"}}>{s.label}</div>
+                <div style={{fontSize:"21px",fontWeight:700,color:s.color}}>{s.value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Tier card */}
+          <div style={{background:tier.darkBg,border:`1px solid ${tier.color}30`,
+            borderLeft:`3px solid ${tier.color}`,borderRadius:"5px",padding:"13px 16px",
+            boxShadow:`-4px 0 18px ${tier.color}22, inset 1px 0 0 ${tier.color}11`}}>
+            <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"12px"}}>
+              <div style={{flex:1}}>
+                <div style={{fontSize:"11px",color:"#8aaac8",textTransform:"uppercase",
+                  letterSpacing:"0.1em",marginBottom:"5px",fontWeight:600}}>Active Instrument</div>
+                <div style={{fontSize:"26px",fontWeight:700,color:tier.color,
+                  lineHeight:1,letterSpacing:"0.04em"}}>{displayName(tier.name)}</div>
+                {tier.typeNote && (
+                  <div style={{display:"inline-flex",alignItems:"center",gap:"6px",marginTop:"5px",marginBottom:"5px"}}>
+                    {tier.typeNote.split(" · ").map((note, i) => (
+                      <span key={i} style={{
+                        fontSize:"11px", fontWeight:600, letterSpacing:"0.07em",
+                        textTransform:"uppercase", color:tier.color,
+                        background:tier.color+"18", border:`1px solid ${tier.color}40`,
+                        borderRadius:"3px", padding:"2px 6px"
+                      }}>{note}</span>
+                    ))}
+                  </div>
+                )}
+                <div style={{fontSize:"13px",color:"#b0c4d8",marginTop:"3px"}}>{tier.desc}</div>
+                <div style={{fontSize:"12px",color:"#7aaac8",marginTop:"4px"}}>
+                  Max APR: <span style={{color:"#d0dde8",fontWeight:600}}>{tier.debt}</span>
+                </div>
+                <div style={{marginTop:"10px",display:"flex",gap:"4px",flexWrap:"wrap",overflowX:"visible",paddingBottom:"0",alignItems:"center"}}>
+                  <span style={{fontSize:"11px",color:"#8aaac8",textTransform:"uppercase",
+                    letterSpacing:"0.08em",marginRight:"2px"}}>Size:</span>
+                  {tier.sizes.map((s,i)=>(
+                    <div key={i} style={{padding:"2px 8px",borderRadius:"3px",fontSize:"12px",
+                      fontWeight:s===size?700:400,
+                      background:s===size?tier.color+"22":"transparent",
+                      border:`1px solid ${s===size?tier.color:tier.color+"55"}`,
+                      color:s===size?tier.color:tier.color+"99"}}>{s}%</div>
+                  ))}
+                </div>
+              </div>
+              {/* Allocation circles */}
+              <div style={{display:"flex",gap:"10px",alignItems:"center",flexShrink:0}}>
+                <div style={{textAlign:"center"}}>
+                  <div style={{fontSize:"10px",color:"#8aaac8",textTransform:"uppercase",
+                    letterSpacing:"0.08em",marginBottom:"5px"}}>{displayName(tier.name)}</div>
+                  <div style={{width:"68px",height:"68px",borderRadius:"50%",
+                    border:`3px solid ${tier.color}`,display:"flex",alignItems:"center",
+                    justifyContent:"center",background:tier.darkBg}}>
+                    <div style={{fontSize:"22px",fontWeight:700,color:tier.color}}>{size}%</div>
+                  </div>
+                </div>
+                {splitTier&&remainder>0&&(
+                  <>
+                    <div style={{fontSize:"16px",color:"#5a8fc0"}}>+</div>
+                    <div style={{textAlign:"center"}}>
+                      <div style={{fontSize:"10px",color:"#8aaac8",textTransform:"uppercase",
+                        letterSpacing:"0.08em",marginBottom:"5px"}}>{displayName(splitTier.name)}</div>
+                      <div style={{width:"68px",height:"68px",borderRadius:"50%",
+                        border:`3px solid ${splitTier.color}`,display:"flex",alignItems:"center",
+                        justifyContent:"center",background:splitTier.darkBg}}>
+                        <div style={{fontSize:"22px",fontWeight:700,color:splitTier.color}}>{remainder}%</div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+            <div style={{marginTop:"12px",display:"flex",gap:"5px",flexWrap:"wrap"}}>
+              {LADDER.slice().reverse().map(t=>{
+                const active=t.name===tier.name;
+                const isSplit=splitTier&&t.name===splitTier.name;
+                return <div key={t.name} style={{padding:"3px 9px",borderRadius:"3px",fontSize:"11px",
+                  border:`1px solid ${active||isSplit?t.color:t.color+"55"}`,
+                  color:active||isSplit?t.color:t.color+"88",
+                  background:active?t.darkBg:isSplit?t.darkBg:"transparent",
+                  fontWeight:active||isSplit?700:400,
+                  boxShadow:active?`0 0 8px ${t.color}55`:isSplit?`0 0 4px ${t.color}33`:"none"}}>
+                  {displayName(t.name)}{active&&<span style={{marginLeft:"5px",fontWeight:400,opacity:0.8}}>{size}%</span>}{isSplit&&<span style={{marginLeft:"5px",fontWeight:400,opacity:0.8}}>{remainder}%</span>}
+                </div>;
+              })}
+            </div>
+          </div>
+
+          {/* Short Leg Guidance */}
+          {(() => {
+            const rows = [];
+            const primaryScalingIn = size < 100 && splitTier && splitTier.qMin < tier.qMin;
+            if (SHORT_LEG[tier.name]) {
+              const cfg = primaryScalingIn
+                ? SHORT_LEG[tier.name][0]
+                : SHORT_LEG[tier.name].find(s=>s.size===size)
+                  || SHORT_LEG[tier.name].reduce((a,b)=>Math.abs(b.size-size)<Math.abs(a.size-size)?b:a);
+              rows.push({t:tier, cfg, scalingIn:primaryScalingIn});
+            }
+            if (splitTier && remainder>0 && SHORT_LEG[splitTier.name]) {
+              const splitScalingIn = splitTier.qMin > tier.qMin;
+              const cfg2 = splitScalingIn
+                ? SHORT_LEG[splitTier.name][0]
+                : SHORT_LEG[splitTier.name].find(s=>s.size===remainder)
+                  || SHORT_LEG[splitTier.name].reduce((a,b)=>Math.abs(b.size-remainder)<Math.abs(a.size-remainder)?b:a);
+              rows.push({t:splitTier, cfg:cfg2, scalingIn:splitScalingIn});
+            }
+            if (rows.length===0) return null;
+            return (
+              <div style={{display:"flex",flexDirection:"column",gap:"8px",marginTop:"8px"}}>
+                {rows.map(({t,cfg,scalingIn})=>{
+                  const isInitiate = scalingIn || cfg.action==="Initiate";
+                  return (
+                    <div key={t.name} style={{
+                      background:t.darkBg,
+                      border:`1px solid ${t.color}30`,
+                      borderLeft:`3px solid ${t.color}`,
+                      borderRadius:"5px",padding:"11px 14px"}}>
+                      {/* Header row */}
+                      <div style={{display:"flex",alignItems:"center",
+                        justifyContent:"space-between",marginBottom:"8px"}}>
+                        <div>
+                          <div style={{fontSize:"10px",color:"#8aaac8",textTransform:"uppercase",
+                            letterSpacing:"0.1em",marginBottom:"3px",fontWeight:600}}>Short Leg</div>
+                          <div style={{fontSize:"20px",fontWeight:700,color:t.color,
+                            letterSpacing:"0.08em",textTransform:"uppercase"}}>{t.name}</div>
+                        </div>
+                        {/* Action badge — green for Initiate, instrument color for Roll */}
+                        <div style={{padding:"3px 10px",borderRadius:"3px",
+                          fontSize:"11px",fontWeight:700,letterSpacing:"0.08em",
+                          textTransform:"uppercase",
+                          background:isInitiate?"#052e16":t.color+"18",
+                          border:`1px solid ${isInitiate?"#14532d":t.color+"55"}`,
+                          color:isInitiate?"#22c55e":t.color}}>
+                          {isInitiate?"Initiate":"Roll"}
+                        </div>
+                      </div>
+                      {/* Data badges — same style as 0.80+ DELTA / 24+ MO TO EXPIRY */}
+                      <div style={{display:"inline-flex",alignItems:"center",gap:"6px",flexWrap:"wrap"}}>
+                        <div style={{padding:"3px 9px",borderRadius:"3px",fontSize:"11px",
+                          fontWeight:700,letterSpacing:"0.06em",
+                          background:t.color+"18",border:`1px solid ${t.color}40`,color:t.color}}>
+                          Δ {cfg.delta} SHORT
+                        </div>
+                        <div style={{padding:"3px 9px",borderRadius:"3px",fontSize:"11px",
+                          fontWeight:700,letterSpacing:"0.06em",
+                          background:t.color+"18",border:`1px solid ${t.color}40`,color:t.color}}>
+                          {cfg.expiry.toUpperCase()}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
+          {/* Band proximity table */}
+          <div style={{background:"#070f1f",border:"1px solid #0a1628",borderRadius:"5px",padding:"12px"}}>
+            <div style={{fontSize:"12px",color:"#7ab8d8",textTransform:"uppercase",
+              letterSpacing:"0.1em",marginBottom:"10px",fontWeight:600}}>Band Proximity</div>
+            <div style={{display:"grid",gridTemplateColumns:"3fr 4fr 4fr 3fr",fontSize:"13px",gap:"1px"}}>
+              {["Band","Level","Distance","% Away"].map(h=>(
+                <div key={h} style={{color:"#7ab8d8",padding:"3px 6px",
+                  borderBottom:"1px solid #0a1930",fontSize:"11px",
+                  textTransform:"uppercase",letterSpacing:"0.06em",fontWeight:600}}>{h}</div>
+              ))}
+              {bandRows.map(b=>{
+                const near = b.q === nearestAboveQ || b.q === nearestBelowQ;
+                const bg   = near?"#0a1a2e":"transparent";
+                const instrColor = getTierAndSize(b.q).tier.color;
+                return [
+                  <div key={b.label+"q"} style={{padding:"4px 5px",borderBottom:"1px solid #050c18",
+                    color:instrColor,fontWeight:700,background:bg}}>{b.label}</div>,
+                  <div key={b.label+"p"} style={{padding:"4px 5px",borderBottom:"1px solid #050c18",
+                    color:"#94a3b8",background:bg}}>{fmtFull(b.bprice)}</div>,
+                  <div key={b.label+"d"} style={{padding:"4px 5px",borderBottom:"1px solid #050c18",
+                    color:b.above?"#ef4444":"#22c55e",background:bg}}>
+                    {b.above?"↑":"↓"} {price>0?fmtFull(Math.abs(b.bprice-price)):"—"}
+                  </div>,
+                  <div key={b.label+"a"} style={{padding:"4px 5px",borderBottom:"1px solid #050c18",
+                    color:b.above?"#ef4444":"#22c55e",background:bg}}>
+                    {b.pctAway==="—"?"—":`${parseFloat(b.pctAway)>0?"+":""}${b.pctAway}%`}
+                  </div>,
+                ];
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Gauge */}
+        <QuantileGauge q={q} todayTs={todayTs} tierColor={tier.color}/>
+      </div>
+      {/* INCOME CONVERTER */}
+      <IncomeConverter btcPrice={price} fairValue={fv} activeTier={tier.name}/>
+
+      {/* FORWARD PROJECTION TABLE */}
+      <ForwardTable todayTs={todayTs} modelA={modelA} modelB={modelB}/>
+
+      <div style={{marginTop:"16px",fontSize:"11px",color:"#5a8fc0",textAlign:"center",letterSpacing:"0.1em"}}>
+        Kaim Power Law Model  ·  A=5.82  ·  B=−17.029
+      </div>
+    </div>
+  );
+}
+
+
+    function App() {
+      const [unlocked, setUnlocked] = React.useState(false);
+      const [pin, setPin] = React.useState("");
+      const [err, setErr] = React.useState(false);
+
+      const attempt = () => {
+        if (pin === "4241") { setUnlocked(true); }
+        else { setErr(true); setPin(""); setTimeout(() => setErr(false), 2000); }
+      };
+
+      if (unlocked) return <BTCPowerLaw />;
+
+      return (
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",
+          minHeight:"100vh",background:"#020817",fontFamily:"'DM Mono','Courier New',monospace"}}>
+          <div style={{textAlign:"center"}}>
+            <div style={{fontSize:"13px",color:"#8aaac8",textTransform:"uppercase",
+              letterSpacing:"0.15em",marginBottom:"24px"}}>BTC Quantile Ladder</div>
+            <input type="password" maxLength={10} placeholder="passcode" value={pin}
+              onChange={e => setPin(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && attempt()}
+              style={{background:"#070f1f",border:"1px solid #0f2a42",borderRadius:"4px",
+                color:"#facc15",fontSize:"18px",fontFamily:"inherit",padding:"10px 16px",
+                width:"160px",outline:"none",textAlign:"center",letterSpacing:"0.2em"}}/>
+            <div style={{marginTop:"12px"}}>
+              <button onClick={attempt}
+                style={{background:"#070f1f",border:"1px solid #1a3a5c",borderRadius:"4px",
+                  color:"#8aaac8",fontSize:"12px",fontFamily:"inherit",padding:"8px 20px",
+                  cursor:"pointer",letterSpacing:"0.08em",textTransform:"uppercase"}}>
+                Enter
+              </button>
+            </div>
+            <div style={{color:"#ef4444",fontSize:"11px",marginTop:"10px",
+              letterSpacing:"0.06em",opacity:err?1:0,transition:"opacity 0.2s"}}>
+              incorrect passcode
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+  <script>
+    function applyMobileStyles() {
+      const mobile = window.innerWidth <= 700;
+      const existing = document.getElementById('m');
+      if (!mobile) {
+        if (existing) existing.remove();
+        return;
+      }
+      if (existing) return;
+      const s = document.createElement('style');
+      s.id = 'm';
+      s.textContent = `
+        #root [style*="gap: 14px"][style*="margin-bottom: 14px"] { grid-template-columns: 1fr !important; }
+        #root [style*="gap: 14px"][style*="margin-bottom: 14px"] > *:first-child { min-width: 0 !important; overflow: hidden !important; }
+        #root [style*="gap: 14px"][style*="margin-bottom: 14px"] > *:last-child { display: none !important; }
+        #root [style*="repeat(4, 1fr)"] { grid-template-columns: repeat(2,1fr) !important; }
+        #root [style*="repeat(5, 1fr)"] { grid-template-columns: repeat(2,1fr) !important; }
+        #root [style*="flex-wrap: wrap"][style*="gap: 4px"],
+        #root [style*="flex-wrap: wrap"][style*="gap: 5px"] { flex-wrap: nowrap !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; }
+        #root [style*="justify-content: space-between"][style*="gap: 12px"] { flex-wrap: wrap !important; }
+        #root [style*="margin-left: 4px"][style*="gap: 8px"] { flex-wrap: wrap !important; }
+        #root [style*="margin-left: 4px"][style*="gap: 8px"] > * { min-width: 0 !important; }
+        /* Legend rows: 2-col grid, hide hint text on mobile */
+        #root [style*="gap: 20px"][style*="flex-wrap: wrap"] { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 4px 8px !important; }
+        #root [style*="gap: 20px"][style*="flex-wrap: wrap"] > div { flex-wrap: nowrap !important; overflow: hidden !important; }
+        #root [style*="gap: 20px"][style*="flex-wrap: wrap"] > div span:last-child { display: none !important; }
+      `;
+      document.head.appendChild(s);
+    }
+    // Run after React mounts content
+    const _observer = new MutationObserver(() => applyMobileStyles());
+    _observer.observe(document.getElementById('root'), {childList:true, subtree:false});
+    window.addEventListener('resize', applyMobileStyles);
+    // Also run once on load in case observer fires too early
+    window.addEventListener('load', applyMobileStyles);
+  </script>
+</body>
+</html>

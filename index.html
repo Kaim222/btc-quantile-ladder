@@ -182,28 +182,28 @@ function priceToQuantile(price, ts, A=JV_A, B=JV_B) {
 // ─────────────────────────────────────────────────────────────────────────────
 const SHORT_LEG = {
   "IBIT Shares": [
-    { size:100, delta:"0.15", expiry:"24+ mo", action:"Initiate",  note:"Sell OTM covered call at 0.15Δ matching shares expiry. Converts to a capped upside position at full allocation — maximises premium capture at peak conviction." },
-    { size:75,  delta:"0.30", expiry:"~12 mo",              action:"Roll",      note:"Roll short call down and forward to 0.30Δ / 12-month expiry. Reduced allocation signals rising quantile — tighten the cap, increase theta." },
-    { size:50,  delta:"0.45", expiry:"~6 mo",               action:"Roll",      note:"Roll to 0.45Δ / 6-month expiry. Position is at half size; shorter tenor and higher delta extracts meaningful premium relative to remaining exposure." },
-    { size:25,  delta:"0.60", expiry:"~3 mo",               action:"Roll",      note:"Roll to 0.60Δ / 3-month expiry. Near-money, short-dated call at minimal allocation — maximise theta capture as position approaches full exit." },
+    { size:100, delta:"0.15", expiry:"24+ mo", action:"Initiate", note:"Sell OTM covered call at 0.15Δ / 24+ mo. Full allocation, maximum conviction — low delta preserves upside while collecting steady premium." },
+    { size:75,  delta:"0.25", expiry:"~12 mo", action:"Roll",     note:"Roll to 0.25Δ / ~12 mo. Quantile rising — tighten cap incrementally, reduce tenor to accelerate theta." },
+    { size:50,  delta:"0.35", expiry:"~6 mo",  action:"Roll",     note:"Roll to 0.35Δ / ~6 mo. Half size; closer strike and shorter tenor extracts meaningful premium relative to remaining exposure." },
+    { size:25,  delta:"0.45", expiry:"~3 mo",  action:"Roll",     note:"Roll to 0.45Δ / ~3 mo. Minimal allocation — near-money short-dated call maximises theta as position approaches full exit." },
   ],
   "IBIT LEAPs": [
-    { size:100, delta:"0.15", expiry:"24+ mo", action:"Initiate",  note:"Sell OTM call at 0.15Δ with identical expiry to the long leg, forming a debit call spread. At full allocation this structure reduces net premium paid and defines maximum risk." },
-    { size:75,  delta:"0.30", expiry:"~12 mo",              action:"Roll",      note:"Roll short leg down to 0.30Δ and forward to ~12-month expiry. Rising quantile warrants a tighter cap; rolling forward preserves time value and avoids early assignment risk." },
-    { size:50,  delta:"0.45", expiry:"~6 mo",               action:"Roll",      note:"Roll to 0.45Δ / 6-month expiry. Closer-to-money strike with shorter tenor accelerates premium realisation as conviction moderates." },
-    { size:25,  delta:"0.60", expiry:"~3 mo",               action:"Roll",      note:"Roll to 0.60Δ / 3-month expiry. High-delta, short-duration short call maximises theta at minimum position size — effectively pre-positioning for full exit." },
+    { size:100, delta:"0.15", expiry:"24+ mo", action:"Initiate", note:"Sell 0.15Δ call at identical expiry to the long leg, forming a debit call spread. Reduces net premium paid while preserving the majority of upside." },
+    { size:75,  delta:"0.25", expiry:"~12 mo", action:"Roll",     note:"Roll short leg to 0.25Δ / ~12 mo. Rising quantile warrants a tighter cap; rolling forward preserves time value and avoids early assignment risk." },
+    { size:50,  delta:"0.35", expiry:"~6 mo",  action:"Roll",     note:"Roll to 0.35Δ / ~6 mo. Closer strike with shorter tenor accelerates premium realisation as conviction moderates." },
+    { size:25,  delta:"0.45", expiry:"~3 mo",  action:"Roll",     note:"Roll to 0.45Δ / ~3 mo. High-delta, short-duration call maximises theta at minimum position size — pre-positioning for full exit." },
   ],
   "MSTR LEAPs": [
-    { size:100, delta:"0.15", expiry:"24+ mo", action:"Initiate",  note:"Sell 0.15Δ call at identical expiry to form a debit spread. At full MSTR allocation, the spread structure caps upside while significantly reducing the net debit paid on the long leg." },
-    { size:75,  delta:"0.30", expiry:"~12 mo",              action:"Roll",      note:"Roll short leg down to 0.30Δ / ~12-month expiry. Partial allocation reduction signals the quantile is rising — roll down and forward to recapture premium while widening the spread." },
-    { size:50,  delta:"0.45", expiry:"~6 mo",               action:"Roll",      note:"Roll to 0.45Δ / 6-month expiry. Mid-cycle position; near-money strike with a 6-month window accelerates theta accrual against the remaining long exposure." },
-    { size:25,  delta:"0.60", expiry:"~3 mo",               action:"Roll",      note:"Roll to 0.60Δ / 3-month expiry. Near-ATM short call on a quarter-sized position drives maximum premium efficiency as MSTR allocation approaches full exit." },
+    { size:100, delta:"0.15", expiry:"24+ mo", action:"Initiate", note:"Sell 0.15Δ call at identical expiry to form a debit spread. Caps upside while significantly reducing net debit on the long leg." },
+    { size:75,  delta:"0.25", expiry:"~12 mo", action:"Roll",     note:"Roll to 0.25Δ / ~12 mo. Quantile rising — roll down and forward to recapture premium while keeping the strike comfortably OTM given MSTR's idiosyncratic vol." },
+    { size:50,  delta:"0.35", expiry:"~6 mo",  action:"Roll",     note:"Roll to 0.35Δ / ~6 mo. Mid-cycle; 6-month tenor accelerates theta accrual against remaining long exposure without crowding the strike." },
+    { size:25,  delta:"0.45", expiry:"~3 mo",  action:"Roll",     note:"Roll to 0.45Δ / ~3 mo. Conservative cap at minimum allocation — avoids assignment risk on a position that is costly to re-enter." },
   ],
   "MSTX LEAPs": [
-    { size:100, delta:"0.15", expiry:"24+ mo", action:"Initiate",  note:"Sell 0.15Δ call at identical expiry to form a debit call spread. The 2× leveraged structure amplifies both the premium received and the cost of the long leg — the spread materially reduces net exposure at full allocation." },
-    { size:75,  delta:"0.30", expiry:"~12 mo",              action:"Roll",      note:"Roll short leg down to 0.30Δ / ~12-month expiry. Moving from peak allocation, the roll-down and forward captures incremental premium while the tighter cap reflects reduced upside conviction." },
-    { size:50,  delta:"0.45", expiry:"~6 mo",               action:"Roll",      note:"Roll to 0.45Δ / 6-month expiry. With half the allocation remaining, a closer-to-money 6-month call accelerates premium recovery and continues to partially offset the cost of the leveraged long leg." },
-    { size:25,  delta:"0.60", expiry:"~3 mo",               action:"Roll",      note:"Roll to 0.60Δ / 3-month expiry. Near-ATM, short-dated call at minimum allocation — peak theta extraction as MSTX position is wound down. Monitor closely: 2× leverage can cause rapid strike breach." },
+    { size:100, delta:"0.15", expiry:"24+ mo", action:"Initiate", note:"Sell 0.15Δ call at identical expiry to form a debit spread. High IV on MSTX means excellent premium even at low delta — no need to push the strike closer." },
+    { size:75,  delta:"0.25", expiry:"~12 mo", action:"Roll",     note:"Roll to 0.25Δ / ~12 mo. High IV delivers strong premium at conservative delta; avoid tighter strikes given 2× leverage can cause rapid strike breach." },
+    { size:50,  delta:"0.35", expiry:"~6 mo",  action:"Roll",     note:"Roll to 0.35Δ / ~6 mo. Even at half size, MSTX IV generates meaningful theta at this delta. Protect the position — re-entry after assignment is expensive." },
+    { size:25,  delta:"0.45", expiry:"~3 mo",  action:"Roll",     note:"Roll to 0.45Δ / ~3 mo. Minimum allocation, short-dated cap. Monitor closely — 2× leverage means strikes can be breached quickly on BTC moves." },
   ],
 };
 

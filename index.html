@@ -922,7 +922,7 @@ function BTCPowerLaw() {
       const t = LADDER.find(l=>l.name===tierName);
       const s = LADDER.find(l=>l.name===splitName);
       const splitIsRiskier = s && t && s.qMin < t.qMin;
-      posLines.push(`${displayName(tierName)}  <b>${sz}%</b>${splitIsRiskier ? '  <i>scaling in</i>' : ''}`);
+      posLines.push(`${displayName(tierName)}  <b>${sz}%</b>${splitIsRiskier ? '  <i>scaling in</i>' : '  <i>scaling out</i>'}`);
       posLines.push(`${displayName(splitName)}  <b>${splitSz}%</b>${splitIsRiskier ? '  <i>scaling out</i>' : '  <i>scaling in</i>'}`);
     } else {
       posLines.push(`${displayName(tierName)}  <b>${sz}%</b>`);

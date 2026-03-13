@@ -96,6 +96,13 @@ const BTC_HISTORY = [
   {days:6221,price:105000.0},{days:6252,price:85000.0},{days:6280,price:67250.0},
 ];
 
+// Derive SEED_PRICES as ["YYYY-MM", price] pairs from BTC_HISTORY for chart merge
+const SEED_PRICES = BTC_HISTORY.map(({days, price}) => {
+  const d = new Date(GENESIS.getTime() + days * 86400000);
+  const ym = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0");
+  return [ym, price];
+});
+
 // Fit EMA-weighted power law regression. halfLifeDays=Infinity → Kaim fixed.
 function fitEMA(halfLifeDays) {
   if (!halfLifeDays || halfLifeDays >= 1e9) return { A: JV_A, B: JV_B };
@@ -131,8 +138,6 @@ function fairValueAt(ts, A=JV_A, B=JV_B) {
 // offset(days) = m * days + c  for 99.9%, 95%, 85%
 // constant for 50%, 15%, 0.1%
 function bandOffset(mSlope, cIntercept, ts) {
-  // ts is milliseconds since epoch; convert to days since genesis
-  const GENESIS_MS = Date.UTC(2009, 0, 3);
   const days = (ts - GENESIS_MS) / 86400000;
   return mSlope * days + cIntercept;
 }
@@ -141,7 +146,7 @@ const BAND_DEFS = [
   { q: 99.9, m: -0.0000756204, c:  0.849329, label: "99.9%", color: "#b91c1c", dash: "6,3", w: 1   },
   { q: 95,   m: -0.0000583518, c:  0.683930, label: "95%",   color: "#dc2626", dash: "5,3", w: 1   },
   { q: 85,   m: -0.0000516698, c:  0.473869, label: "85%",   color: "#f97316", dash: "",    w: 1.2 },
-  { q: 50,   m:  0,            c: -0.000400, label: "50%",   color: "#22d3ee", dash: "",    w: 1.8 },
+  { q: 50,   m:  0,            c:  0,        label: "50%",   color: "#22d3ee", dash: "",    w: 1.8 },
   { q: 15,   m:  0,            c: -0.209200, label: "15%",   color: "#22c55e", dash: "",    w: 1.2 },
   { q: 0.1,  m:  0,            c: -0.340300, label: "0.1%",  color: "#6366f1", dash: "5,3", w: 1   },
 ];
@@ -158,23 +163,25 @@ function priceToQuantile(price, ts, A=JV_A, B=JV_B) {
   const fv = fairValueAt(ts, A, B);
   if (!fv || price <= 0) return 50;
   const res = Math.log10(price / fv);
+  // Compute offsets fresh for the given timestamp (upper bands decay over time)
+  const bands = BAND_DEFS.map(b => ({ ...b, offset: bandOffset(b.m, b.c, ts) }));
   // Interpolate between calibration points
-  for (let i = 0; i < BANDS.length - 1; i++) {
-    const hi = BANDS[i], lo = BANDS[i + 1];
+  for (let i = 0; i < bands.length - 1; i++) {
+    const hi = bands[i], lo = bands[i + 1];
     if (res <= hi.offset && res >= lo.offset) {
       const t = (res - lo.offset) / (hi.offset - lo.offset);
       return lo.q + t * (hi.q - lo.q);
     }
   }
-  if (res > BANDS[0].offset) {
+  if (res > bands[0].offset) {
     // Above 99.9th — extrapolate
-    const slope = (BANDS[0].q - BANDS[1].q) / (BANDS[0].offset - BANDS[1].offset);
-    return Math.min(99.99, BANDS[0].q + slope * (res - BANDS[0].offset));
+    const slope = (bands[0].q - bands[1].q) / (bands[0].offset - bands[1].offset);
+    return Math.min(99.99, bands[0].q + slope * (res - bands[0].offset));
   }
   // Below 0.1st — extrapolate
-  const slope = (BANDS[BANDS.length-2].q - BANDS[BANDS.length-1].q) /
-                (BANDS[BANDS.length-2].offset - BANDS[BANDS.length-1].offset);
-  return Math.max(0.01, BANDS[BANDS.length-1].q + slope * (res - BANDS[BANDS.length-1].offset));
+  const slope = (bands[bands.length-2].q - bands[bands.length-1].q) /
+                (bands[bands.length-2].offset - bands[bands.length-1].offset);
+  return Math.max(0.01, bands[bands.length-1].q + slope * (res - bands[bands.length-1].offset));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -217,8 +224,9 @@ const LADDER = [
 ];
 
 function getTierAndSize(q) {
+  // Clamp: q >= top tier's qMax → safest tier (index 0); q < bottom tier's qMin → riskiest (last)
   const tierIdx = LADDER.findIndex(t => q >= t.qMin && q < t.qMax);
-  const idx = tierIdx >= 0 ? tierIdx : LADDER.length - 1;
+  const idx = tierIdx >= 0 ? tierIdx : (q >= LADDER[0].qMax ? 0 : LADDER.length - 1);
   const tier = LADDER[idx];
   const pos = Math.max(0, Math.min(0.9999, (q - tier.qMin) / (tier.qMax - tier.qMin)));
   const size = tier.sizes[Math.min(tier.sizes.length - 1, Math.floor(pos * tier.sizes.length))];
@@ -723,18 +731,25 @@ function IncomeConverter({ btcPrice, fairValue, activeTier }) {
 // FORWARD PROJECTION TABLE
 // ─────────────────────────────────────────────────────────────────────────────
 function ForwardTable({ todayTs, modelA=JV_A, modelB=JV_B }) {
+  // Safe date offset: always derive from todayTs, never mutate
+  const offsetTs = (months=0, years=0) => {
+    const d = new Date(todayTs);
+    d.setFullYear(d.getFullYear() + years);
+    d.setMonth(d.getMonth() + months);
+    return d.getTime();
+  };
   const cols = [
-    { label:"1yr ago",  ts: new Date(new Date().setFullYear(new Date().getFullYear()-1)).getTime() },
-    { label:"6mo ago",  ts: new Date(new Date().setMonth(new Date().getMonth()-6)).getTime() },
-    { label:"Today",    ts: todayTs },
-    { label:"3mo",      ts: new Date(new Date().setMonth(new Date().getMonth()+3)).getTime() },
-    { label:"6mo",      ts: new Date(new Date().setMonth(new Date().getMonth()+6)).getTime() },
-    { label:"1yr",      ts: new Date(new Date().setFullYear(new Date().getFullYear()+1)).getTime() },
-    { label:"2yr",      ts: new Date(new Date().setFullYear(new Date().getFullYear()+2)).getTime() },
-    { label:"3yr",      ts: new Date(new Date().setFullYear(new Date().getFullYear()+3)).getTime() },
-    { label:"4yr",      ts: new Date(new Date().setFullYear(new Date().getFullYear()+4)).getTime() },
-    { label:"5yr",      ts: new Date(new Date().setFullYear(new Date().getFullYear()+5)).getTime() },
-    { label:"10yr",     ts: new Date(new Date().setFullYear(new Date().getFullYear()+10)).getTime() },
+    { label:"1yr ago",  ts: offsetTs(0, -1) },
+    { label:"6mo ago",  ts: offsetTs(-6)     },
+    { label:"Today",    ts: todayTs           },
+    { label:"3mo",      ts: offsetTs(3)       },
+    { label:"6mo",      ts: offsetTs(6)       },
+    { label:"1yr",      ts: offsetTs(0, 1)    },
+    { label:"2yr",      ts: offsetTs(0, 2)    },
+    { label:"3yr",      ts: offsetTs(0, 3)    },
+    { label:"4yr",      ts: offsetTs(0, 4)    },
+    { label:"5yr",      ts: offsetTs(0, 5)    },
+    { label:"10yr",     ts: offsetTs(0, 10)   },
   ];
 
   const displayBands = [99.9, 95, 85, 50, 15, 0.1];

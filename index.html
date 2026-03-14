@@ -905,20 +905,43 @@ function PowerLawChart({ btcPrice, todayTs, liveHistory, modelA=JV_A, modelB=JV_
         pts.push([ts, price]);
       }
     }
-    // Overlay live daily data if available
+    // Overlay live data — downsample daily to weekly to match seed density
     if (liveHistory) {
+      const weekMs = 7 * 86400000;
+      const buckets = new Map();
       for (const [ts, price] of liveHistory) {
         if (ts >= tMin && ts <= tMax && price > 0) {
-          pts.push([ts, price]);
+          const weekKey = Math.floor(ts / weekMs);
+          const existing = buckets.get(weekKey);
+          // Keep the last data point in each week
+          if (!existing || ts > existing[0]) buckets.set(weekKey, [ts, price]);
         }
       }
+      for (const [, pt] of buckets) pts.push(pt);
     }
-    // Deduplicate by keeping latest value per month-ish window
+    // Sort and deduplicate: keep one point per ~7-day window
     pts.sort((a,b) => a[0] - b[0]);
-    let d = "";
-    for (const [ts, price] of pts) {
-      const x = tx(ts), y = ty(Math.log10(price));
-      d += (d ? "L" : "M") + x.toFixed(1) + "," + y.toFixed(1);
+    const deduped = [];
+    for (const pt of pts) {
+      if (deduped.length === 0 || pt[0] - deduped[deduped.length-1][0] > 5*86400000) {
+        deduped.push(pt);
+      }
+    }
+    // Build smooth SVG path using Catmull-Rom → cubic bezier conversion
+    if (deduped.length < 2) return "";
+    const points = deduped.map(([ts, price]) => [tx(ts), ty(Math.log10(price))]);
+    let d = `M${points[0][0].toFixed(1)},${points[0][1].toFixed(1)}`;
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[Math.max(0, i - 1)];
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const p3 = points[Math.min(points.length - 1, i + 2)];
+      // Catmull-Rom to cubic bezier control points (tension=0.5)
+      const cp1x = p1[0] + (p2[0] - p0[0]) / 6;
+      const cp1y = p1[1] + (p2[1] - p0[1]) / 6;
+      const cp2x = p2[0] - (p3[0] - p1[0]) / 6;
+      const cp2y = p2[1] - (p3[1] - p1[1]) / 6;
+      d += ` C${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
     }
     return d;
   }, [liveHistory]);

@@ -234,12 +234,12 @@ const SHORT_LEG = {
 };
 
 const LADDER = [
-  { name:"EPD",         color:"#3b82f6", darkBg:"#050f1f", qMin:95,  qMax:100, debt:"< 4% APR",    desc:"Cycle top. High STRC demand likely compresses its yield — EPD holds rate.",        sizes:[100],          typeNote:"equity" },
-  { name:"STRC",        color:"#22c55e", darkBg:"#071a0f", qMin:80,  qMax:95,  debt:"< 6% APR",   desc:"Perpetual preferred, 10%+ variable yield on $100 par.",    sizes:[100,75,50,25], typeNote:"equity" },
-  { name:"IBIT Shares", color:"#22d3ee", darkBg:"#0c1e26", qMin:60,  qMax:80,  debt:"< 8% APR",   desc:"Spot BTC ETF. ~1× beta.",             sizes:[100,75,50,25], typeNote:"equity" },
-  { name:"IBIT LEAPs",  color:"#eab308", darkBg:"#1c1700", qMin:35,  qMax:60,  debt:"< 10% APR",   desc:"Deep ITM calls on spot BTC ETF. ~2× beta.",          sizes:[100,75,50,25], typeNote:"0.80+ delta · 24+ mo to expiry" },
-  { name:"MSTR LEAPs",  color:"#f97316", darkBg:"#1c0e00", qMin:15,  qMax:35,  debt:"< 12% APR",   desc:"Deep ITM calls on Strategy (MSTR). ~4× beta.",           sizes:[100,75,50,25], typeNote:"0.80+ delta · 24+ mo to expiry" },
-  { name:"MSTX LEAPs",  color:"#ef4444", darkBg:"#1c0505", qMin:0,   qMax:15,  debt:"< 14% APR",   desc:"Deep ITM calls on 2× levered Strategy ETF. ~8× beta.",        sizes:[100,75,50,25], typeNote:"0.80+ delta · 24+ mo to expiry" },
+  { name:"EPD",         color:"#3b82f6", darkBg:"#050f1f", qMin:100, qMax:101, debt:"< 3% APR",   desc:"Cycle top. High STRC demand likely compresses its yield — EPD holds rate.",        sizes:[100],          typeNote:"equity" },
+  { name:"STRC",        color:"#22c55e", darkBg:"#071a0f", qMin:80,  qMax:100, debt:"< 5% APR",   desc:"Perpetual preferred, 10%+ variable yield on $100 par.",    sizes:[100,75,50,25], typeNote:"equity" },
+  { name:"IBIT Shares", color:"#22d3ee", darkBg:"#0c1e26", qMin:60,  qMax:80,  debt:"< 6% APR",   desc:"Spot BTC ETF. ~1× beta.",             sizes:[100,75,50,25], typeNote:"equity" },
+  { name:"IBIT LEAPs",  color:"#eab308", darkBg:"#1c1700", qMin:40,  qMax:60,  debt:"< 10% APR",  desc:"Deep ITM calls on spot BTC ETF. ~2× beta.",          sizes:[100,75,50,25], typeNote:"0.80+ delta · 24+ mo to expiry" },
+  { name:"MSTR LEAPs",  color:"#f97316", darkBg:"#1c0e00", qMin:20,  qMax:40,  debt:"< 12% APR",  desc:"Deep ITM calls on Strategy (MSTR). ~4× beta.",           sizes:[100,75,50,25], typeNote:"0.80+ delta · 24+ mo to expiry" },
+  { name:"MSTX LEAPs",  color:"#ef4444", darkBg:"#1c0505", qMin:0,   qMax:20,  debt:"< 14% APR",  desc:"Deep ITM calls on 2× levered Strategy ETF. ~8× beta.",        sizes:[100,75,50,25], typeNote:"0.80+ delta · 24+ mo to expiry" },
 ];
 
 function getTierAndSize(q) {

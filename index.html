@@ -8,27 +8,42 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #020817; }
+    :root {
+      --bg-base: #020817; --bg-card: #070f1f; --bg-inner: #040c1a;
+      --bg-hover: #0c1e30; --border: #0f2035; --border-focus: #1e5f8a;
+      --text-primary: #e2e8f0; --text-muted: #8aaac8; --text-dim: #5a7fa0;
+      --accent-cyan: #22d3ee; --accent-gold: #facc15;
+      --font: 'JetBrains Mono', 'DM Mono', 'Courier New', monospace;
+    }
+    body { background: var(--bg-base); font-family: var(--font); }
     ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: #020817; }
+    ::-webkit-scrollbar-track { background: var(--bg-base); }
     ::-webkit-scrollbar-thumb { background: #162840; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #1e3a58; }
     input[type=range] { -webkit-appearance: none; appearance: none; background: transparent; }
     input[type=range]::-webkit-slider-runnable-track { height: 3px; background: transparent; }
     input[type=range]::-webkit-slider-thumb {
       -webkit-appearance: none; appearance: none;
       width: 14px; height: 14px; border-radius: 50%;
-      background: #22d3ee; margin-top: -5.5px; cursor: pointer;
-      border: 2px solid #020817;
-      box-shadow: 0 0 0 1px #22d3ee88, 0 0 8px #22d3ee66;
+      background: var(--accent-cyan); margin-top: -5.5px; cursor: pointer;
+      border: 2px solid var(--bg-base);
+      box-shadow: 0 0 0 1px #22d3ee88, 0 0 8px #22d3ee44;
     }
     input[type=range]::-moz-range-track { height: 3px; background: transparent; }
     input[type=range]::-moz-range-thumb {
       width: 14px; height: 14px; border-radius: 50%;
-      background: #22d3ee; border: 2px solid #020817; cursor: pointer;
+      background: var(--accent-cyan); border: 2px solid var(--bg-base); cursor: pointer;
       box-shadow: 0 0 0 1px #22d3ee88;
     }
     input[type=range]:focus { outline: none; }
+    /* Smooth transitions for interactive elements */
+    button { transition: all 0.15s ease; }
+    button:hover { filter: brightness(1.15); }
+    /* Subtle card hover lift */
+    .card-hover { transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+    .card-hover:hover { border-color: #1a3a5c !important; box-shadow: 0 2px 12px rgba(0,0,0,0.3); }
   </style>
 </head>
 <body>
@@ -473,7 +488,7 @@ function IncomeConverter({ btcPrice, fairValue, activeTier }) {
 
   return (
     <div style={{background:"#040c1a",border:"1px solid #0a1628",borderRadius:"5px",padding:"16px 18px",marginBottom:"12px"}}>
-      <div style={{fontSize:"12px",color:"#7ab8d8",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:"14px",fontWeight:600}}>
+      <div style={{fontSize:"11px",color:"#5a8fc0",textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:"14px",fontWeight:600}}>
         Income Converter
       </div>
 
@@ -569,7 +584,7 @@ function IncomeConverter({ btcPrice, fairValue, activeTier }) {
 
       {/* Fair Value Gain Panel */}
       {btcPrice > 0 && fairValue > 0 && (
-        <div style={{marginTop:"10px",background:"#070f1f",border:"1px solid #0a1628",borderRadius:"5px",padding:"12px 14px"}}>
+        <div style={{marginTop:"10px",background:"#070f1f",border:"1px solid #0a1628",borderRadius:"6px",padding:"14px 16px"}}>
           <div style={{fontSize:"12px",color:"#8aaac8",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:"10px",display:"flex",alignItems:"center",gap:"8px",fontWeight:600}}>
             {aboveFV ? (
               <>
@@ -637,7 +652,7 @@ function IncomeConverter({ btcPrice, fairValue, activeTier }) {
       {/* Margin Panel — income sleeve only */}
       {(target === "STRC" || target === "EPD") && posVal > 0 && (
         <div style={{marginTop:"10px",background:"#070f1f",border:"1px solid #0f1e32",borderRadius:"6px",padding:"14px 16px"}}>
-          <div style={{fontSize:"12px",color:"#7ab8d8",textTransform:"uppercase",letterSpacing:"0.08em",
+          <div style={{fontSize:"11px",color:"#5a8fc0",textTransform:"uppercase",letterSpacing:"0.12em",
             marginBottom:"12px",display:"flex",alignItems:"center",gap:"10px",fontWeight:600}}>
             <span style={{color:"#8aaac8"}}>Margin Analysis</span>
             <span style={{color:"#334a5e",fontWeight:400}}>·</span>
@@ -760,8 +775,8 @@ function ForwardTable({ todayTs, modelA=JV_A, modelB=JV_B }) {
   const displayBands = [99.9, 95, 85, 50, 15, 0.1];
 
   return (
-    <div style={{background:"#040c1a",border:"1px solid #0a1628",borderRadius:"5px",padding:"12px 14px"}}>
-      <div style={{fontSize:"12px",color:"#7ab8d8",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:"12px",fontWeight:600}}>
+    <div style={{background:"#040c1a",border:"1px solid #0a1628",borderRadius:"6px",padding:"14px 16px"}}>
+      <div style={{fontSize:"11px",color:"#5a8fc0",textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:"12px",fontWeight:600}}>
         Forward Price Projections
       </div>
       <div style={{overflowX:"auto"}}>
@@ -948,9 +963,9 @@ function PowerLawChart({ btcPrice, todayTs, liveHistory, modelA=JV_A, modelB=JV_
   }, [months, modelA, modelB]);
 
   return (
-    <div style={{background:"#040c1a",border:"1px solid #0a1628",borderRadius:"5px",padding:"12px 14px",marginTop:"12px"}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"8px"}}>
-        <div style={{fontSize:"12px",color:"#7ab8d8",textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:600}}>
+    <div style={{background:"#040c1a",border:"1px solid #0a1628",borderRadius:"6px",padding:"16px 18px",marginTop:"14px"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"10px"}}>
+        <div style={{fontSize:"11px",color:"#5a8fc0",textTransform:"uppercase",letterSpacing:"0.12em",fontWeight:600}}>
           Power Law Bands
         </div>
         {/* Legend */}
@@ -1279,22 +1294,22 @@ function BTCPowerLaw() {
 
   return (
     <div style={{background:"#020817",minHeight:"100vh",
-      fontFamily:"'DM Mono','Courier New',monospace",
-      color:"#e2e8f0",padding:"20px 16px 32px",maxWidth:"960px",margin:"0 auto"}}>
+      fontFamily:"var(--font, 'JetBrains Mono', 'DM Mono', monospace)",
+      color:"#e2e8f0",padding:"24px 20px 40px",maxWidth:"980px",margin:"0 auto"}}>
 
       {/* HEADER */}
-      <div style={{marginBottom:"14px"}}>
+      <div style={{marginBottom:"18px"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:"8px"}}>
           <div>
             <div style={{display:"flex",alignItems:"baseline",gap:"12px"}}>
-              <h1 style={{margin:0,fontSize:"22px",fontWeight:700,letterSpacing:"0.12em",
+              <h1 style={{margin:0,fontSize:"20px",fontWeight:700,letterSpacing:"0.14em",
                 color:"#f1f5f9",textTransform:"uppercase"}}>BTC Quantile Ladder</h1>
-              <span style={{fontSize:"12px",color:"#8ab8d8",letterSpacing:"0.08em"}}>
+              <span style={{fontSize:"11px",color:"#5a8fc0",letterSpacing:"0.08em",fontWeight:500}}>
                 Kaim Power Law Model
               </span>
             </div>
             <div style={{height:"1px",
-              background:"linear-gradient(90deg,#22d3ee,#eab308 40%,transparent 75%)",marginTop:"6px"}}/>
+              background:"linear-gradient(90deg,#22d3ee 0%,#eab308 35%,#f97316 60%,transparent 85%)",marginTop:"8px",opacity:0.7}}/>
           </div>
           <div style={{display:"flex",gap:"8px",alignItems:"center",flexWrap:"wrap"}}>
             <span style={{fontSize:"11px",padding:"2px 8px",borderRadius:"3px",
@@ -1422,7 +1437,7 @@ function BTCPowerLaw() {
       <div style={{display:"flex",flexDirection:"column",gap:"11px",marginBottom:"14px"}}>
 
           {/* 4 stat cards */}
-          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"8px"}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"10px"}}>
             {[
               {label:"price", value:fmtFull(price||0),                              color:"#facc15"},
               {label:"fair value",value:fmtFull(fv),                                    color:"#22d3ee"},
@@ -1432,24 +1447,25 @@ function BTCPowerLaw() {
               <div key={s.label} style={{
                 background: s.label==="vs fair value" ? (parseFloat(devPct)>0?"#150404":"#041209") : s.label==="quantile" ? tier.darkBg : "#070f1f",
                 border: s.label==="vs fair value" ? `1px solid ${parseFloat(devPct)>0?"#2d0808":"#0a2518"}` : s.label==="quantile" ? `1px solid ${tier.color}30` : "1px solid #0f2035",
-                borderRadius:"5px",padding:"11px 13px"}}>
-                <div style={{fontSize:"11px",color:"#6aa0d0",textTransform:"uppercase",
-                  letterSpacing:"0.1em",marginBottom:"4px"}}>{s.label}</div>
-                <div style={{fontSize:"21px",fontWeight:700,color:s.color}}>{s.value}</div>
+                borderRadius:"6px",padding:"14px 16px",
+                boxShadow: s.label==="quantile" ? `0 0 20px ${tier.color}11` : "none"}}>
+                <div style={{fontSize:"10px",color:"#5a8fc0",textTransform:"uppercase",
+                  letterSpacing:"0.12em",marginBottom:"6px",fontWeight:600}}>{s.label}</div>
+                <div style={{fontSize:"22px",fontWeight:700,color:s.color,letterSpacing:"-0.01em"}}>{s.value}</div>
               </div>
             ))}
           </div>
 
           {/* Tier card */}
-          <div style={{background:tier.darkBg,border:`1px solid ${tier.color}30`,
-            borderLeft:`3px solid ${tier.color}`,borderRadius:"5px",padding:"13px 16px",
-            boxShadow:`-4px 0 18px ${tier.color}22, inset 1px 0 0 ${tier.color}11`}}>
-            <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"12px"}}>
+          <div style={{background:tier.darkBg,border:`1px solid ${tier.color}25`,
+            borderLeft:`4px solid ${tier.color}`,borderRadius:"6px",padding:"16px 20px",
+            boxShadow:`-4px 0 24px ${tier.color}15, inset 1px 0 0 ${tier.color}08`}}>
+            <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"16px"}}>
               <div style={{flex:1}}>
-                <div style={{fontSize:"11px",color:"#8aaac8",textTransform:"uppercase",
-                  letterSpacing:"0.1em",marginBottom:"5px",fontWeight:600}}>Active Instrument</div>
-                <div style={{fontSize:"26px",fontWeight:700,color:tier.color,
-                  lineHeight:1,letterSpacing:"0.04em"}}>{displayName(tier.name)}</div>
+                <div style={{fontSize:"10px",color:"#5a8fc0",textTransform:"uppercase",
+                  letterSpacing:"0.12em",marginBottom:"6px",fontWeight:600}}>Active Instrument</div>
+                <div style={{fontSize:"28px",fontWeight:700,color:tier.color,
+                  lineHeight:1,letterSpacing:"0.02em"}}>{displayName(tier.name)}</div>
                 {tier.typeNote && (
                   <div style={{display:"inline-flex",alignItems:"center",gap:"6px",marginTop:"5px",marginBottom:"5px"}}>
                     {tier.typeNote.split(" · ").map((note, i) => (
@@ -1550,7 +1566,7 @@ function BTCPowerLaw() {
                       background:t.darkBg,
                       border:`1px solid ${t.color}30`,
                       borderLeft:`3px solid ${t.color}`,
-                      borderRadius:"5px",padding:"11px 14px"}}>
+                      borderRadius:"6px",padding:"12px 16px"}}>
                       {/* Header row */}
                       <div style={{display:"flex",alignItems:"center",
                         justifyContent:"space-between",marginBottom:"8px"}}>
@@ -1591,7 +1607,7 @@ function BTCPowerLaw() {
           })()}
 
           {/* Band proximity table */}
-          <div style={{background:"#070f1f",border:"1px solid #0a1628",borderRadius:"5px",padding:"12px"}}>
+          <div style={{background:"#070f1f",border:"1px solid #0a1628",borderRadius:"6px",padding:"14px"}}>
             <div style={{fontSize:"12px",color:"#7ab8d8",textTransform:"uppercase",
               letterSpacing:"0.1em",marginBottom:"10px",fontWeight:600}}>Band Proximity</div>
             <div style={{display:"grid",gridTemplateColumns:"3fr 4fr 4fr 3fr",fontSize:"13px",gap:"1px"}}>
@@ -1631,8 +1647,10 @@ function BTCPowerLaw() {
       {/* POWER LAW CHART */}
       <PowerLawChart btcPrice={price} todayTs={todayTs} liveHistory={liveHistory} modelA={modelA} modelB={modelB}/>
 
-      <div style={{marginTop:"16px",fontSize:"11px",color:"#5a8fc0",textAlign:"center",letterSpacing:"0.1em"}}>
-        Kaim Power Law Model  ·  A=5.82  ·  B=−17.029
+      <div style={{marginTop:"24px",paddingTop:"16px",borderTop:"1px solid #0a1628"}}>
+        <div style={{fontSize:"10px",color:"#3a5a78",textAlign:"center",letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:500}}>
+          Kaim Power Law Model  ·  A=5.82  ·  B=−17.029
+        </div>
       </div>
     </div>
   );
@@ -1653,25 +1671,25 @@ function BTCPowerLaw() {
 
       return (
         <div style={{display:"flex",alignItems:"center",justifyContent:"center",
-          minHeight:"100vh",background:"#020817",fontFamily:"'DM Mono','Courier New',monospace"}}>
+          minHeight:"100vh",background:"#020817",fontFamily:"var(--font, 'JetBrains Mono', monospace)"}}>
           <div style={{textAlign:"center"}}>
-            <div style={{fontSize:"13px",color:"#8aaac8",textTransform:"uppercase",
-              letterSpacing:"0.15em",marginBottom:"24px"}}>BTC Quantile Ladder</div>
-            <input type="password" maxLength={10} placeholder="passcode" value={pin}
+            <div style={{fontSize:"11px",color:"#5a8fc0",textTransform:"uppercase",
+              letterSpacing:"0.18em",marginBottom:"32px",fontWeight:600}}>BTC Quantile Ladder</div>
+            <input type="password" maxLength={10} placeholder="····" value={pin}
               onChange={e => setPin(e.target.value)}
               onKeyDown={e => e.key === "Enter" && attempt()}
-              style={{background:"#070f1f",border:"1px solid #0f2a42",borderRadius:"4px",
-                color:"#facc15",fontSize:"18px",fontFamily:"inherit",padding:"10px 16px",
-                width:"160px",outline:"none",textAlign:"center",letterSpacing:"0.2em"}}/>
-            <div style={{marginTop:"12px"}}>
+              style={{background:"#070f1f",border:"1px solid #0f2a42",borderRadius:"6px",
+                color:"#facc15",fontSize:"20px",fontFamily:"inherit",padding:"12px 18px",
+                width:"160px",outline:"none",textAlign:"center",letterSpacing:"0.3em"}}/>
+            <div style={{marginTop:"16px"}}>
               <button onClick={attempt}
-                style={{background:"#070f1f",border:"1px solid #1a3a5c",borderRadius:"4px",
-                  color:"#8aaac8",fontSize:"12px",fontFamily:"inherit",padding:"8px 20px",
-                  cursor:"pointer",letterSpacing:"0.08em",textTransform:"uppercase"}}>
+                style={{background:"#070f1f",border:"1px solid #1a3a5c",borderRadius:"6px",
+                  color:"#8aaac8",fontSize:"11px",fontFamily:"inherit",padding:"10px 24px",
+                  cursor:"pointer",letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:600}}>
                 Enter
               </button>
             </div>
-            <div style={{color:"#ef4444",fontSize:"11px",marginTop:"10px",
+            <div style={{color:"#ef4444",fontSize:"11px",marginTop:"12px",
               letterSpacing:"0.06em",opacity:err?1:0,transition:"opacity 0.2s"}}>
               incorrect passcode
             </div>

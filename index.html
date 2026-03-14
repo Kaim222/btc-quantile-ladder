@@ -59,15 +59,14 @@
 // Verified: FV = $118,006 on Mar 7 2026
 //
 // Band offsets (log10 scale from fair value):
-//   99.9th → $282K  offset= +0.3783
-//   95th   → $246K  offset= +0.3190
-//   85th   → $167K  offset= +0.1508
-//   50th   → $118K  offset=  0.0000  (fair value)
-//   15th   → $ 72.9K offset= -0.2092
-//   0.1st  → $ 53.9K offset= -0.3403
+//   99.9th → $220K  offset= +0.2687 (c=0.7434, m=-7.56e-5)
+//   95th   → $200K  offset= +0.2277 (c=0.5943, m=-5.84e-5)
+//   85th   → $152K  offset= +0.1072 (c=0.4318, m=-5.17e-5)
+//   50th   → $119K  offset= -0.0004  (fair value)
+//   15th   → $ 73K  offset= -0.2092
+//   0.1st  → $ 54K  offset= -0.3403
 //
-// Forward verification vs JV's table (1yr = Mar 2027):
-//   50th=$163K ✓  85th=$231K ✓  15th=$101K ✓  95th=$340K ✓
+// Upper band C offsets synced with Excel v01(4) — tighter ceiling
 // ─────────────────────────────────────────────────────────────────────────────
 
 const GENESIS = new Date("2009-01-03T00:00:00Z");
@@ -163,9 +162,9 @@ function bandOffset(mSlope, cIntercept, ts) {
 }
 
 const BAND_DEFS = [
-  { q: 99.9, m: -0.0000756204, c:  0.849329, label: "99.9%", color: "#b91c1c", dash: "6,3", w: 1   },
-  { q: 95,   m: -0.0000583518, c:  0.683930, label: "95%",   color: "#dc2626", dash: "5,3", w: 1   },
-  { q: 85,   m: -0.0000516698, c:  0.473869, label: "85%",   color: "#f97316", dash: "",    w: 1.2 },
+  { q: 99.9, m: -0.0000756204, c:  0.7434,  label: "99.9%", color: "#b91c1c", dash: "6,3", w: 1   },
+  { q: 95,   m: -0.0000583518, c:  0.5943,  label: "95%",   color: "#dc2626", dash: "5,3", w: 1   },
+  { q: 85,   m: -0.0000516698, c:  0.4318,  label: "85%",   color: "#f97316", dash: "",    w: 1.2 },
   { q: 50,   m:  0,            c: -0.000400, label: "50%",   color: "#22d3ee", dash: "",    w: 1.8 },
   { q: 15,   m:  0,            c: -0.209200, label: "15%",   color: "#22c55e", dash: "",    w: 1.2 },
   { q: 0.1,  m:  0,            c: -0.340300, label: "0.1%",  color: "#6366f1", dash: "5,3", w: 1   },

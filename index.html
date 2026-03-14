@@ -1322,7 +1322,7 @@ function BTCPowerLaw() {
 
         {/* EMA MODEL SELECTOR */}
         <div style={{marginTop:"10px",display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap"}}>          <span style={{fontSize:"11px",color:"#94b8d0",textTransform:"uppercase",letterSpacing:"0.1em",marginRight:"2px"}}>Model</span>
-          {[["standard",0],["weighted",isJV?5:halfLifeYears]].map(([label,val])=>(
+          {[["standard",0],["weighted",isJV?3:halfLifeYears]].map(([label,val])=>(
             <button key={label} onClick={()=>setHalfLifeYears(val)} style={{
               fontSize:"11px",fontFamily:"inherit",fontWeight:700,letterSpacing:"0.06em",
               textTransform:"uppercase",padding:"4px 10px",borderRadius:"4px",cursor:"pointer",

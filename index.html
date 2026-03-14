@@ -1015,8 +1015,10 @@ function PowerLawChart({ btcPrice, todayTs, liveHistory, modelA=JV_A, modelB=JV_
           {/* Current price dot */}
           {priceY !== null && priceY >= PAD.t && priceY <= PAD.t+ch && (
             <>
-              <circle cx={todayX} cy={priceY} r="4" fill="#facc15" stroke="#020817" strokeWidth="1.5"/>
-              <text x={todayX} y={priceY - 10} fill="#facc15" fontSize="10" fontWeight="700" textAnchor="middle">
+              <circle cx={todayX} cy={priceY} r="5" fill="#facc15" stroke="#020817" strokeWidth="2"/>
+              {/* Price label with dark background for readability over band lines */}
+              <rect x={todayX+9} y={priceY-8} width={String(fmtFull(btcPrice)).length*7+10} height="16" rx="3" fill="#020817" opacity="0.85"/>
+              <text x={todayX+14} y={priceY+4} fill="#facc15" fontSize="11" fontWeight="700">
                 {fmtFull(btcPrice)}
               </text>
             </>

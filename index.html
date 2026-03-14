@@ -553,7 +553,7 @@ function IncomeConverter({ btcPrice, fairValue, activeTier }) {
             <div style={{position:"relative",display:"inline-block"}}>
               <input value={isSTRC?strcRate:epdYield}
                 onChange={e=>isSTRC?setStrcRate(e.target.value.replace(/[^0-9.]/g,"")):setEpdYield(e.target.value.replace(/[^0-9.]/g,""))}
-                style={inputStyle}/>
+                style={{...inputStyle, paddingRight:"22px"}}/>
               <span style={{position:"absolute",right:"8px",top:"50%",transform:"translateY(-50%)",color:"#7a8fa8",fontSize:"13px"}}>%</span>
             </div>
           </div>

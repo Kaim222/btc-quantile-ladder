@@ -960,15 +960,6 @@ function PowerLawChart({ btcPrice, todayTs, liveHistory, modelA=JV_A, modelB=JV_
   const todayX = tx(todayTs);
   const priceY = btcPrice > 0 ? ty(Math.log10(btcPrice)) : null;
 
-  // Band prices at today for labeling on the chart
-  const todayBandPrices = useMemo(() => {
-    return BAND_DEFS.map(b => {
-      const p = bandPriceAt(todayTs, b, modelA, modelB);
-      const y = p > 0 ? ty(Math.log10(p)) : -999;
-      return { q: b.q, label: b.label, color: b.color, y, price: p };
-    }).filter(b => b.y >= PAD.t && b.y <= PAD.t + ch);
-  }, [todayTs, modelA, modelB]);
-
   return (
     <div style={{background:"#040c1a",border:"1px solid #0a1628",borderRadius:"6px",padding:"16px 18px",marginTop:"14px"}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"10px"}}>
@@ -1013,13 +1004,6 @@ function PowerLawChart({ btcPrice, todayTs, liveHistory, modelA=JV_A, modelB=JV_
               strokeDasharray={b.dash} opacity={0.7}/>
           ))}
 
-          {/* Band price labels at TODAY line — left-aligned to avoid clipping */}
-          {todayBandPrices.map(b => (
-            <text key={b.q+"lbl"} x={todayX - 8} y={b.y - 4} fill={b.color} fontSize="9" fontWeight="600" textAnchor="end" opacity="0.75">
-              {b.label} {fmt(b.price)}
-            </text>
-          ))}
-
           {/* Historical price line */}
           <path d={pricePath} fill="none" stroke="#f1f5f9" strokeWidth="1.2" opacity="0.85"/>
 
@@ -1032,8 +1016,8 @@ function PowerLawChart({ btcPrice, todayTs, liveHistory, modelA=JV_A, modelB=JV_
           {priceY !== null && priceY >= PAD.t && priceY <= PAD.t+ch && (
             <>
               <circle cx={todayX} cy={priceY} r="4" fill="#facc15" stroke="#020817" strokeWidth="1.5"/>
-              <text x={todayX+7} y={priceY+4} fill="#facc15" fontSize="10" fontWeight="700">
-                {fmt(btcPrice)}
+              <text x={todayX} y={priceY - 10} fill="#facc15" fontSize="10" fontWeight="700" textAnchor="middle">
+                {fmtFull(btcPrice)}
               </text>
             </>
           )}

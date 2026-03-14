@@ -827,8 +827,8 @@ function ForwardTable({ todayTs, modelA=JV_A, modelB=JV_B }) {
 function PowerLawChart({ btcPrice, todayTs, liveHistory, modelA=JV_A, modelB=JV_B }) {
   const canvasRef = useRef(null);
 
-  // Chart dimensions — wider right pad for band labels
-  const W = 900, H = 420, PAD = {t:30, r:70, b:40, l:65};
+  // Chart dimensions
+  const W = 900, H = 420, PAD = {t:30, r:20, b:40, l:65};
   const cw = W - PAD.l - PAD.r, ch = H - PAD.t - PAD.b;
 
   // Time range: 2011-01-01 to +5 years
@@ -960,30 +960,14 @@ function PowerLawChart({ btcPrice, todayTs, liveHistory, modelA=JV_A, modelB=JV_
   const todayX = tx(todayTs);
   const priceY = btcPrice > 0 ? ty(Math.log10(btcPrice)) : null;
 
-  // Band labels with collision avoidance — push labels apart if too close
-  const bandLabelData = useMemo(() => {
-    const lastTs = months[months.length - 1];
-    const raw = BAND_DEFS.map(b => {
-      const p = bandPriceAt(lastTs, b, modelA, modelB);
+  // Band prices at today for labeling on the chart
+  const todayBandPrices = useMemo(() => {
+    return BAND_DEFS.map(b => {
+      const p = bandPriceAt(todayTs, b, modelA, modelB);
       const y = p > 0 ? ty(Math.log10(p)) : -999;
       return { q: b.q, label: b.label, color: b.color, y, price: p };
-    }).filter(b => b.y >= PAD.t - 5 && b.y <= PAD.t + ch + 5);
-    // Sort by y position (top to bottom)
-    raw.sort((a, b) => a.y - b.y);
-    // Push apart labels that are too close (min 11px gap)
-    const minGap = 11;
-    for (let pass = 0; pass < 5; pass++) {
-      for (let i = 0; i < raw.length - 1; i++) {
-        const gap = raw[i + 1].y - raw[i].y;
-        if (gap < minGap) {
-          const push = (minGap - gap) / 2;
-          raw[i].y -= push;
-          raw[i + 1].y += push;
-        }
-      }
-    }
-    return raw;
-  }, [months, modelA, modelB]);
+    }).filter(b => b.y >= PAD.t && b.y <= PAD.t + ch);
+  }, [todayTs, modelA, modelB]);
 
   return (
     <div style={{background:"#040c1a",border:"1px solid #0a1628",borderRadius:"6px",padding:"16px 18px",marginTop:"14px"}}>
@@ -1029,12 +1013,11 @@ function PowerLawChart({ btcPrice, todayTs, liveHistory, modelA=JV_A, modelB=JV_
               strokeDasharray={b.dash} opacity={0.7}/>
           ))}
 
-          {/* Band labels (right edge — collision-avoided) */}
-          {bandLabelData.map(b => (
-            <g key={b.q}>
-              <text x={PAD.l+cw+4} y={b.y+3} fill={b.color} fontSize="10" fontWeight="600">{b.label}</text>
-              <text x={PAD.l+cw+4} y={b.y+13} fill={b.color} fontSize="9" fontWeight="400" opacity="0.6">{fmt(b.price)}</text>
-            </g>
+          {/* Band price labels at TODAY line — left-aligned to avoid clipping */}
+          {todayBandPrices.map(b => (
+            <text key={b.q+"lbl"} x={todayX - 8} y={b.y - 4} fill={b.color} fontSize="9" fontWeight="600" textAnchor="end" opacity="0.75">
+              {b.label} {fmt(b.price)}
+            </text>
           ))}
 
           {/* Historical price line */}
@@ -1544,7 +1527,8 @@ function BTCPowerLaw() {
                 )}
               </div>
             </div>
-            <div style={{marginTop:"12px",display:"flex",gap:"5px",flexWrap:"wrap"}}>
+            <div style={{marginTop:"12px",display:"flex",gap:"5px",overflowX:"auto",
+              WebkitOverflowScrolling:"touch",scrollbarWidth:"none",paddingBottom:"2px"}}>
               {LADDER.slice().reverse().map(t=>{
                 const active=t.name===tier.name;
                 const isSplit=splitTier&&t.name===splitTier.name;
@@ -1736,17 +1720,43 @@ function BTCPowerLaw() {
       const s = document.createElement('style');
       s.id = 'm';
       s.textContent = `
+        /* Stat cards: 4-col → 2-col */
         #root [style*="repeat(4, 1fr)"] { grid-template-columns: repeat(2,1fr) !important; }
+        /* Income/margin grids: 5-col → 2-col + last full-width */
         #root [style*="repeat(5, 1fr)"] { grid-template-columns: repeat(2,1fr) !important; }
+        #root [style*="repeat(5, 1fr)"] > *:nth-child(5) { grid-column: 1 / -1 !important; }
+        /* Horizontal scroll for preset buttons and instrument selectors */
         #root [style*="flex-wrap: wrap"][style*="gap: 4px"],
-        #root [style*="flex-wrap: wrap"][style*="gap: 5px"] { flex-wrap: nowrap !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; }
-        #root [style*="justify-content: space-between"][style*="gap: 12px"] { flex-wrap: wrap !important; }
+        #root [style*="flex-wrap: wrap"][style*="gap: 5px"] { 
+          flex-wrap: nowrap !important; overflow-x: auto !important; 
+          -webkit-overflow-scrolling: touch !important; padding-bottom: 4px !important;
+          scrollbar-width: none !important;
+        }
+        #root [style*="flex-wrap: wrap"][style*="gap: 4px"]::-webkit-scrollbar,
+        #root [style*="flex-wrap: wrap"][style*="gap: 5px"]::-webkit-scrollbar { display: none !important; }
+        /* Header row: stack on mobile */
+        #root [style*="justify-content: space-between"][style*="gap: 8px"] { flex-wrap: wrap !important; }
+        /* Model selector: wrap */
         #root [style*="margin-left: 4px"][style*="gap: 8px"] { flex-wrap: wrap !important; }
         #root [style*="margin-left: 4px"][style*="gap: 8px"] > * { min-width: 0 !important; }
-        /* Legend rows: 2-col grid, hide hint text on mobile */
+        /* Income converter chain: stack vertically */
+        #root [style*="flex: 1 1 auto"][style*="min-width: 120px"] { min-width: 100% !important; }
+        /* Allocation circles: smaller */
+        #root [style*="width: 68px"][style*="height: 68px"] { width: 54px !important; height: 54px !important; }
+        #root [style*="width: 68px"][style*="height: 68px"] > div { font-size: 18px !important; }
+        /* Instrument ladder pills: scroll horizontally */
+        #root [style*="gap: 5px"][style*="flex-wrap: wrap"]:last-child {
+          flex-wrap: nowrap !important; overflow-x: auto !important;
+          -webkit-overflow-scrolling: touch !important; padding-bottom: 4px !important;
+        }
+        /* Legend rows: 2-col grid, hide hint text */
         #root [style*="gap: 20px"][style*="flex-wrap: wrap"] { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 4px 8px !important; }
         #root [style*="gap: 20px"][style*="flex-wrap: wrap"] > div { flex-wrap: nowrap !important; overflow: hidden !important; }
         #root [style*="gap: 20px"][style*="flex-wrap: wrap"] > div span:last-child { display: none !important; }
+        /* Forward projection table: smaller font */
+        #root [style*="gridTemplateColumns"][style*="60px"] { font-size: 10px !important; }
+        /* Chart legend: hide on mobile (bands are color-coded) */
+        #root svg + div, #root [style*="gap: 10px"][style*="flex-wrap: wrap"] { display: none !important; }
       `;
       document.head.appendChild(s);
     }

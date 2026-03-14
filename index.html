@@ -1603,7 +1603,8 @@ function BTCPowerLaw() {
           <div style={{background:"#070f1f",border:"1px solid #0a1628",borderRadius:"6px",padding:"14px"}}>
             <div style={{fontSize:"12px",color:"#7ab8d8",textTransform:"uppercase",
               letterSpacing:"0.1em",marginBottom:"10px",fontWeight:600}}>Band Proximity</div>
-            <div style={{display:"grid",gridTemplateColumns:"3fr 4fr 4fr 3fr",fontSize:"13px",gap:"1px"}}>
+            <div style={{overflowX:"auto"}}>
+            <div style={{display:"grid",gridTemplateColumns:"3fr 4fr 4fr 3fr",fontSize:"13px",gap:"1px",minWidth:"340px"}}>
               {["Band","Level","Distance","% Away"].map(h=>(
                 <div key={h} style={{color:"#7ab8d8",padding:"3px 6px",
                   borderBottom:"1px solid #0a1930",fontSize:"11px",
@@ -1628,6 +1629,7 @@ function BTCPowerLaw() {
                   </div>,
                 ];
               })}
+            </div>
             </div>
           </div>
       </div>

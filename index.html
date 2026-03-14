@@ -1451,7 +1451,7 @@ function BTCPowerLaw() {
           <div style={{background:tier.darkBg,border:`1px solid ${tier.color}25`,
             borderLeft:`4px solid ${tier.color}`,borderRadius:"6px",padding:"16px 20px",
             boxShadow:`-4px 0 24px ${tier.color}15, inset 1px 0 0 ${tier.color}08`}}>
-            <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"16px"}}>
+            <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"16px",flexWrap:"wrap"}}>
               <div style={{flex:1}}>
                 <div style={{fontSize:"10px",color:"#5a8fc0",textTransform:"uppercase",
                   letterSpacing:"0.12em",marginBottom:"6px",fontWeight:600}}>Active Instrument</div>
@@ -1518,6 +1518,7 @@ function BTCPowerLaw() {
                 const active=t.name===tier.name;
                 const isSplit=splitTier&&t.name===splitTier.name;
                 return <div key={t.name} style={{padding:"3px 9px",borderRadius:"3px",fontSize:"11px",
+                  whiteSpace:"nowrap",flexShrink:0,
                   border:`1px solid ${active||isSplit?t.color:t.color+"55"}`,
                   color:active||isSplit?t.color:t.color+"88",
                   background:active?t.darkBg:isSplit?t.darkBg:"transparent",
@@ -1710,38 +1711,37 @@ function BTCPowerLaw() {
         /* Income/margin grids: 5-col → 2-col + last full-width */
         #root [style*="repeat(5, 1fr)"] { grid-template-columns: repeat(2,1fr) !important; }
         #root [style*="repeat(5, 1fr)"] > *:nth-child(5) { grid-column: 1 / -1 !important; }
-        /* Horizontal scroll for preset buttons and instrument selectors */
-        #root [style*="flex-wrap: wrap"][style*="gap: 4px"],
-        #root [style*="flex-wrap: wrap"][style*="gap: 5px"] { 
+        /* Horizontal scroll for preset buttons */
+        #root [style*="flex-wrap: wrap"][style*="gap: 4px"] { 
           flex-wrap: nowrap !important; overflow-x: auto !important; 
           -webkit-overflow-scrolling: touch !important; padding-bottom: 4px !important;
           scrollbar-width: none !important;
         }
-        #root [style*="flex-wrap: wrap"][style*="gap: 4px"]::-webkit-scrollbar,
-        #root [style*="flex-wrap: wrap"][style*="gap: 5px"]::-webkit-scrollbar { display: none !important; }
+        #root [style*="flex-wrap: wrap"][style*="gap: 4px"]::-webkit-scrollbar { display: none !important; }
         /* Header row: stack on mobile */
         #root [style*="justify-content: space-between"][style*="gap: 8px"] { flex-wrap: wrap !important; }
+        /* Tier card: stack text above circles */
+        #root [style*="justify-content: space-between"][style*="gap: 16px"] { 
+          flex-direction: column !important; align-items: flex-start !important; 
+        }
+        /* Allocation circles: smaller on mobile */
+        #root [style*="width: 68px"][style*="height: 68px"] { width: 52px !important; height: 52px !important; }
+        #root [style*="width: 68px"][style*="height: 68px"] > div { font-size: 17px !important; }
         /* Model selector: wrap */
         #root [style*="margin-left: 4px"][style*="gap: 8px"] { flex-wrap: wrap !important; }
         #root [style*="margin-left: 4px"][style*="gap: 8px"] > * { min-width: 0 !important; }
         /* Income converter chain: stack vertically */
         #root [style*="flex: 1 1 auto"][style*="min-width: 120px"] { min-width: 100% !important; }
-        /* Allocation circles: smaller */
-        #root [style*="width: 68px"][style*="height: 68px"] { width: 54px !important; height: 54px !important; }
-        #root [style*="width: 68px"][style*="height: 68px"] > div { font-size: 18px !important; }
-        /* Instrument ladder pills: scroll horizontally */
-        #root [style*="gap: 5px"][style*="flex-wrap: wrap"]:last-child {
-          flex-wrap: nowrap !important; overflow-x: auto !important;
-          -webkit-overflow-scrolling: touch !important; padding-bottom: 4px !important;
-        }
         /* Legend rows: 2-col grid, hide hint text */
         #root [style*="gap: 20px"][style*="flex-wrap: wrap"] { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 4px 8px !important; }
         #root [style*="gap: 20px"][style*="flex-wrap: wrap"] > div { flex-wrap: nowrap !important; overflow: hidden !important; }
         #root [style*="gap: 20px"][style*="flex-wrap: wrap"] > div span:last-child { display: none !important; }
         /* Forward projection table: smaller font */
         #root [style*="gridTemplateColumns"][style*="60px"] { font-size: 10px !important; }
-        /* Chart legend: hide on mobile (bands are color-coded) */
-        #root svg + div, #root [style*="gap: 10px"][style*="flex-wrap: wrap"] { display: none !important; }
+        /* Instrument name: smaller on mobile */
+        #root [style*="font-size: 28px"] { font-size: 22px !important; }
+        /* General: tighter padding */
+        #root > div > div { padding-left: 12px !important; padding-right: 12px !important; }
       `;
       document.head.appendChild(s);
     }

@@ -137,16 +137,21 @@ function fairValueAt(ts, A=JV_A, B=JV_B) {
 // Band offsets — upper bands decay linearly over time (empirical fit)
 // offset(days) = m * days + c  for 99.9%, 95%, 85%
 // constant for 50%, 15%, 0.1%
+// Upper bands: cap decay at today's day count (matches Excel MIN(days,today) fix)
+// Without this, 99.9th crosses below 95th at ~day 9578 and 85th hits 50th at ~day 9171
+const TODAY_DAYS = (Date.now() - GENESIS_MS) / 86400000;
 function bandOffset(mSlope, cIntercept, ts) {
   const days = (ts - GENESIS_MS) / 86400000;
-  return mSlope * days + cIntercept;
+  // For decaying bands (m < 0), cap at today's value so projections don't collapse
+  const effectiveDays = mSlope < 0 ? Math.min(days, TODAY_DAYS) : days;
+  return mSlope * effectiveDays + cIntercept;
 }
 
 const BAND_DEFS = [
   { q: 99.9, m: -0.0000756204, c:  0.849329, label: "99.9%", color: "#b91c1c", dash: "6,3", w: 1   },
   { q: 95,   m: -0.0000583518, c:  0.683930, label: "95%",   color: "#dc2626", dash: "5,3", w: 1   },
   { q: 85,   m: -0.0000516698, c:  0.473869, label: "85%",   color: "#f97316", dash: "",    w: 1.2 },
-  { q: 50,   m:  0,            c:  0,        label: "50%",   color: "#22d3ee", dash: "",    w: 1.8 },
+  { q: 50,   m:  0,            c: -0.000400, label: "50%",   color: "#22d3ee", dash: "",    w: 1.8 },
   { q: 15,   m:  0,            c: -0.209200, label: "15%",   color: "#22c55e", dash: "",    w: 1.2 },
   { q: 0.1,  m:  0,            c: -0.340300, label: "0.1%",  color: "#6366f1", dash: "5,3", w: 1   },
 ];
@@ -802,6 +807,198 @@ function ForwardTable({ todayTs, modelA=JV_A, modelB=JV_B }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// POWER LAW CHART (SVG)
+// ─────────────────────────────────────────────────────────────────────────────
+function PowerLawChart({ btcPrice, todayTs, liveHistory, modelA=JV_A, modelB=JV_B }) {
+  const canvasRef = useRef(null);
+
+  // Chart dimensions
+  const W = 900, H = 400, PAD = {t:30, r:40, b:40, l:65};
+  const cw = W - PAD.l - PAD.r, ch = H - PAD.t - PAD.b;
+
+  // Time range: 2011-01-01 to +5 years
+  const tMin = new Date("2011-01-01").getTime();
+  const tMax = new Date(new Date().getFullYear() + 5, 11, 31).getTime();
+
+  // Price range in log scale
+  const pMin = Math.log10(0.3);   // $0.30
+  const pMax = Math.log10(2000000); // $2M
+
+  const tx = ts => PAD.l + cw * (ts - tMin) / (tMax - tMin);
+  const ty = logP => PAD.t + ch * (1 - (logP - pMin) / (pMax - pMin));
+
+  // Build band curves (monthly resolution)
+  const months = [];
+  {
+    const d = new Date(2011, 0, 1);
+    const end = new Date(new Date().getFullYear() + 5, 11, 31);
+    while (d <= end) {
+      months.push(d.getTime());
+      d.setMonth(d.getMonth() + 1);
+    }
+  }
+
+  // Band fill areas (between adjacent bands)
+  const bandFills = useMemo(() => {
+    const fills = [];
+    const bandPairs = [
+      { upper: BAND_DEFS[0], lower: BAND_DEFS[1], color: "#b91c1c", opacity: 0.08 },
+      { upper: BAND_DEFS[1], lower: BAND_DEFS[2], color: "#dc2626", opacity: 0.06 },
+      { upper: BAND_DEFS[2], lower: BAND_DEFS[3], color: "#f97316", opacity: 0.06 },
+      { upper: BAND_DEFS[3], lower: BAND_DEFS[4], color: "#22d3ee", opacity: 0.06 },
+      { upper: BAND_DEFS[4], lower: BAND_DEFS[5], color: "#22c55e", opacity: 0.06 },
+    ];
+    for (const {upper, lower, color, opacity} of bandPairs) {
+      let pathUp = "", pathDn = "";
+      for (let i = 0; i < months.length; i++) {
+        const ts = months[i];
+        const pU = bandPriceAt(ts, upper, modelA, modelB);
+        const pL = bandPriceAt(ts, lower, modelA, modelB);
+        if (pU <= 0 || pL <= 0) continue;
+        const x = tx(ts);
+        const yU = ty(Math.log10(pU));
+        const yL = ty(Math.log10(pL));
+        pathUp += (pathUp ? "L" : "M") + x.toFixed(1) + "," + yU.toFixed(1);
+        pathDn = x.toFixed(1) + "," + yL.toFixed(1) + (pathDn ? "L" : "") + pathDn;
+      }
+      fills.push({ d: pathUp + "L" + pathDn + "Z", color, opacity });
+    }
+    return fills;
+  }, [months, modelA, modelB]);
+
+  // Band lines
+  const bandLines = useMemo(() => {
+    return BAND_DEFS.map(b => {
+      let d = "";
+      for (const ts of months) {
+        const p = bandPriceAt(ts, b, modelA, modelB);
+        if (p <= 0) continue;
+        const x = tx(ts), y = ty(Math.log10(p));
+        d += (d ? "L" : "M") + x.toFixed(1) + "," + y.toFixed(1);
+      }
+      return { ...b, d };
+    });
+  }, [months, modelA, modelB]);
+
+  // Historical price line from seed + live data
+  const pricePath = useMemo(() => {
+    const pts = [];
+    // Use BTC_HISTORY (monthly seed) for pre-live data
+    for (const {days, price} of BTC_HISTORY) {
+      const ts = GENESIS_MS + days * 86400000;
+      if (ts >= tMin && ts <= tMax && price > 0) {
+        pts.push([ts, price]);
+      }
+    }
+    // Overlay live daily data if available
+    if (liveHistory) {
+      for (const [ts, price] of liveHistory) {
+        if (ts >= tMin && ts <= tMax && price > 0) {
+          pts.push([ts, price]);
+        }
+      }
+    }
+    // Deduplicate by keeping latest value per month-ish window
+    pts.sort((a,b) => a[0] - b[0]);
+    let d = "";
+    for (const [ts, price] of pts) {
+      const x = tx(ts), y = ty(Math.log10(price));
+      d += (d ? "L" : "M") + x.toFixed(1) + "," + y.toFixed(1);
+    }
+    return d;
+  }, [liveHistory]);
+
+  // Y-axis labels
+  const yLabels = [1, 10, 100, 1000, 10000, 100000, 1000000];
+
+  // X-axis labels
+  const xLabels = [];
+  for (let yr = 2012; yr <= new Date().getFullYear() + 5; yr += 2) {
+    const ts = new Date(yr, 0, 1).getTime();
+    if (ts >= tMin && ts <= tMax) xLabels.push({ yr, ts });
+  }
+
+  // Today marker
+  const todayX = tx(todayTs);
+  const priceY = btcPrice > 0 ? ty(Math.log10(btcPrice)) : null;
+
+  return (
+    <div style={{background:"#040c1a",border:"1px solid #0a1628",borderRadius:"5px",padding:"12px 14px",marginTop:"12px"}}>
+      <div style={{fontSize:"12px",color:"#7ab8d8",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:"8px",fontWeight:600}}>
+        Power Law Bands
+      </div>
+      <div style={{overflowX:"auto"}}>
+        <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",maxWidth:`${W}px`,height:"auto",display:"block"}}>
+          {/* Background */}
+          <rect x={PAD.l} y={PAD.t} width={cw} height={ch} fill="#070f1f" rx="2"/>
+
+          {/* Grid lines */}
+          {yLabels.map(v => {
+            const y = ty(Math.log10(v));
+            return y >= PAD.t && y <= PAD.t + ch ? (
+              <line key={v} x1={PAD.l} x2={PAD.l+cw} y1={y} y2={y} stroke="#0d1e30" strokeWidth="0.5"/>
+            ) : null;
+          })}
+
+          {/* Band fills */}
+          {bandFills.map((f,i) => (
+            <path key={i} d={f.d} fill={f.color} opacity={f.opacity}/>
+          ))}
+
+          {/* Band lines */}
+          {bandLines.map(b => (
+            <path key={b.q} d={b.d} fill="none" stroke={b.color} strokeWidth={b.w}
+              strokeDasharray={b.dash} opacity={0.7}/>
+          ))}
+
+          {/* Band labels (right edge) */}
+          {bandLines.map(b => {
+            const lastTs = months[months.length - 1];
+            const p = bandPriceAt(lastTs, b, modelA, modelB);
+            const y = p > 0 ? ty(Math.log10(p)) : 0;
+            return y >= PAD.t && y <= PAD.t + ch ? (
+              <text key={b.q+"lbl"} x={PAD.l+cw+3} y={y+3} fill={b.color} fontSize="9" fontWeight="600">{b.label}</text>
+            ) : null;
+          })}
+
+          {/* Historical price line */}
+          <path d={pricePath} fill="none" stroke="#f1f5f9" strokeWidth="1.2" opacity="0.85"/>
+
+          {/* Today vertical line */}
+          <line x1={todayX} x2={todayX} y1={PAD.t} y2={PAD.t+ch}
+            stroke="#22d3ee" strokeWidth="0.5" strokeDasharray="3,3" opacity="0.4"/>
+
+          {/* Current price dot */}
+          {priceY !== null && priceY >= PAD.t && priceY <= PAD.t+ch && (
+            <>
+              <circle cx={todayX} cy={priceY} r="4" fill="#facc15" stroke="#020817" strokeWidth="1.5"/>
+              <text x={todayX+7} y={priceY+4} fill="#facc15" fontSize="10" fontWeight="700">
+                {fmt(btcPrice)}
+              </text>
+            </>
+          )}
+
+          {/* Y-axis labels */}
+          {yLabels.map(v => {
+            const y = ty(Math.log10(v));
+            return y >= PAD.t && y <= PAD.t + ch ? (
+              <text key={v} x={PAD.l-6} y={y+3} fill="#5a8fc0" fontSize="10" textAnchor="end">
+                {v >= 1e6 ? "$"+v/1e6+"M" : v >= 1e3 ? "$"+v/1e3+"K" : "$"+v}
+              </text>
+            ) : null;
+          })}
+
+          {/* X-axis labels */}
+          {xLabels.map(({yr,ts}) => (
+            <text key={yr} x={tx(ts)} y={PAD.t+ch+16} fill="#5a8fc0" fontSize="10" textAnchor="middle">{yr}</text>
+          ))}
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // MAIN
 // ─────────────────────────────────────────────────────────────────────────────
 function BTCPowerLaw() {
@@ -1389,6 +1586,9 @@ function BTCPowerLaw() {
 
       {/* FORWARD PROJECTION TABLE */}
       <ForwardTable todayTs={todayTs} modelA={modelA} modelB={modelB}/>
+
+      {/* POWER LAW CHART */}
+      <PowerLawChart btcPrice={price} todayTs={todayTs} liveHistory={liveHistory} modelA={modelA} modelB={modelB}/>
 
       <div style={{marginTop:"16px",fontSize:"11px",color:"#5a8fc0",textAlign:"center",letterSpacing:"0.1em"}}>
         Kaim Power Law Model  ·  A=5.82  ·  B=−17.029

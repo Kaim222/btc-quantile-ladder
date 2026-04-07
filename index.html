@@ -823,19 +823,22 @@ function ForwardTable({ todayTs, modelA=JV_A, modelB=JV_B }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // PRICE LOOKUP
 // ─────────────────────────────────────────────────────────────────────────────
-function PriceLookup({ modelA=JV_A, modelB=JV_B }) {
-  const [dateStr, setDateStr] = useState("");
+function PriceLookup({ btcPrice, modelA=JV_A, modelB=JV_B }) {
+  const [dateStr, setDateStr] = useState("2026-09-18");
   const results = useMemo(() => {
     if (!dateStr) return null;
     const d = new Date(dateStr + "T00:00:00Z");
     if (isNaN(d)) return null;
     const days = (d.getTime() - GENESIS_MS) / 86400000;
     if (days <= 0) return null;
-    return BAND_DEFS.map(b => {
+    const now = new Date();
+    const daysFromNow = Math.round((d.getTime() - now.getTime()) / 86400000);
+    const bands = [...BAND_DEFS].reverse().map(b => {
       const offset = bandOffset(b.m, b.c, d.getTime());
       const price = Math.pow(10, modelA * Math.log10(days) + modelB + offset);
-      return { label: b.label, price, color: b.color };
+      return { label: b.label, price, color: b.color, q: b.q };
     });
+    return { bands, daysFromNow, days: Math.round(days) };
   }, [dateStr, modelA, modelB]);
 
   const inputStyle = {
@@ -846,21 +849,40 @@ function PriceLookup({ modelA=JV_A, modelB=JV_B }) {
 
   return (
     <div style={{background:"#040c1a",border:"1px solid #0a1628",borderRadius:"6px",padding:"14px 16px",marginTop:"12px"}}>
-      <div style={{display:"flex",alignItems:"center",gap:"12px",flexWrap:"wrap"}}>
-        <div style={{fontSize:"11px",color:"#5a8fc0",textTransform:"uppercase",letterSpacing:"0.12em",fontWeight:600}}>
-          Price Lookup
+      <div style={{display:"flex",alignItems:"center",gap:"12px",flexWrap:"wrap",justifyContent:"space-between"}}>
+        <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
+          <div style={{fontSize:"11px",color:"#5a8fc0",textTransform:"uppercase",letterSpacing:"0.12em",fontWeight:600}}>
+            Price Lookup
+          </div>
+          <input type="date" value={dateStr} onChange={e=>setDateStr(e.target.value)}
+            style={{...inputStyle, colorScheme:"dark"}}/>
         </div>
-        <input type="date" value={dateStr} onChange={e=>setDateStr(e.target.value)}
-          style={{...inputStyle, colorScheme:"dark"}}/>
+        {results && (
+          <div style={{fontSize:"11px",color:"#4a6a80"}}>
+            {results.daysFromNow > 0 ? `${results.daysFromNow} days from now` :
+             results.daysFromNow === 0 ? "today" :
+             `${Math.abs(results.daysFromNow)} days ago`}
+          </div>
+        )}
       </div>
       {results && (
-        <div style={{display:"flex",gap:"12px",marginTop:"10px",flexWrap:"wrap"}}>
-          {results.map(r => (
-            <div key={r.label} style={{fontSize:"13px"}}>
-              <span style={{color:r.color,fontWeight:600}}>{r.label}</span>
-              <span style={{color:"#d0dde8",marginLeft:"5px"}}>{fmtFull(r.price)}</span>
-            </div>
-          ))}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(6, 1fr)",gap:"6px",marginTop:"12px"}}>
+          {results.bands.map(r => {
+            const aboveBelow = btcPrice > 0 ? ((btcPrice / r.price - 1) * 100) : null;
+            return (
+              <div key={r.label} style={{background:"#070f1f",border:`1px solid ${r.color}22`,
+                borderRadius:"5px",padding:"8px 10px",textAlign:"center"}}>
+                <div style={{fontSize:"11px",color:r.color,fontWeight:700,letterSpacing:"0.06em",marginBottom:"4px"}}>{r.label}</div>
+                <div style={{fontSize:"14px",color:"#d0dde8",fontWeight:600}}>{fmtFull(r.price)}</div>
+                {aboveBelow !== null && (
+                  <div style={{fontSize:"10px",marginTop:"3px",
+                    color:aboveBelow > 0 ? "#22c55e" : "#ef4444"}}>
+                    {aboveBelow > 0 ? "+" : ""}{aboveBelow.toFixed(1)}%
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -1687,7 +1709,7 @@ function BTCPowerLaw() {
       <ForwardTable todayTs={todayTs} modelA={modelA} modelB={modelB}/>
 
       {/* PRICE LOOKUP */}
-      <PriceLookup modelA={modelA} modelB={modelB}/>
+      <PriceLookup btcPrice={price} modelA={modelA} modelB={modelB}/>
 
       {/* POWER LAW CHART */}
       <PowerLawChart btcPrice={price} todayTs={todayTs} liveHistory={liveHistory} modelA={modelA} modelB={modelB}/>
@@ -1760,6 +1782,8 @@ function BTCPowerLaw() {
       s.textContent = `
         /* Stat cards: 4-col → 2-col */
         #root [style*="repeat(4, 1fr)"] { grid-template-columns: repeat(2,1fr) !important; }
+        /* Price lookup: 6-col → 3-col */
+        #root [style*="repeat(6, 1fr)"] { grid-template-columns: repeat(3,1fr) !important; }
         /* Income/margin grids: 5-col → 2-col + last full-width */
         #root [style*="repeat(5, 1fr)"] { grid-template-columns: repeat(2,1fr) !important; }
         #root [style*="repeat(5, 1fr)"] > *:nth-child(5) { grid-column: 1 / -1 !important; }

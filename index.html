@@ -833,7 +833,7 @@ function PriceLookup({ btcPrice, modelA=JV_A, modelB=JV_B }) {
     if (days <= 0) return null;
     const now = new Date();
     const daysFromNow = Math.round((d.getTime() - now.getTime()) / 86400000);
-    const bands = [...BAND_DEFS].reverse().map(b => {
+    const bands = BAND_DEFS.map(b => {
       const offset = bandOffset(b.m, b.c, d.getTime());
       const price = Math.pow(10, modelA * Math.log10(days) + modelB + offset);
       return { label: b.label, price, color: b.color, q: b.q };

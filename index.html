@@ -836,7 +836,8 @@ function PriceLookup({ btcPrice, modelA=JV_A, modelB=JV_B }) {
     const bands = BAND_DEFS.map(b => {
       const offset = bandOffset(b.m, b.c, d.getTime());
       const price = Math.pow(10, modelA * Math.log10(days) + modelB + offset);
-      return { label: b.label, price, color: b.color, q: b.q };
+      const tierColor = getTierAndSize(b.q).tier.color;
+      return { label: b.label, price, color: tierColor, q: b.q };
     });
     return { bands, daysFromNow, days: Math.round(days) };
   }, [dateStr, modelA, modelB]);

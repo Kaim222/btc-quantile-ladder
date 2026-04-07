@@ -821,6 +821,53 @@ function ForwardTable({ todayTs, modelA=JV_A, modelB=JV_B }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// PRICE LOOKUP
+// ─────────────────────────────────────────────────────────────────────────────
+function PriceLookup({ modelA=JV_A, modelB=JV_B }) {
+  const [dateStr, setDateStr] = useState("");
+  const results = useMemo(() => {
+    if (!dateStr) return null;
+    const d = new Date(dateStr + "T00:00:00Z");
+    if (isNaN(d)) return null;
+    const days = (d.getTime() - GENESIS_MS) / 86400000;
+    if (days <= 0) return null;
+    return BAND_DEFS.map(b => {
+      const offset = bandOffset(b.m, b.c, d.getTime());
+      const price = Math.pow(10, modelA * Math.log10(days) + modelB + offset);
+      return { label: b.label, price, color: b.color };
+    });
+  }, [dateStr, modelA, modelB]);
+
+  const inputStyle = {
+    background:"#070f1f", border:"1px solid #0f2a42", borderRadius:"4px",
+    color:"#facc15", fontSize:"14px", fontFamily:"inherit", fontWeight:600,
+    padding:"6px 10px", outline:"none",
+  };
+
+  return (
+    <div style={{background:"#040c1a",border:"1px solid #0a1628",borderRadius:"6px",padding:"14px 16px",marginTop:"12px"}}>
+      <div style={{display:"flex",alignItems:"center",gap:"12px",flexWrap:"wrap"}}>
+        <div style={{fontSize:"11px",color:"#5a8fc0",textTransform:"uppercase",letterSpacing:"0.12em",fontWeight:600}}>
+          Price Lookup
+        </div>
+        <input type="date" value={dateStr} onChange={e=>setDateStr(e.target.value)}
+          style={{...inputStyle, colorScheme:"dark"}}/>
+      </div>
+      {results && (
+        <div style={{display:"flex",gap:"12px",marginTop:"10px",flexWrap:"wrap"}}>
+          {results.map(r => (
+            <div key={r.label} style={{fontSize:"13px"}}>
+              <span style={{color:r.color,fontWeight:600}}>{r.label}</span>
+              <span style={{color:"#d0dde8",marginLeft:"5px"}}>{fmtFull(r.price)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // POWER LAW CHART (SVG)
 // ─────────────────────────────────────────────────────────────────────────────
 function PowerLawChart({ btcPrice, todayTs, liveHistory, modelA=JV_A, modelB=JV_B }) {
@@ -1638,6 +1685,9 @@ function BTCPowerLaw() {
 
       {/* FORWARD PROJECTION TABLE */}
       <ForwardTable todayTs={todayTs} modelA={modelA} modelB={modelB}/>
+
+      {/* PRICE LOOKUP */}
+      <PriceLookup modelA={modelA} modelB={modelB}/>
 
       {/* POWER LAW CHART */}
       <PowerLawChart btcPrice={price} todayTs={todayTs} liveHistory={liveHistory} modelA={modelA} modelB={modelB}/>

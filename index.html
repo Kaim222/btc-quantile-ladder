@@ -1040,7 +1040,7 @@ function PowerLawChart({ btcPrice, todayTs, liveHistory, modelA=JV_A, modelB=JV_
             <div style={{width:"12px",height:"2px",background:"#f1f5f9",borderRadius:"1px"}}/>
             <span style={{fontSize:"10px",color:"#8aaac8"}}>BTC</span>
           </div>
-          {BAND_DEFS.map(b => (
+          {[...BAND_DEFS].reverse().map(b => (
             <div key={b.q} style={{display:"flex",alignItems:"center",gap:"3px"}}>
               <div style={{width:"12px",height:"2px",background:b.color,borderRadius:"1px",opacity:0.8}}/>
               <span style={{fontSize:"10px",color:b.color,opacity:0.85}}>{b.label}</span>

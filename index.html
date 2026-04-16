@@ -308,7 +308,7 @@ function QuantileGauge({ q, todayTs, tierColor }) {
         {/* Band tick marks — proportionally placed */}
         {BANDS.map(b=>{
           const bp = bandPriceAt(todayTs, b);
-          const instrColor = getTierAndSize(b.q).tier.color;
+          const instrColor = b.color;
           return (
             <div key={b.q} style={{position:"absolute",left:0,right:"-92px",
               top:`${qToTop(b.q)}px`,display:"flex",alignItems:"center",gap:"3px",
@@ -795,7 +795,7 @@ function ForwardTable({ todayTs, modelA=JV_A, modelB=JV_B }) {
           {displayBands.map(q=>{
             const band = BANDS.find(b=>b.q===q);
             const isFV = q===50;
-            const rowColor = getTierAndSize(q).tier.color;
+            const rowColor = band.color;
             return [
               <div key={q+"label"} style={{padding:"5px 6px",borderBottom:"1px solid #070f1f",
                 color:rowColor,fontWeight:700,fontSize:"13px"}}>{band.label}</div>,
@@ -836,8 +836,7 @@ function PriceLookup({ btcPrice, modelA=JV_A, modelB=JV_B }) {
     const bands = [...BAND_DEFS].reverse().map(b => {
       const offset = bandOffset(b.m, b.c, d.getTime());
       const price = Math.pow(10, modelA * Math.log10(days) + modelB + offset);
-      const tierColor = getTierAndSize(b.q).tier.color;
-      return { label: b.label, price, color: tierColor, q: b.q };
+      return { label: b.label, price, color: b.color, q: b.q };
     });
     return { bands, daysFromNow, days: Math.round(days) };
   }, [dateStr, modelA, modelB]);
@@ -1683,7 +1682,7 @@ function BTCPowerLaw() {
               {bandRows.map(b=>{
                 const near = b.q === nearestAboveQ || b.q === nearestBelowQ;
                 const bg   = near?"#0a1a2e":"transparent";
-                const instrColor = getTierAndSize(b.q).tier.color;
+                const instrColor = b.color;
                 return [
                   <div key={b.label+"q"} style={{padding:"4px 5px",borderBottom:"1px solid #050c18",
                     color:instrColor,fontWeight:700,background:bg}}>{b.label}</div>,

@@ -914,10 +914,11 @@ function PriceLookup({ btcPrice, modelA=JV_A, modelB=JV_B }) {
             style={{...inputStyle, colorScheme:"dark"}}/>
         </div>
         {results && (
-          <div style={{fontSize:"11px",color:"#4a6a80"}}>
-            {results.daysFromNow > 0 ? `${results.daysFromNow} days from now` :
-             results.daysFromNow === 0 ? "today" :
-             `${Math.abs(results.daysFromNow)} days ago`}
+          <div style={{fontSize:"11px",color:"#4a6a80",letterSpacing:"0.08em",
+            textTransform:"uppercase",fontWeight:600}}>
+            {results.daysFromNow > 0 ? `+${results.daysFromNow}D` :
+             results.daysFromNow === 0 ? "TODAY" :
+             `−${Math.abs(results.daysFromNow)}D`}
           </div>
         )}
       </div>

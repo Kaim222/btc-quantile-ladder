@@ -1,0 +1,20 @@
+{
+  "_readme": "Per-ticker Robinhood margin requirements. Robinhood sets these dynamically (25-100%) based on volatility and liquidity, and does NOT publish a public per-ticker feed. Look up in Robinhood app: Investing -> Buying power -> Margin status -> Positions. Update this file, commit, push. App reads on load with cache-bust.",
+  "lastUpdated": "2026-04-18",
+  "source": "placeholder - verify in Robinhood app before relying on these",
+  "broker": "Robinhood",
+  "requirements": {
+    "STRC": {
+      "initial": null,
+      "maintenance": null,
+      "checked": null,
+      "notes": "Strategy Inc variable-rate perpetual preferred, listed NASDAQ Oct 2025. Robinhood's first preferred stock listing. Verify in app."
+    },
+    "EPD": {
+      "initial": null,
+      "maintenance": null,
+      "checked": null,
+      "notes": "Enterprise Products Partners MLP. Large-cap liquid; likely standard 25% maintenance but verify in app."
+    }
+  }
+}

@@ -371,8 +371,27 @@ function IncomeConverter({ btcPrice, fairValue, activeTier }) {
   const [epdYield,   setEpdYield]     = useState("10.0");
   const [marginPct,  setMarginPct]    = useState("50");    // % of position on margin
   const [marginRate, setMarginRate]   = useState("4.5");   // margin interest rate %
-  const [callReq,    setCallReq]      = useState("60");    // margin call requirement %
+  const [callReq,    setCallReq]      = useState("35");    // conservative Robinhood house baseline; real value sync'd from margin.json when available
   const [target,     setTarget]       = useState("STRC");
+
+  // Broker margin data — sourced from margin.json, user-editable.
+  // Robinhood does not publish per-ticker margin; user verifies in-app weekly.
+  const [marginData, setMarginData] = useState(null);
+  const [userEditedCallReq, setUserEditedCallReq] = useState(false);
+  useEffect(() => {
+    fetch("margin.json?v=" + Date.now())
+      .then(r => r.ok ? r.json() : null)
+      .then(j => { if (j) setMarginData(j); })
+      .catch(() => {});
+  }, []);
+  // Auto-fill callReq from margin.json when target changes (unless user edited it)
+  useEffect(() => {
+    if (!marginData || userEditedCallReq) return;
+    const req = marginData?.requirements?.[target];
+    if (req && typeof req.maintenance === "number") {
+      setCallReq(String(req.maintenance));
+    }
+  }, [target, marginData, userEditedCallReq]);
 
   const inst      = INCOME_INSTRUMENTS.find(i => i.name === instrument) || INCOME_INSTRUMENTS[0];
   const posVal    = parseFloat(posValue.replace(/[^0-9.]/g,"")) || 0;
@@ -527,7 +546,7 @@ function IncomeConverter({ btcPrice, fairValue, activeTier }) {
           <div style={{fontSize:"11px",color:"#8aaac8",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:"5px"}}>convert to</div>
           <div style={{display:"flex",gap:"4px"}}>
             {["STRC","EPD"].map(t=>(
-              <button key={t} onClick={()=>setTarget(t)} style={{
+              <button key={t} onClick={()=>{ setTarget(t); setUserEditedCallReq(false); }} style={{
                 background: t===target ? (t==="STRC"?"#22c55e22":"#3b82f622") : "transparent",
                 border:`1px solid ${t===target?(t==="STRC"?"#22c55e":"#3b82f6"):(t==="STRC"?"#22c55e33":"#3b82f633")}`,
                 borderRadius:"3px", color: t===target?(t==="STRC"?"#22c55e":"#3b82f6"):(t==="STRC"?"#22c55eaa":"#3b82f6aa"),
@@ -561,7 +580,7 @@ function IncomeConverter({ btcPrice, fairValue, activeTier }) {
       </div>
 
       {/* Chain visualization */}
-      <div style={{display:"flex",alignItems:"stretch",gap:"0px",flexWrap:"wrap",gap:"2px"}}>
+      <div style={{display:"flex",alignItems:"stretch",flexWrap:"wrap",gap:"2px"}}>
         {steps.map((s,i)=>(
           <div key={i} style={{display:"flex",alignItems:"center",gap:"2px",flex:"1 1 auto",minWidth:"120px"}}>
             <div style={{
@@ -649,27 +668,67 @@ function IncomeConverter({ btcPrice, fairValue, activeTier }) {
       )}
 
       {/* Margin Panel — income sleeve only */}
-      {(target === "STRC" || target === "EPD") && posVal > 0 && (
+      {(target === "STRC" || target === "EPD") && posVal > 0 && (() => {
+        const req = marginData?.requirements?.[target] || null;
+        const liveMaint = req && typeof req.maintenance === "number" ? req.maintenance : null;
+        const liveInit  = req && typeof req.initial === "number" ? req.initial : null;
+        const lastUpd   = marginData?.lastUpdated || null;
+        const callReqStale = liveMaint !== null && parseFloat(callReq) !== liveMaint && !userEditedCallReq;
+        return (
         <div style={{marginTop:"10px",background:"#070f1f",border:"1px solid #0f1e32",borderRadius:"6px",padding:"14px 16px"}}>
           <div style={{fontSize:"11px",color:"#5a8fc0",textTransform:"uppercase",letterSpacing:"0.12em",
-            marginBottom:"12px",display:"flex",alignItems:"center",gap:"10px",fontWeight:600}}>
+            marginBottom:"10px",display:"flex",alignItems:"center",gap:"10px",fontWeight:600,flexWrap:"wrap"}}>
             <span style={{color:"#8aaac8"}}>Margin Analysis</span>
             <span style={{color:"#334a5e",fontWeight:400}}>·</span>
             <span style={{color:"#8aaac8",fontWeight:400,fontSize:"11px"}}>Income Sleeve</span>
+            {/* Robinhood badge — shows source + last updated, auto-fills Call Req */}
+            <span style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:"6px",fontSize:"10px",
+              fontWeight:500,letterSpacing:"0.04em",textTransform:"none"}}>
+              <span style={{color:"#7a9ab8"}}>Robinhood</span>
+              <span style={{color:"#334a5e"}}>·</span>
+              {liveMaint !== null ? (
+                <span style={{color:tgtColor,fontWeight:700}}>
+                  {target} maint {liveMaint}%{liveInit !== null ? ` · init ${liveInit}%` : ""}
+                </span>
+              ) : (
+                <span style={{color:"#eab308"}}>verify in app</span>
+              )}
+              {lastUpd && <span style={{color:"#4a6a80"}}>({lastUpd})</span>}
+            </span>
           </div>
           {/* Inputs row */}
           <div style={{display:"flex",gap:"10px",marginBottom:"14px",flexWrap:"wrap"}}>
             {[
-              { label:"Margin %", val:marginPct, set:setMarginPct },
-              { label:"Rate %",   val:marginRate, set:setMarginRate },
-              { label:"Call Req %", val:callReq, set:setCallReq },
+              { label:"Margin %",   val:marginPct,  set:setMarginPct,  trackEdit:false },
+              { label:"Rate %",     val:marginRate, set:setMarginRate, trackEdit:false },
+              { label:"Call Req %", val:callReq,    set:setCallReq,    trackEdit:true  },
             ].map(f=>(
               <div key={f.label} style={{display:"flex",flexDirection:"column",gap:"5px"}}>
                 <div style={{fontSize:"11px",color:"#8aaac8",textTransform:"uppercase",
-                  letterSpacing:"0.06em",fontWeight:600}}>{f.label}</div>
+                  letterSpacing:"0.06em",fontWeight:600,display:"flex",alignItems:"center",gap:"6px"}}>
+                  {f.label}
+                  {f.trackEdit && callReqStale && (
+                    <button onClick={()=>{ setCallReq(String(liveMaint)); setUserEditedCallReq(false); }}
+                      title={`Sync to Robinhood's ${liveMaint}% maintenance requirement`}
+                      style={{background:"#052e16",border:"1px solid #14532d",borderRadius:"3px",
+                        color:"#22c55e",fontSize:"9px",fontWeight:700,padding:"1px 5px",
+                        cursor:"pointer",letterSpacing:"0.04em",textTransform:"uppercase",
+                        fontFamily:"inherit"}}>
+                      sync {liveMaint}%
+                    </button>
+                  )}
+                  {f.trackEdit && userEditedCallReq && liveMaint !== null && (
+                    <span title="You've edited this away from margin.json. Use 'sync' to restore."
+                      style={{color:"#eab308",fontSize:"10px"}}>●</span>
+                  )}
+                </div>
                 <div style={{display:"flex",alignItems:"center",background:"#040c1a",
                   border:"1px solid #162840",borderRadius:"4px",padding:"5px 10px",gap:"3px"}}>
-                  <input value={f.val} onChange={e=>f.set(e.target.value.replace(/[^0-9.]/g,""))}
+                  <input value={f.val}
+                    onChange={e=>{
+                      f.set(e.target.value.replace(/[^0-9.]/g,""));
+                      if (f.trackEdit) setUserEditedCallReq(true);
+                    }}
                     style={{background:"transparent",border:"none",outline:"none",color:"#e2e8f0",
                       fontSize:"14px",fontFamily:"inherit",fontWeight:700,width:"52px",textAlign:"right"}}/>
                   <span style={{fontSize:"12px",color:"#5a7fa0"}}>%</span>
@@ -693,12 +752,14 @@ function IncomeConverter({ btcPrice, fairValue, activeTier }) {
                 color:"#ef4444",
               },
               {
-                label:`Call @ ${callReq}%`,
+                label:`Call @ ${callReq}%${liveMaint === null ? " ⚠" : ""}`,
                 value: marginCallVal >= fvPosValue * 0.90 ? "⚠ TOO CLOSE" : fmtD(marginCallPx),
-                sub: marginCallVal >= fvPosValue * 0.90
-                  ? `strike ${fmtD(marginCallPx)} — within 10% of FV`
-                  : `triggers at ${fmtD(marginCallVal)}`,
-                color: marginCallVal >= fvPosValue * 0.90 ? "#ef4444" : "#f97316",
+                sub: liveMaint === null
+                  ? `unverified — update margin.json with ${target} maintenance %`
+                  : marginCallVal >= fvPosValue * 0.90
+                    ? `strike ${fmtD(marginCallPx)} — within 10% of FV`
+                    : `triggers at ${fmtD(marginCallVal)}`,
+                color: liveMaint === null ? "#eab308" : marginCallVal >= fvPosValue * 0.90 ? "#ef4444" : "#f97316",
               },
               {
                 label:`${target} w/ Margin`,
@@ -723,7 +784,8 @@ function IncomeConverter({ btcPrice, fairValue, activeTier }) {
             ))}
           </div>
         </div>
-      )}
+        );
+      })()}
       {/* Beta reference — 2 rows */}
       <div style={{marginTop:"12px",display:"flex",flexDirection:"column",gap:"5px"}}>
         {[[0,1],[2,3]].map((pair,ri)=>(

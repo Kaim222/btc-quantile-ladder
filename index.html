@@ -682,12 +682,12 @@ function IncomeConverter({ btcPrice, fairValue, activeTier }) {
             <span style={{color:"#8aaac8",fontWeight:400,fontSize:"11px"}}>Income Sleeve</span>
             {liveMaint !== null && (
               <span style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:"6px",fontSize:"10px",
-                fontWeight:500,letterSpacing:"0.04em",textTransform:"none"}}
-                title="Sourced from Interactive Brokers public margin policy. Robinhood sets requirements dynamically and may differ by ~10pts — verify in-app before opening large positions.">
+                fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase"}}
+                title="Sourced from Interactive Brokers public margin policy. Robinhood sets requirements dynamically and may differ by ~10 pts — verify in-app before opening large positions.">
                 <span style={{color:"#7a9ab8"}}>{brokerSrc}</span>
                 <span style={{color:"#334a5e"}}>·</span>
                 <span style={{color:tgtColor,fontWeight:700}}>
-                  {target} {liveMaint}%{liveInit !== null && liveInit !== liveMaint ? ` maint · ${liveInit}% init` : " maint"}
+                  {target} {liveMaint}%{liveInit !== null && liveInit !== liveMaint ? ` MAINT · ${liveInit}% INIT` : " MAINT"}
                 </span>
               </span>
             )}

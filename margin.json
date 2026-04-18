@@ -1,18 +1,18 @@
 {
   "lastUpdated": "2026-04-18",
-  "source": "Interactive Brokers (public policy)",
+  "source": "Interactive Brokers — inferred from public Jan-2025 policy",
   "broker": "IBKR",
-  "note": "IBKR is the closest public-disclosing proxy for Robinhood house requirements. Robinhood sets margin dynamically (25-100%) and does not publish a per-ticker feed; actual Robinhood requirements may be within ~10 pts of these. Verify in-app before relying.",
+  "note": "IBKR publicly announced a 50% minimum maintenance across all MicroStrategy (Strategy Inc.) products in Jan 2025. STRC is Strategy's variable-rate perpetual preferred (listed Oct 2025) and is inferred to fall under that umbrella — not confirmed via IBKR's per-ticker margin tool (requires login). Robinhood sets margin dynamically and is not publicly disclosed; these IBKR figures are the closest public proxy. Verify in your Robinhood app before sizing into STRC/EPD positions.",
   "requirements": {
     "STRC": {
       "initial": 50,
       "maintenance": 50,
-      "notes": "IBKR raised all Strategy Inc. (MSTR) products to 50% min maintenance in Jan 2025 after the crypto-preferred volatility episode. STRC is Strategy's variable-rate perpetual preferred — same umbrella."
+      "notes": "Inferred from IBKR's Jan 2025 policy covering all MSTR-family products. Alex's independent estimate also landed at ~50%. Treat as a floor — Robinhood may require more."
     },
     "EPD": {
       "initial": 30,
       "maintenance": 30,
-      "notes": "Large-cap MLP, ~$65B cap, tight bid/ask. Standard Reg T territory; IBKR baseline for liquid yield equities runs 25-30%."
+      "notes": "Large-cap MLP, ~$65B cap, tight bid/ask. IBKR baseline for liquid yield equities runs 25-30%. Reg T federal minimum is 25%."
     }
   }
 }

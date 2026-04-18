@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BTC Quantile Ladder</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23020817'/%3E%3Cpath d='M14 48 L14 42 L20 42 L20 22 L14 22 L14 16 L22 16 L22 10 L28 10 L28 16 L32 16 L32 10 L38 10 L38 16.5 Q46 17.5 46 24 Q46 29 42 30.5 Q48 32 48 38.5 Q48 46 38 47.5 L38 54 L32 54 L32 48 L28 48 L28 54 L22 54 L22 48 Z M26 22 L26 28 L34 28 Q38 28 38 25 Q38 22 34 22 Z M26 34 L26 42 L35 42 Q40 42 40 38 Q40 34 35 34 Z' fill='%23facc15'/%3E%3C/svg%3E">
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -371,11 +372,9 @@ function IncomeConverter({ btcPrice, fairValue, activeTier }) {
   const [epdYield,   setEpdYield]     = useState("10.0");
   const [marginPct,  setMarginPct]    = useState("50");    // % of position on margin
   const [marginRate, setMarginRate]   = useState("4.5");   // margin interest rate %
-  const [callReq,    setCallReq]      = useState("35");    // conservative Robinhood house baseline; real value sync'd from margin.json when available
+  const [callReq,    setCallReq]      = useState("50");    // STRC default — conservative baseline, overridden by broker data on load
   const [target,     setTarget]       = useState("STRC");
 
-  // Broker margin data — sourced from margin.json, user-editable.
-  // Robinhood does not publish per-ticker margin; user verifies in-app weekly.
   const [marginData, setMarginData] = useState(null);
   const [userEditedCallReq, setUserEditedCallReq] = useState(false);
   useEffect(() => {
@@ -672,7 +671,7 @@ function IncomeConverter({ btcPrice, fairValue, activeTier }) {
         const req = marginData?.requirements?.[target] || null;
         const liveMaint = req && typeof req.maintenance === "number" ? req.maintenance : null;
         const liveInit  = req && typeof req.initial === "number" ? req.initial : null;
-        const lastUpd   = marginData?.lastUpdated || null;
+        const brokerSrc = marginData?.broker || "—";
         const callReqStale = liveMaint !== null && parseFloat(callReq) !== liveMaint && !userEditedCallReq;
         return (
         <div style={{marginTop:"10px",background:"#070f1f",border:"1px solid #0f1e32",borderRadius:"6px",padding:"14px 16px"}}>
@@ -681,20 +680,17 @@ function IncomeConverter({ btcPrice, fairValue, activeTier }) {
             <span style={{color:"#8aaac8"}}>Margin Analysis</span>
             <span style={{color:"#334a5e",fontWeight:400}}>·</span>
             <span style={{color:"#8aaac8",fontWeight:400,fontSize:"11px"}}>Income Sleeve</span>
-            {/* Robinhood badge — shows source + last updated, auto-fills Call Req */}
-            <span style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:"6px",fontSize:"10px",
-              fontWeight:500,letterSpacing:"0.04em",textTransform:"none"}}>
-              <span style={{color:"#7a9ab8"}}>Robinhood</span>
-              <span style={{color:"#334a5e"}}>·</span>
-              {liveMaint !== null ? (
+            {liveMaint !== null && (
+              <span style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:"6px",fontSize:"10px",
+                fontWeight:500,letterSpacing:"0.04em",textTransform:"none"}}
+                title="Sourced from Interactive Brokers public margin policy. Robinhood sets requirements dynamically and may differ by ~10pts — verify in-app before opening large positions.">
+                <span style={{color:"#7a9ab8"}}>{brokerSrc}</span>
+                <span style={{color:"#334a5e"}}>·</span>
                 <span style={{color:tgtColor,fontWeight:700}}>
-                  {target} maint {liveMaint}%{liveInit !== null ? ` · init ${liveInit}%` : ""}
+                  {target} {liveMaint}%{liveInit !== null && liveInit !== liveMaint ? ` maint · ${liveInit}% init` : " maint"}
                 </span>
-              ) : (
-                <span style={{color:"#eab308"}}>verify in app</span>
-              )}
-              {lastUpd && <span style={{color:"#4a6a80"}}>({lastUpd})</span>}
-            </span>
+              </span>
+            )}
           </div>
           {/* Inputs row */}
           <div style={{display:"flex",gap:"10px",marginBottom:"14px",flexWrap:"wrap"}}>
@@ -709,16 +705,16 @@ function IncomeConverter({ btcPrice, fairValue, activeTier }) {
                   {f.label}
                   {f.trackEdit && callReqStale && (
                     <button onClick={()=>{ setCallReq(String(liveMaint)); setUserEditedCallReq(false); }}
-                      title={`Sync to Robinhood's ${liveMaint}% maintenance requirement`}
+                      title={`Reset to ${liveMaint}% (broker baseline)`}
                       style={{background:"#052e16",border:"1px solid #14532d",borderRadius:"3px",
                         color:"#22c55e",fontSize:"9px",fontWeight:700,padding:"1px 5px",
                         cursor:"pointer",letterSpacing:"0.04em",textTransform:"uppercase",
                         fontFamily:"inherit"}}>
-                      sync {liveMaint}%
+                      reset {liveMaint}%
                     </button>
                   )}
                   {f.trackEdit && userEditedCallReq && liveMaint !== null && (
-                    <span title="You've edited this away from margin.json. Use 'sync' to restore."
+                    <span title="Manually edited. Click reset to restore broker default."
                       style={{color:"#eab308",fontSize:"10px"}}>●</span>
                   )}
                 </div>
@@ -752,14 +748,12 @@ function IncomeConverter({ btcPrice, fairValue, activeTier }) {
                 color:"#ef4444",
               },
               {
-                label:`Call @ ${callReq}%${liveMaint === null ? " ⚠" : ""}`,
+                label:`Call @ ${callReq}%`,
                 value: marginCallVal >= fvPosValue * 0.90 ? "⚠ TOO CLOSE" : fmtD(marginCallPx),
-                sub: liveMaint === null
-                  ? `unverified — update margin.json with ${target} maintenance %`
-                  : marginCallVal >= fvPosValue * 0.90
-                    ? `strike ${fmtD(marginCallPx)} — within 10% of FV`
-                    : `triggers at ${fmtD(marginCallVal)}`,
-                color: liveMaint === null ? "#eab308" : marginCallVal >= fvPosValue * 0.90 ? "#ef4444" : "#f97316",
+                sub: marginCallVal >= fvPosValue * 0.90
+                  ? `strike ${fmtD(marginCallPx)} — within 10% of FV`
+                  : `triggers at ${fmtD(marginCallVal)}`,
+                color: marginCallVal >= fvPosValue * 0.90 ? "#ef4444" : "#f97316",
               },
               {
                 label:`${target} w/ Margin`,

@@ -1,7 +1,37 @@
 {
-  "generated_at": "2026-07-19T07:47:54Z",
+  "generated_at": "2026-07-19T15:41:22Z",
   "crisis_ratio": 0.0,
   "headlines": [
+    {
+      "title": "Bitcoin's biggest advocate, Michael Saylor, says new plan to clean up the blockchain is 'a bad idea'",
+      "url": "https://www.coindesk.com/tech/2026/07/19/bitcoin-s-biggest-advocate-michael-saylor-says-new-plan-to-clean-up-the-blockchain-is-a-bad-idea",
+      "source": "CoinDesk",
+      "published_at": "2026-07-19T15:19:21Z"
+    },
+    {
+      "title": "AI is destroying the internet. Math is our only hope.",
+      "url": "https://www.coindesk.com/opinion/2026/07/17/ai-is-destroying-the-internet-math-is-our-only-hope",
+      "source": "CoinDesk",
+      "published_at": "2026-07-19T14:00:00Z"
+    },
+    {
+      "title": "Tether's USDT hits 2-year countdown threatening its position on U.S. crypto platforms",
+      "url": "https://www.coindesk.com/news-analysis/2026/07/17/tether-s-usdt-hits-2-year-countdown-threatening-its-position-on-u-s-crypto-platforms",
+      "source": "CoinDesk",
+      "published_at": "2026-07-19T13:00:00Z"
+    },
+    {
+      "title": "Kraken says simpler options can unlock crypto's next derivatives market",
+      "url": "https://www.coindesk.com/business/2026/07/19/kraken-says-simpler-options-can-unlock-crypto-s-next-derivatives-market",
+      "source": "CoinDesk",
+      "published_at": "2026-07-19T13:00:00Z"
+    },
+    {
+      "title": "Bitcoin\u2019s quantum problem gets a recovery tool, but not for Satoshi\u2019s 1.1 million coins",
+      "url": "https://www.coindesk.com/tech/2026/07/19/bitcoin-s-quantum-problem-gets-a-recovery-tool-but-not-for-satoshi-s-1-1-million-coin",
+      "source": "CoinDesk",
+      "published_at": "2026-07-19T10:00:00Z"
+    },
     {
       "title": "Inside Zcash's new node that targets Visa-scale privacy at 50,000 transactions per second",
       "url": "https://www.coindesk.com/tech/2026/07/16/inside-zcash-s-new-node-that-targets-visa-scale-privacy-at-50-000-transactions-per-second",
@@ -151,36 +181,6 @@
       "url": "https://www.coindesk.com/business/2026/07/17/stripe-and-swift-race-to-control-the-next-generation-of-global-payments-infrastructure",
       "source": "CoinDesk",
       "published_at": "2026-07-17T17:23:01Z"
-    },
-    {
-      "title": "Galaxy Puts Its Name on Texas Tech's Stadium in a 15-Year, Crypto-Native Deal",
-      "url": "https://decrypt.co/373710/galaxy-texas-tech-stadium-15-year-crypto-native-deal",
-      "source": "Decrypt",
-      "published_at": "2026-07-17T17:09:33Z"
-    },
-    {
-      "title": "Bitcoin slides toward $63,000 as Coinbase premium stays negative for a record 60 days",
-      "url": "https://www.theblock.co/post/408793/bitcoin-slides-63000-coinbase-premium-stays-negative-record-60-days?utm_source=rss&utm_medium=rss",
-      "source": "The Block",
-      "published_at": "2026-07-17T16:38:50Z"
-    },
-    {
-      "title": "Cardano hands core development to outside teams in decentralization push",
-      "url": "https://www.coindesk.com/tech/2026/07/17/cardano-hands-core-development-to-outside-teams-in-decentralization-push",
-      "source": "CoinDesk",
-      "published_at": "2026-07-17T16:23:26Z"
-    },
-    {
-      "title": "Bitcoin Mining Giant Foundry Asks Miners To Vote on BIP-110 Soft Fork",
-      "url": "https://bitcoinmagazine.com/news/foundry-asks-bitcoin-miners-vote-bip-110",
-      "source": "Bitcoin Magazine",
-      "published_at": "2026-07-17T15:58:36Z"
-    },
-    {
-      "title": "Bitcoin ETFs could mirror gold\u2019s history of \u2018spectacular gains\u2019 and \u2018painful drawdowns,\u2019 analyst says",
-      "url": "https://www.theblock.co/post/408782/bitcoin-etfs-ibit-mirror-golds-history-spectacular-gains-painful-drawdowns-analyst?utm_source=rss&utm_medium=rss",
-      "source": "The Block",
-      "published_at": "2026-07-17T15:40:50Z"
     }
   ]
 }

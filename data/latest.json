@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-07-19T07:47:54Z",
+  "generated_at": "2026-07-19T15:41:22Z",
   "btc": {
-    "price": 64712,
-    "change_24h": 1.1502082392067552,
+    "price": 64516,
+    "change_24h": 0.7763213038139952,
     "source": "CoinGecko"
   },
   "sources": {
@@ -102,19 +102,19 @@
       "stale": false
     },
     "bitcoin_data_sth_sopr": {
-      "ok": false,
-      "error": "HTTPError: 429 Client Error:  for url: https://bitcoin-data.com/v1/sth-sopr",
-      "stale": true
+      "ok": true,
+      "status": 200,
+      "stale": false
     },
     "bitcoin_data_sth_rp": {
-      "ok": false,
-      "error": "HTTPError: 429 Client Error:  for url: https://bitcoin-data.com/v1/sth-realized-price",
-      "stale": true
+      "ok": true,
+      "status": 200,
+      "stale": false
     },
     "bitcoin_data_mvrv_z": {
-      "ok": false,
-      "error": "HTTPError: 429 Client Error:  for url: https://bitcoin-data.com/v1/mvrv-zscore",
-      "stale": true
+      "ok": true,
+      "status": 200,
+      "stale": false
     },
     "blockchain_hashrate": {
       "ok": true,
@@ -137,7 +137,7 @@
     "funding_extreme": {
       "raw": null,
       "score": 0,
-      "reading": "3d mean 4.7% annualized",
+      "reading": "3d mean 4.9% annualized",
       "pillar": "Derivatives",
       "weight_24h": 2,
       "weight_7d": 2,
@@ -197,7 +197,7 @@
     "momentum_7d": {
       "raw": null,
       "score": 0,
-      "reading": "7d +1.5%",
+      "reading": "7d +1.2%",
       "pillar": "Technical",
       "weight_24h": 0,
       "weight_7d": 3,
@@ -205,9 +205,9 @@
       "status": "LIVE"
     },
     "sth_sopr": {
-      "raw": null,
-      "score": null,
-      "reading": "unavailable",
+      "raw": 1.0004,
+      "score": -2,
+      "reading": "SOPR 1.000",
       "pillar": "On-chain",
       "weight_24h": 0,
       "weight_7d": 2,
@@ -277,7 +277,7 @@
     "regime_stretch": {
       "raw": null,
       "score": -1,
-      "reading": "Mayer 0.89",
+      "reading": "Mayer 0.88",
       "pillar": "Technical",
       "weight_24h": 0,
       "weight_7d": 0,
@@ -287,7 +287,7 @@
     "momentum_28d": {
       "raw": null,
       "score": 0,
-      "reading": "28d +2.3%",
+      "reading": "28d +2.0%",
       "pillar": "Technical",
       "weight_24h": 0,
       "weight_7d": 0,
@@ -316,8 +316,8 @@
     },
     "sth_rp_regime": {
       "raw": null,
-      "score": null,
-      "reading": "unavailable",
+      "score": -2,
+      "reading": "STH RP $68,039",
       "pillar": "On-chain",
       "weight_24h": 0,
       "weight_7d": 0,
@@ -335,9 +335,9 @@
       "status": "LIVE"
     },
     "mvrv_z": {
-      "raw": null,
-      "score": null,
-      "reading": "unavailable",
+      "raw": 0.3845,
+      "score": 1,
+      "reading": "Z 0.38",
       "pillar": "On-chain",
       "weight_24h": 0,
       "weight_7d": 0,
@@ -357,7 +357,7 @@
     "powerlaw_blend": {
       "raw": null,
       "score": 2,
-      "reading": "center $133,495; floor $60,977",
+      "reading": "center $133,535; floor $60,995",
       "pillar": "Valuation",
       "weight_24h": 0,
       "weight_7d": 0,
@@ -427,7 +427,7 @@
     "attention_apathy": {
       "raw": null,
       "score": 1,
-      "reading": "52w percentile 4",
+      "reading": "52w percentile 1",
       "pillar": "Sentiment",
       "weight_24h": 0,
       "weight_7d": 0,
@@ -484,16 +484,16 @@
       "abstain": false
     },
     "d7": {
-      "score": -16.67,
-      "raw_weighted_sum": -4.0,
-      "p_up": 0.4792,
-      "tilt": "LEAN DOWN",
+      "score": -28.57,
+      "raw_weighted_sum": -8.0,
+      "p_up": 0.4643,
+      "tilt": "BEAR",
       "abstain": false
     },
     "d30": {
-      "score": -11.17,
-      "raw_weighted_sum": -5.25,
-      "p_up": 0.4832,
+      "score": -14.35,
+      "raw_weighted_sum": -7.75,
+      "p_up": 0.4785,
       "tilt": "LEAN DOWN",
       "abstain": false
     }
@@ -505,7 +505,7 @@
       "rv_percentile": 19.726027397260275
     },
     "dvol_flag": "NORMAL",
-    "dvol": 35.84,
+    "dvol": 35.93,
     "event_window": false,
     "next_event": {
       "date": "2026-07-29",
@@ -517,20 +517,20 @@
   },
   "expected_move": {
     "h24": 1.71,
-    "d7": 4.53,
-    "d30": 9.38
+    "d7": 4.54,
+    "d30": 9.39
   },
   "levels": {
-    "spot": 64712,
+    "spot": 64516,
     "box_floor": 58524,
     "box_ceiling": 64989,
     "low_20d": 58524,
     "high_20d": 64989,
-    "dma_50": 63354,
-    "dma_200": 73046,
-    "sth_cost_basis": null,
-    "pl_floor": 60977,
-    "pl_center": 133495,
+    "dma_50": 63350,
+    "dma_200": 73045,
+    "sth_cost_basis": 68039,
+    "pl_floor": 60995,
+    "pl_center": 133535,
     "prior_day_high": 64828,
     "prior_day_low": 63842
   },
@@ -563,16 +563,16 @@
       "score": -3.33,
       "armed": true,
       "direction": "up",
-      "distance_pct": 0.43,
+      "distance_pct": 0.73,
       "level": 64989
     },
     "d7": {
-      "state": "LEAN SHORT",
-      "score": -16.67
+      "state": "SHORT",
+      "score": -28.57
     },
     "d30": {
       "state": "LEAN SHORT",
-      "score": -11.17
+      "score": -14.35
     }
   }
 }

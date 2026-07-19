@@ -1003,8 +1003,15 @@
               {latest?.regime?.pl_floor_watch && (
                 <span className="badge gold">PL FLOOR WATCH</span>
               )}
-              <span className="label" style={{ marginLeft: "auto" }}>
+              <span
+                className="label"
+                style={{
+                  marginLeft: "auto",
+                  color: age > 7 ? "var(--gold)" : undefined,
+                }}
+              >
                 SNAP {age == null ? "—" : fmt(age, 1) + "h AGO"}
+                {age > 7 ? " — RUN COLLECTOR / ENABLE CRON" : ""}
               </span>
             </div>
             {age > 12 && (
@@ -1103,18 +1110,9 @@
                       let lo = Math.min(...a.map((x) => x.v)) * 0.998,
                         hi = Math.max(...a.map((x) => x.v)) * 1.002,
                         x = (v) => ((v - lo) / (hi - lo)) * 960 + 20;
-                      let lastRight = [-Infinity, -Infinity];
                       for (let z of a) {
                         z.px = x(z.v);
                         z.label = `${z.names.join(" = ")} ${money(z.v)}`;
-                        let halfWidth = z.label.length * 3,
-                          row = z.keys.includes("spot")
-                            ? 0
-                            : z.px - halfWidth > lastRight[0]
-                              ? 0
-                              : 1;
-                        z.row = row;
-                        lastRight[row] = z.px + halfWidth;
                       }
                       return (
                         <>
@@ -1131,12 +1129,17 @@
                                 v24.state === "WATCH TRIGGER" &&
                                 z.keys.some((k) => L[k] === v24.level),
                               spotOne = z.keys.includes("spot");
+                            let labeled = spotOne || armedOne,
+                              tx = Math.max(
+                                60,
+                                Math.min(940, z.px),
+                              );
                             return (
                               <g key={z.keys.join("|")}>
                                 <line
                                   x1={z.px}
                                   x2={z.px}
-                                  y1={z.row ? 36 : 18}
+                                  y1={labeled ? (spotOne ? 22 : 40) : 44}
                                   y2="65"
                                   stroke={
                                     armedOne ? "var(--gold)" : "var(--dim)"
@@ -1152,19 +1155,19 @@
                                     stroke="var(--gold)"
                                   />
                                 )}
-                                <text
-                                  x={z.px}
-                                  y={z.row ? 34 : 16}
-                                  textAnchor="middle"
-                                  fontSize={spotOne ? 12 : 10}
-                                  fill={
-                                    spotOne || armedOne
-                                      ? "var(--gold)"
-                                      : "var(--muted)"
-                                  }
-                                >
-                                  {z.label}
-                                </text>
+                                {labeled && (
+                                  <text
+                                    x={tx}
+                                    y={spotOne ? 16 : 36}
+                                    textAnchor="middle"
+                                    fontSize={spotOne ? 12 : 10}
+                                    fill="var(--gold)"
+                                  >
+                                    {spotOne
+                                      ? `SPOT ${money(z.v)}`
+                                      : `TRIGGER ${money(z.v)}`}
+                                  </text>
+                                )}
                                 {spotOne && (
                                   <circle
                                     cx={z.px}

@@ -1,58 +1,5 @@
 [
   {
-    "ts": "2025-10-15T00:00:00Z",
-    "mode": "backtest",
-    "btc": {
-      "price": 110804.12
-    },
-    "composite": {
-      "h24": {
-        "score": 14.29,
-        "raw_weighted_sum": 1.0,
-        "p_up": 0.5107,
-        "tilt": "LEAN UP",
-        "abstain": false
-      },
-      "d7": {
-        "score": -62.5,
-        "raw_weighted_sum": -5,
-        "p_up": 0.4219,
-        "tilt": "BEAR",
-        "abstain": false
-      },
-      "d30": {
-        "score": 7.14,
-        "raw_weighted_sum": 2.0,
-        "p_up": 0.5107,
-        "tilt": "FLAT",
-        "abstain": false
-      }
-    },
-    "outcomes": {
-      "h24": {
-        "ret": -0.023520064055379875,
-        "realized_class": "DOWN",
-        "call": "UP",
-        "hit": false,
-        "abstained": false
-      },
-      "d7": {
-        "ret": -0.029043504880504445,
-        "realized_class": "DOWN",
-        "call": "DOWN",
-        "hit": true,
-        "abstained": false
-      },
-      "d30": {
-        "ret": -0.14710788732404523,
-        "realized_class": "DOWN",
-        "call": "NEUTRAL",
-        "hit": null,
-        "abstained": false
-      }
-    }
-  },
-  {
     "ts": "2025-10-16T00:00:00Z",
     "mode": "backtest",
     "btc": {
@@ -13176,348 +13123,6 @@
       "h24": null,
       "d7": null,
       "d30": null
-    },
-    "signals": {
-      "funding_extreme": {
-        "raw": null,
-        "score": 0,
-        "reading": "3d mean 5.4% annualized",
-        "pillar": "Derivatives",
-        "weight_24h": 2,
-        "weight_7d": 2,
-        "weight_30d": 0,
-        "status": "LIVE"
-      },
-      "oi_purge_flush": {
-        "raw": null,
-        "score": 0,
-        "reading": "OI 24h -0.7%",
-        "pillar": "Derivatives",
-        "weight_24h": 2,
-        "weight_7d": 0,
-        "weight_30d": 0,
-        "status": "LIVE"
-      },
-      "breakout_20d": {
-        "raw": null,
-        "score": 0,
-        "reading": "$58,524\u2013$64,989",
-        "pillar": "Technical",
-        "weight_24h": 1.5,
-        "weight_7d": 0,
-        "weight_30d": 0,
-        "status": "LIVE"
-      },
-      "box_position": {
-        "raw": null,
-        "score": -1,
-        "reading": "30d support/resistance",
-        "pillar": "Technical",
-        "weight_24h": 1,
-        "weight_7d": 1,
-        "weight_30d": 0,
-        "status": "LIVE"
-      },
-      "monday_asia": {
-        "raw": null,
-        "score": 0,
-        "reading": "outside window",
-        "pillar": "Seasonality",
-        "weight_24h": 0.5,
-        "weight_7d": 0,
-        "weight_30d": 0,
-        "status": "LIVE"
-      },
-      "autocorr_gate": {
-        "raw": null,
-        "score": -1,
-        "reading": "\u03c11 -0.08",
-        "pillar": "Technical",
-        "weight_24h": 0.5,
-        "weight_7d": 0,
-        "weight_30d": 0,
-        "status": "LIVE"
-      },
-      "momentum_7d": {
-        "raw": null,
-        "score": 0,
-        "reading": "7d +1.6%",
-        "pillar": "Technical",
-        "weight_24h": 0,
-        "weight_7d": 3,
-        "weight_30d": 0,
-        "status": "LIVE"
-      },
-      "sth_sopr": {
-        "raw": null,
-        "score": null,
-        "reading": "unavailable",
-        "pillar": "On-chain",
-        "weight_24h": 0,
-        "weight_7d": 2,
-        "weight_30d": 0,
-        "status": "LIVE"
-      },
-      "etf_flow_5d": {
-        "raw": null,
-        "score": null,
-        "reading": "unavailable",
-        "pillar": "Flows",
-        "weight_24h": 0,
-        "weight_7d": 1.5,
-        "weight_30d": 0,
-        "status": "LIVE"
-      },
-      "basis_regime": {
-        "raw": null,
-        "score": null,
-        "reading": "unavailable",
-        "pillar": "Derivatives",
-        "weight_24h": 0,
-        "weight_7d": 1.5,
-        "weight_30d": 0,
-        "status": "LIVE"
-      },
-      "oil_shock": {
-        "raw": null,
-        "score": null,
-        "reading": "unavailable",
-        "pillar": "Macro",
-        "weight_24h": 0,
-        "weight_7d": 1.5,
-        "weight_30d": 0,
-        "status": "LIVE"
-      },
-      "dxy_trend": {
-        "raw": null,
-        "score": null,
-        "reading": "unavailable",
-        "pillar": "Macro",
-        "weight_24h": 0,
-        "weight_7d": 1,
-        "weight_30d": 0,
-        "status": "LIVE"
-      },
-      "nasdaq_risk": {
-        "raw": null,
-        "score": null,
-        "reading": "unavailable",
-        "pillar": "Macro",
-        "weight_24h": 0,
-        "weight_7d": 1,
-        "weight_30d": 0,
-        "status": "LIVE"
-      },
-      "hy_spread": {
-        "raw": null,
-        "score": null,
-        "reading": "unavailable",
-        "pillar": "Macro",
-        "weight_24h": 0,
-        "weight_7d": 1,
-        "weight_30d": 0,
-        "status": "LIVE"
-      },
-      "regime_stretch": {
-        "raw": null,
-        "score": -1,
-        "reading": "Mayer 0.89",
-        "pillar": "Technical",
-        "weight_24h": 0,
-        "weight_7d": 0,
-        "weight_30d": 2.5,
-        "status": "LIVE"
-      },
-      "momentum_28d": {
-        "raw": null,
-        "score": 0,
-        "reading": "28d +0.9%",
-        "pillar": "Technical",
-        "weight_24h": 0,
-        "weight_7d": 0,
-        "weight_30d": 2,
-        "status": "LIVE"
-      },
-      "net_liquidity": {
-        "raw": null,
-        "score": null,
-        "reading": "unavailable",
-        "pillar": "Liquidity",
-        "weight_24h": 0,
-        "weight_7d": 0,
-        "weight_30d": 2,
-        "status": "LIVE"
-      },
-      "stablecoin_30d": {
-        "raw": null,
-        "score": null,
-        "reading": "unavailable",
-        "pillar": "Liquidity",
-        "weight_24h": 0,
-        "weight_7d": 0,
-        "weight_30d": 2,
-        "status": "LIVE"
-      },
-      "sth_rp_regime": {
-        "raw": null,
-        "score": null,
-        "reading": "unavailable",
-        "pillar": "On-chain",
-        "weight_24h": 0,
-        "weight_7d": 0,
-        "weight_30d": 2,
-        "status": "LIVE"
-      },
-      "fng_contrarian": {
-        "raw": null,
-        "score": 0,
-        "reading": "7d mean 25",
-        "pillar": "Sentiment",
-        "weight_24h": 0,
-        "weight_7d": 0,
-        "weight_30d": 1.5,
-        "status": "LIVE"
-      },
-      "mvrv_z": {
-        "raw": null,
-        "score": null,
-        "reading": "unavailable",
-        "pillar": "On-chain",
-        "weight_24h": 0,
-        "weight_7d": 0,
-        "weight_30d": 1.5,
-        "status": "LIVE"
-      },
-      "hash_ribbons": {
-        "raw": null,
-        "score": -1,
-        "reading": "30/60d hashrate ribbon",
-        "pillar": "On-chain",
-        "weight_24h": 0,
-        "weight_7d": 0,
-        "weight_30d": 1.5,
-        "status": "LIVE"
-      },
-      "powerlaw_blend": {
-        "raw": null,
-        "score": 2,
-        "reading": "center $133,453; floor $60,958",
-        "pillar": "Valuation",
-        "weight_24h": 0,
-        "weight_7d": 0,
-        "weight_30d": 1.5,
-        "status": "LIVE"
-      },
-      "dat_stress": {
-        "raw": null,
-        "score": -1,
-        "reading": "mNAV 1.00; 3 sales",
-        "pillar": "Treasury",
-        "weight_24h": 0,
-        "weight_7d": 0,
-        "weight_30d": 1.5,
-        "status": "LIVE"
-      },
-      "polymarket_ye": {
-        "raw": null,
-        "score": 1,
-        "reading": "operator score",
-        "pillar": "Expectations",
-        "weight_24h": 0,
-        "weight_7d": 0,
-        "weight_30d": 1.5,
-        "status": "LIVE"
-      },
-      "weekly_structure": {
-        "raw": null,
-        "score": -1.5,
-        "reading": "weekly moving-average structure",
-        "pillar": "Technical",
-        "weight_24h": 0,
-        "weight_7d": 0,
-        "weight_30d": 1.5,
-        "status": "LIVE"
-      },
-      "halving_clock": {
-        "raw": null,
-        "score": -1,
-        "reading": "26.9 months since halving",
-        "pillar": "Cycle",
-        "weight_24h": 0,
-        "weight_7d": 0,
-        "weight_30d": 1,
-        "status": "LIVE"
-      },
-      "global_m2": {
-        "raw": null,
-        "score": null,
-        "reading": "unavailable",
-        "pillar": "Liquidity",
-        "weight_24h": 0,
-        "weight_7d": 0,
-        "weight_30d": 1,
-        "status": "LIVE"
-      },
-      "gli_phase": {
-        "raw": null,
-        "score": -1,
-        "reading": "operator score",
-        "pillar": "Liquidity",
-        "weight_24h": 0,
-        "weight_7d": 0,
-        "weight_30d": 1,
-        "status": "LIVE"
-      },
-      "attention_apathy": {
-        "raw": null,
-        "score": 1,
-        "reading": "52w percentile 4",
-        "pillar": "Sentiment",
-        "weight_24h": 0,
-        "weight_7d": 0,
-        "weight_30d": 1,
-        "status": "LIVE"
-      },
-      "cwac_analyst": {
-        "raw": null,
-        "score": -1,
-        "reading": "operator score",
-        "pillar": "Analyst",
-        "weight_24h": 0,
-        "weight_7d": 0,
-        "weight_30d": 1,
-        "status": "LIVE"
-      },
-      "ism_regime": {
-        "raw": null,
-        "score": null,
-        "reading": "manual ISM inputs",
-        "pillar": "Macro",
-        "weight_24h": 0,
-        "weight_7d": 0,
-        "weight_30d": 0.5,
-        "status": "LIVE"
-      },
-      "pi_cycle": {
-        "raw": null,
-        "score": 0,
-        "reading": "111DMA vs 2\u00d7350DMA",
-        "pillar": "Cycle",
-        "weight_24h": 0,
-        "weight_7d": 0,
-        "weight_30d": 0.5,
-        "status": "LIVE"
-      },
-      "liquidity_sweep": {
-        "raw": null,
-        "score": 0,
-        "reading": "incubating; excluded from composite",
-        "pillar": "Technical",
-        "weight_24h": 0,
-        "weight_7d": 0,
-        "weight_30d": 0,
-        "status": "INCUBATING"
-      }
     }
   },
   {
@@ -13525,6 +13130,145 @@
     "mode": "live",
     "btc": {
       "price": 64657
+    },
+    "composite": {
+      "h24": {
+        "score": -3.33,
+        "raw_weighted_sum": -0.5,
+        "p_up": 0.4975,
+        "tilt": "FLAT",
+        "abstain": false
+      },
+      "d7": {
+        "score": -28.57,
+        "raw_weighted_sum": -8.0,
+        "p_up": 0.4643,
+        "tilt": "BEAR",
+        "abstain": false
+      },
+      "d30": {
+        "score": -14.35,
+        "raw_weighted_sum": -7.75,
+        "p_up": 0.4785,
+        "tilt": "LEAN DOWN",
+        "abstain": false
+      }
+    },
+    "outcomes": {
+      "h24": null,
+      "d7": null,
+      "d30": null
+    },
+    "signals": {
+      "funding_extreme": {
+        "score": 0
+      },
+      "oi_purge_flush": {
+        "score": 0
+      },
+      "breakout_20d": {
+        "score": 0
+      },
+      "box_position": {
+        "score": -1
+      },
+      "monday_asia": {
+        "score": 0
+      },
+      "autocorr_gate": {
+        "score": 1
+      },
+      "momentum_7d": {
+        "score": 0
+      },
+      "sth_sopr": {
+        "score": -2
+      },
+      "etf_flow_5d": {
+        "score": null
+      },
+      "basis_regime": {
+        "score": 0
+      },
+      "oil_shock": {
+        "score": -2
+      },
+      "dxy_trend": {
+        "score": 0
+      },
+      "nasdaq_risk": {
+        "score": -1
+      },
+      "hy_spread": {
+        "score": 1
+      },
+      "regime_stretch": {
+        "score": -1
+      },
+      "momentum_28d": {
+        "score": 0
+      },
+      "net_liquidity": {
+        "score": 1
+      },
+      "stablecoin_30d": {
+        "score": -1
+      },
+      "sth_rp_regime": {
+        "score": -2
+      },
+      "fng_contrarian": {
+        "score": 0
+      },
+      "mvrv_z": {
+        "score": 1
+      },
+      "hash_ribbons": {
+        "score": -1
+      },
+      "powerlaw_blend": {
+        "score": 2
+      },
+      "dat_stress": {
+        "score": -1
+      },
+      "polymarket_ye": {
+        "score": 1
+      },
+      "weekly_structure": {
+        "score": -1.5
+      },
+      "halving_clock": {
+        "score": -1
+      },
+      "global_m2": {
+        "score": 0
+      },
+      "gli_phase": {
+        "score": -1
+      },
+      "attention_apathy": {
+        "score": 1
+      },
+      "cwac_analyst": {
+        "score": -1
+      },
+      "ism_regime": {
+        "score": 0
+      },
+      "pi_cycle": {
+        "score": 0
+      },
+      "liquidity_sweep": {
+        "score": 0
+      }
+    }
+  },
+  {
+    "ts": "2026-07-19T15:41:22Z",
+    "mode": "live",
+    "btc": {
+      "price": 64516
     },
     "composite": {
       "h24": {

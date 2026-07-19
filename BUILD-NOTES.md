@@ -59,3 +59,26 @@ Skeptic verdict on the fix build was FIX with one blocking + two substantial fin
 3. **Threshold disclosure (substantial).** Gauge tilt now has LEAN UP/LEAN DOWN states between ±10 and ±20 (aligned to the scored-call boundary) and the methodology footer documents the label bands explicitly.
 4. Edge-status classifier corrected earlier the same evening: the fall-through case (Wilson upper bound below baseline) now reports BELOW_BASELINE instead of PROMISING.
 5. Added `.gitignore` (`__pycache__/`, `*.pyc`). Repaired double-encoded UTF-8 in signals.html (two-pass latin-1/cp1252 round-trip).
+
+## v2 — 2026-07-19
+
+Shipped Signals v2 with stored verdicts, conviction bars, auto-brief, structured levels, trade context, model scoreboard, normalized drivers, collapsed evidence sections, definition versioning, retirement watch/graveyard, and THE CONTRACT doctrine. Added the independent EO Tracker with ET window clock, measured-vs-marketed gauge, laundering accountability, scouting report, pick/history ledgers, and prediction cards. Added opt-in ntfy collector alerts and three-page shared navigation.
+
+Acceptance: collector and scorer exit 0; browser console clean on Ladder, Signals, and EO at desktop/mobile; missing-file tests preserve unaffected sections; forbidden large-data fetch grep clean; EO requests only `data/eo.json`; UTF-8/mojibake and anonymity guards clean; all 15 judge checks exercised. Payload: Signals local JSON 1,672,261 bytes; EO JSON 15,326 bytes.
+
+## Post-review fixes (2026-07-19)
+
+- Signal drill-down now renders only a gold `WARMING UP (n=X)` measured-record message when n<30 and suppresses the status cell entirely; horizon tab buttons have stable React keys.
+- Key-level rail markers within 0.15% are merged under combined labels, remaining labels use two staggered rows with SPOT fixed to the top row, and the moving-average labels are consistently `50DMA` / `200DMA`.
+- EO's claim comparison prominently carries the JSON verdict and `WARMING UP (n=19)` badge, with all comparison language marked provisional while preserving the Wilson CI whisker.
+- EO next-window targeting now walks America/New_York calendar dates and binary-searches the UTC instant for the target ET wall clock. Hash-gated console assertions cover the 2026-03-08 spring-forward and 2026-11-01 fall-back transitions.
+- Restored the exact inline BTC SVG favicon from the ladder page to Signals and EO. Refreshed `data/latest.json` with collector snapshot `2026-07-19T07:40:53Z` (30 scored signals; 2,729 ledger rows).
+- Headless Chrome served Signals and EO over `python -m http.server` with zero page exceptions/console errors; EO DST self-tests passed, warm-up/verdict copy rendered, and repository grep found no malformed moving-average labels.
+
+## Final review remediation (2026-07-19)
+
+- Rebound EO's measured gauge and current ledger to the rebuilt `measured.trigger_scored` and `basis: leg-scored` schema. The ledger now exposes trigger/target/stop, includes OPEN styling, states that its rows sum to the aggregate, and keeps historical rows separate by `basis`.
+- Made EO's warm-up badge conditional on `n < 30`, gated statistical language until `n >= 30`, placed the JSON verdict beside the gauge, neutralized conditional-exclusion copy, and labeled the prediction cards as predictions of the next post rather than trade ideas.
+- Made the Signals brief report every narrated horizon's pooled hit rate, always-up baseline, sample size, Wilson interval, and edge assessment. NO_EDGE/BELOW_BASELINE record lines now render at 12px in regular text color.
+- Derived probability caps from score caps in `collector/lib.py`; all displayed cap values now come from `data/latest.json` (with the existing UI constants used only as a missing-data fallback).
+- Regenerated the collector snapshot at `2026-07-19T07:47:54Z` (30 scored signals; 2,729 ledger rows). HTTP-served headless-browser checks rendered EO's 25 current leg rows plus 20 historical rows and loaded both pages without page exceptions.

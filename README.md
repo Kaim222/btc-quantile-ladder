@@ -1,9 +1,14 @@
 # BTC Quantile Ladder + Signals
 
-A static GitHub Pages research site with two passcode-gated tabs:
+A static GitHub Pages research site with three passcode-gated tabs:
 
 - **Ladder** — the existing BTC power-law quantile and planning dashboard.
 - **Signals** — capped 24-hour, 7-day, and 30-day directional estimates with a permanent, self-scoring ledger.
+- **EO Tracker** — an anonymized, measured pick ledger and posting-window tracker.
+
+## Optional alerts
+
+Set `ntfy_topic` in `config/manual.json` to a long, random topic string to receive verdict, newly armed, and multi-source-failure alerts. Leave it empty to disable alerts. ntfy topics are public-by-obscurity, and alerts never contain manual configuration values.
 
 ## Doctrine
 

@@ -1,0 +1,941 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>EO Tracker</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23020817'/%3E%3Cpath d='M14 48 L14 42 L20 42 L20 22 L14 22 L14 16 L22 16 L22 10 L28 10 L28 16 L32 16 L32 10 L38 10 L38 16.5 Q46 17.5 46 24 Q46 29 42 30.5 Q48 32 48 38.5 Q48 46 38 47.5 L38 54 L32 54 L32 48 L28 48 L28 54 L22 54 L22 48 Z M26 22 L26 28 L34 28 Q38 28 38 25 Q38 22 34 22 Z M26 34 L26 42 L35 42 Q40 42 40 38 Q40 34 35 34 Z' fill='%23facc15'/%3E%3C/svg%3E"
+    />
+    <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap");
+      * {
+        box-sizing: border-box;
+      }
+      :root {
+        --bg: #020817;
+        --card: #070f1f;
+        --inner: #040c1a;
+        --border: #0f2035;
+        --text: #e2e8f0;
+        --muted: #8aaac8;
+        --dim: #6b8fb3;
+        --cyan: #22d3ee;
+        --gold: #facc15;
+        --red: #ef4444;
+        --green: #34d399;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "JetBrains Mono", "Courier New", monospace;
+        font-variant-numeric: tabular-nums;
+      }
+      button {
+        font: inherit;
+      }
+      .shell {
+        max-width: 1300px;
+        margin: auto;
+        padding: 22px;
+      }
+      .nav {
+        display: flex;
+        gap: 22px;
+        margin-bottom: 22px;
+        border-bottom: 1px solid var(--border);
+      }
+      .nav a {
+        padding: 9px 2px;
+        text-decoration: none;
+        font-size: 11px;
+        letter-spacing: 0.16em;
+        color: var(--muted);
+      }
+      .nav .active {
+        color: var(--gold);
+        border-bottom: 2px solid var(--gold);
+      }
+      .grid {
+        display: grid;
+        gap: 12px;
+      }
+      .g2 {
+        grid-template-columns: 1fr 1fr;
+      }
+      .g3 {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 15px;
+      }
+      .inner {
+        background: var(--inner);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 10px;
+      }
+      .section {
+        margin-top: 20px;
+      }
+      .section h2,
+      details > summary {
+        font-size: 11px;
+        color: var(--muted);
+        letter-spacing: 0.14em;
+        margin: 0 0 10px;
+      }
+      .label {
+        font-size: 10px;
+        color: var(--dim);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      .badge {
+        display: inline-block;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 3px 7px;
+        font-size: 9px;
+        white-space: nowrap;
+      }
+      .gold {
+        color: var(--gold);
+        border-color: #6a5b15;
+      }
+      .cyan {
+        color: var(--cyan);
+        border-color: #15566a;
+      }
+      .green {
+        color: var(--green);
+      }
+      .red {
+        color: var(--red);
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .tabs {
+        display: flex;
+        gap: 6px;
+        margin: 8px 0;
+      }
+      .tabs button {
+        background: transparent;
+        color: var(--muted);
+        border: 1px solid var(--border);
+        padding: 8px 12px;
+        min-height: 44px;
+      }
+      .tabs .on {
+        color: var(--gold);
+        border-color: var(--gold);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 10px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 8px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+      th {
+        color: var(--dim);
+      }
+      .scroll {
+        overflow: auto;
+      }
+      .placeholder {
+        color: var(--dim);
+        padding: 18px;
+        text-align: center;
+      }
+      .footer {
+        font-size: 10px;
+        line-height: 1.7;
+        color: var(--muted);
+      }
+      details summary {
+        cursor: pointer;
+      }
+      .card,
+      .inner {
+        transition: border-color 0.15s;
+      }
+      .marker-g {
+        transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      @keyframes pulseGold {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.35);
+        }
+        50% {
+          box-shadow: 0 0 0 7px rgba(250, 204, 21, 0);
+        }
+      }
+      .armed {
+        animation: pulseGold 2s ease-in-out infinite;
+        border-color: #6a5b15;
+      }
+      @keyframes pulseLive {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.55;
+        }
+      }
+      .livepulse {
+        animation: pulseLive 1.6s ease-in-out infinite;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .armed,
+        .livepulse {
+          animation: none;
+        }
+        .marker-g {
+          transition: none;
+        }
+      }
+      @media (max-width: 700px) {
+        .g3,
+        .g2 {
+          grid-template-columns: 1fr !important;
+        }
+        .shell {
+          padding: 10px;
+        }
+        .card {
+          padding: 10px;
+        }
+        th,
+        td {
+          white-space: nowrap;
+        }
+        .section {
+          margin-top: 14px;
+        }
+        .gauge-svg {
+          max-width: 420px;
+          margin: auto;
+        }
+        .countdown {
+          font-size: 20px !important;
+        }
+        .hero-flex {
+          display: block !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="text/babel">
+      /* Color contract: green/red measured outcomes and pick direction only; gold attention/claim/live; cyan measured data and interaction. */
+      const { useEffect, useState } = React;
+      const pc = (x) => (x == null ? "—" : `${(x * 100).toFixed(0)}%`);
+      function etParts(date = new Date()) {
+        let f = new Intl.DateTimeFormat("en-US", {
+          timeZone: "America/New_York",
+          weekday: "short",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
+        });
+        let p = Object.fromEntries(
+          f.formatToParts(date).map((x) => [x.type, x.value]),
+        );
+        return {
+          weekday: p.weekday,
+          year: +p.year,
+          month: +p.month,
+          day: +p.day,
+          hour: +p.hour % 24,
+          minute: +p.minute,
+          second: +p.second,
+        };
+      }
+      function addEtDays(p, count) {
+        let d = new Date(Date.UTC(p.year, p.month - 1, p.day + count, 12));
+        return etParts(d);
+      }
+      function etWallInstant(p, hour, minute) {
+        const wanted = Date.UTC(p.year, p.month - 1, p.day, hour, minute, 0);
+        let lo = wanted - 36 * 3600000,
+          hi = wanted + 36 * 3600000;
+        // Binary-search UTC for the instant whose formatted ET wall clock matches.
+        while (hi - lo > 1000) {
+          let mid = Math.floor((lo + hi) / 2000) * 1000,
+            q = etParts(new Date(mid)),
+            wall = Date.UTC(
+              q.year,
+              q.month - 1,
+              q.day,
+              q.hour,
+              q.minute,
+              q.second,
+            );
+          if (wall < wanted) lo = mid + 1000;
+          else hi = mid;
+        }
+        return new Date(hi);
+      }
+      function nextEoWindow(now = new Date()) {
+        let p = etParts(now),
+          di = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(
+            p.weekday,
+          ),
+          nightlyOpen = di <= 4 ? etWallInstant(p, 19, 0) : null,
+          nightlyClose = di <= 4 ? etWallInstant(p, 21, 45) : null,
+          basketOpen = di === 0 ? etWallInstant(p, 20, 30) : null,
+          basketClose = di === 0 ? etWallInstant(p, 21, 15) : null;
+        if (basketOpen && now >= basketOpen && now < basketClose)
+          return {
+            state: "LIVE",
+            label: "SUNDAY BASKET",
+            end: "21:15",
+            left: (basketClose - now) / 1000,
+          };
+        if (nightlyOpen && now >= nightlyOpen && now < nightlyClose)
+          return {
+            state: "LIVE",
+            label: "NIGHTLY PLAN",
+            end: "21:45",
+            left: (nightlyClose - now) / 1000,
+          };
+        for (let add = 0; add < 8; add++) {
+          let day = addEtDays(p, add),
+            dayIndex = [
+              "Sun",
+              "Mon",
+              "Tue",
+              "Wed",
+              "Thu",
+              "Fri",
+              "Sat",
+            ].indexOf(day.weekday);
+          if (dayIndex > 4) continue;
+          let target = etWallInstant(day, 19, 0);
+          if (target <= now) continue;
+          return {
+            state: add === 0 ? "TONIGHT" : "DARK",
+            label: "NIGHTLY PLAN",
+            window: "19:00-21:45",
+            day: day.weekday,
+            start: "19:00",
+            target,
+            left: (target - now) / 1000,
+          };
+        }
+      }
+      if (location.hash === "#selftest") {
+        console.group("EO DST countdown self-test");
+        console.assert(
+          nextEoWindow(
+            new Date("2026-03-08T16:00:00Z"),
+          ).target.toISOString() === "2026-03-08T23:00:00.000Z",
+          "spring-forward fixture",
+        );
+        console.assert(
+          nextEoWindow(
+            new Date("2026-11-01T17:00:00Z"),
+          ).target.toISOString() === "2026-11-02T00:00:00.000Z",
+          "fall-back fixture",
+        );
+        console.groupEnd();
+      }
+      function useJson(path) {
+        const [v, setV] = useState(null),
+          [bad, setBad] = useState(false);
+        useEffect(() => {
+          fetch(path + "?t=" + Date.now())
+            .then((r) => {
+              if (!r.ok) throw Error(r.status);
+              return r.json();
+            })
+            .then(setV)
+            .catch(() => setBad(true));
+        }, [path]);
+        return [v, bad];
+      }
+      function Nav() {
+        return (
+          <div className="nav">
+            <a href="index.html">LADDER</a>
+            <a href="signals.html">SIGNALS</a>
+            <a className="active" href="eo.html">
+              EO TRACKER
+            </a>
+          </div>
+        );
+      }
+      function Gate({ go }) {
+        const [p, setP] = useState("");
+        let enter = () => {
+          if (p === "4241") {
+            sessionStorage.setItem("bql_ok", "1");
+            go();
+          }
+        };
+        return (
+          <div className="shell">
+            <div
+              className="card"
+              style={{ maxWidth: 420, margin: "18vh auto" }}
+            >
+              <div className="label">EO TRACKER</div>
+              <input
+                aria-label="passcode"
+                type="password"
+                value={p}
+                onChange={(e) => setP(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && enter()}
+                style={{
+                  width: "100%",
+                  margin: "15px 0",
+                  padding: 12,
+                  background: "var(--inner)",
+                  color: "var(--text)",
+                  border: "1px solid var(--border)",
+                }}
+              />
+              <button onClick={enter}>ENTER</button>
+            </div>
+          </div>
+        );
+      }
+      function Outcome({ x }) {
+        let o = x === "NO_TRIGGER" ? "NO TRIG" : x;
+        return (
+          <span
+            title={
+              x === "NO_TRIGGER"
+                ? "never traded through trigger — excluded from his marketed record, counted in ours"
+                : ""
+            }
+            className={`badge ${x === "HIT" ? "green" : x === "MISS" ? "red" : x === "NO_TRIGGER" ? "gold" : x === "OPEN" ? "cyan" : ""}`}
+            style={x === "OPEN" ? { opacity: 0.65 } : undefined}
+          >
+            {o}
+          </span>
+        );
+      }
+      function PickTable({ rows }) {
+        return (
+          <div className="scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>DATE</th>
+                  <th>TICKER</th>
+                  <th>DIR</th>
+                  <th>DETAIL</th>
+                  <th>TRIGGER</th>
+                  <th>TARGET</th>
+                  <th>STOP</th>
+                  <th>OUTCOME</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((x, i) => (
+                  <tr key={i}>
+                    <td title={x.basis === "historical" ? "HISTORICAL" : ""}>
+                      {x.date}
+                    </td>
+                    <td>{x.ticker}</td>
+                    <td>
+                      <span
+                        className={`badge ${x.side === "C" ? "green" : "red"}`}
+                      >
+                        {x.side}
+                      </span>
+                    </td>
+                    <td className="muted">
+                      {x.note && x.note !== x.detail ? (
+                        <details>
+                          <summary>{x.detail.slice(0, 90)}</summary>
+                          {x.note}
+                        </details>
+                      ) : (
+                        x.detail
+                      )}
+                    </td>
+                    <td>{x.trigger ?? "—"}</td>
+                    <td>{x.target ?? "—"}</td>
+                    <td>{x.stop ?? "—"}</td>
+                    <td>
+                      <Outcome x={x.outcome} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      }
+      function App() {
+        const [ok, setOk] = useState(sessionStorage.getItem("bql_ok") === "1"),
+          [eo, bad] = useJson("data/eo.json"),
+          [now, setNow] = useState(new Date()),
+          [filter, setFilter] = useState("ALL"),
+          [all, setAll] = useState(false);
+        useEffect(() => {
+          let id = setInterval(() => setNow(new Date()), 1000);
+          return () => clearInterval(id);
+        }, []);
+        if (!ok) return <Gate go={() => setOk(true)} />;
+        let w = nextEoWindow(now),
+          dur = w.left || 0,
+          hh = Math.floor(dur / 3600),
+          mm = Math.floor((dur % 3600) / 60),
+          ss = Math.floor(dur % 60),
+          ts = eo?.measured?.trigger_scored,
+          lr = eo?.measured?.laundering_rate,
+          claim = eo?.marketed_claim?.win_rate,
+          recent = (eo?.picks || [])
+            .filter((x) => x.basis === "leg-scored")
+            .sort((a, b) => b.date.localeCompare(a.date)),
+          archive = (eo?.picks || [])
+            .filter((x) => x.basis === "historical")
+            .sort((a, b) => b.date.localeCompare(a.date));
+        let shown =
+          filter === "ALL"
+            ? recent
+            : recent.filter(
+                (x) =>
+                  x.outcome === (filter === "NO TRIG" ? "NO_TRIGGER" : filter),
+              );
+        let scored = (eo?.our_predictions || []).filter(
+            (x) => x.match_score != null,
+          ),
+          avg = scored.length
+            ? scored.reduce((a, x) => a + x.match_score, 0) / scored.length
+            : null,
+          openGuess = (eo?.our_predictions || [])
+            .filter((x) => x.status === "OPEN")
+            .map((x) => x.guess)
+            .join(" ");
+        return (
+          <div className="shell">
+            <Nav />
+            <section className={`card ${w.state === "LIVE" ? "armed" : ""}`}>
+              <div className="label">
+                EO TRACKER · SCORING A PUBLIC OPTIONS CALLER · ANONYMIZED
+              </div>
+              <div
+                className="hero-flex"
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 20,
+                  marginTop: 10,
+                }}
+              >
+                <div>
+                  <div
+                    className={w.state === "LIVE" ? "livepulse" : ""}
+                    style={{
+                      fontSize: 32,
+                      fontWeight: 700,
+                      color:
+                        w.state === "LIVE"
+                          ? "var(--gold)"
+                          : w.state === "DARK"
+                            ? "var(--muted)"
+                            : "var(--text)",
+                    }}
+                  >
+                    {w.state === "LIVE"
+                      ? "EO WINDOW LIVE"
+                      : w.state === "TONIGHT"
+                        ? "OPENS TONIGHT"
+                        : "DARK"}
+                  </div>
+                  {w.state !== "LIVE" && (
+                    <div
+                      className="countdown"
+                      style={{
+                        fontSize: 22,
+                        fontWeight: 700,
+                        color: "var(--gold)",
+                      }}
+                    >
+                      T−
+                      {w.state === "DARK"
+                        ? `${Math.floor(dur / 86400)}d ${hh % 24}h ${mm}m`
+                        : `${hh}h ${mm}m ${ss}s`}
+                    </div>
+                  )}
+                  <div style={{ fontSize: 12 }}>
+                    {w.state === "LIVE"
+                      ? `${w.label} · closes ${w.end} ET (${Math.ceil(dur / 60)}m left)`
+                      : w.state === "TONIGHT"
+                        ? `${w.label} · ${eo?.cadence?.nightly_plan?.window_et || w.window} ET`
+                        : `next: ${w.label} · ${w.day} ${w.start} ET`}
+                  </div>
+                  <div className="label" style={{ marginTop: 6 }}>
+                    {bad
+                      ? "EO DATA UNAVAILABLE"
+                      : w.state === "LIVE"
+                        ? "refresh his feed, log the picks below"
+                        : ""}
+                  </div>
+                </div>
+                <div
+                  className="muted"
+                  style={{ fontSize: 10, lineHeight: 1.8 }}
+                >
+                  SUN {eo?.cadence?.weekly_basket?.window_et || "20:30-21:15"} ·{" "}
+                  {eo?.cadence?.weekly_basket?.desc || "weekly basket"}
+                  <br />
+                  SUN–THU{" "}
+                  {eo?.cadence?.nightly_plan?.window_et || "19:00-21:45"} ·{" "}
+                  {eo?.cadence?.nightly_plan?.desc || "nightly plan"}
+                  <br />
+                  FRI/SAT dark
+                </div>
+              </div>
+            </section>
+            <section className="section grid g3">
+              <div className="card" style={{ gridColumn: "span 2" }}>
+                <h2>MARKETED VS MEASURED</h2>
+                {!ts ? (
+                  <div className="placeholder">Measured record unavailable</div>
+                ) : (
+                  <>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 8,
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                        marginBottom: 6,
+                      }}
+                    >
+                      {ts.n < 30 && (
+                        <span className="badge gold">WARMING UP (n={ts.n})</span>
+                      )}
+                      <strong className="gold" style={{ fontSize: 12 }}>
+                        {eo.measured.verdict}
+                      </strong>
+                    </div>
+                    <svg
+                      viewBox="0 0 600 90"
+                      className="gauge-svg"
+                      style={{ width: "100%" }}
+                    >
+                      <rect
+                        x="0"
+                        y="40"
+                        width="600"
+                        height="14"
+                        rx="5"
+                        fill="var(--inner)"
+                      />
+                      <line x1="300" x2="300" y1="34" y2="60" stroke="white" />
+                      <text
+                        x="300"
+                        y="72"
+                        textAnchor="middle"
+                        fontSize="8"
+                        fill="var(--dim)"
+                      >
+                        COIN FLIP 50
+                      </text>
+                      <rect
+                        x={600 * ts.wilson_lo}
+                        y="36"
+                        width={600 * (ts.wilson_hi - ts.wilson_lo)}
+                        height="22"
+                        fill="#22d3ee22"
+                      />
+                      <text
+                        x={(600 * (ts.wilson_lo + ts.wilson_hi)) / 2}
+                        y="32"
+                        textAnchor="middle"
+                        fontSize="9"
+                        fill="var(--cyan)"
+                      >
+                        95% CI {pc(ts.wilson_lo)}–{pc(ts.wilson_hi)}
+                      </text>
+                      <line
+                        x1={600 * ts.hit_rate_strict}
+                        x2={600 * ts.hit_rate_strict}
+                        y1="26"
+                        y2="62"
+                        stroke="var(--cyan)"
+                        strokeWidth="3"
+                      />
+                      <text
+                        x={600 * ts.hit_rate_strict}
+                        y="18"
+                        textAnchor="middle"
+                        fontSize="12"
+                        fill="var(--cyan)"
+                      >
+                        MEASURED {pc(ts.hit_rate_strict)} ({ts.hits}H/
+                        {ts.misses}M)
+                      </text>
+                      <line
+                        x1={600 * claim}
+                        x2={600 * claim}
+                        y1="26"
+                        y2="62"
+                        stroke="var(--gold)"
+                        strokeWidth="3"
+                        strokeDasharray="5 3"
+                      />
+                      <text
+                        x={600 * claim}
+                        y="86"
+                        textAnchor="middle"
+                        fontSize="12"
+                        fill="var(--gold)"
+                      >
+                        HIS CLAIM {pc(claim)}
+                      </text>
+                    </svg>
+                    <div className="muted" style={{ fontSize: 12 }}>
+                      {ts.n < 30
+                        ? "PROVISIONAL — his claim sits above the measured CI, but n is too small to judge — target n>=100"
+                        : claim > ts.wilson_hi
+                          ? "His claim is statistically implausible against the measured 95% CI."
+                          : `His claim is ${Math.round((claim - ts.hit_rate_strict) * 100)}pts above the measured rate.`}
+                    </div>
+                    <div className="label" style={{ marginTop: 8 }}>
+                      strict {pc(ts.hit_rate_strict)} · generous{" "}
+                      {pc(ts.hit_rate_generous)} (ambiguous legs counted his
+                      way) · CI {pc(ts.wilson_lo)}–{pc(ts.wilson_hi)} · n={ts.n}{" "}
+                      trigger-scored{" "}
+                      {ts.n < 30 && (
+                        <span className="badge gold">WARMING UP (n={ts.n})</span>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className="card">
+                <div className="label">NEVER TRIGGERED</div>
+                <div
+                  style={{
+                    fontSize: 32,
+                    fontWeight: 700,
+                    color: "var(--gold)",
+                  }}
+                >
+                  {pc(lr?.value)}
+                </div>
+                {ts && (
+                  <>
+                    <div style={{ fontSize: 12 }}>
+                      {ts.no_trigger} of {ts.n + ts.no_trigger} tracked picks
+                      never traded through their trigger
+                    </div>
+                    <div
+                      className="muted"
+                      style={{ fontSize: 10, margin: "8px 0" }}
+                    >
+                      {lr?.label}
+                    </div>
+                    <div className="grid g3">
+                      <div className="inner green" style={{ fontSize: 20 }}>
+                        {ts.hits} HIT
+                      </div>
+                      <div className="inner red" style={{ fontSize: 20 }}>
+                        {ts.misses} MISS
+                      </div>
+                      <div className="inner gold" style={{ fontSize: 20 }}>
+                        {ts.no_trigger} NO-TRIG
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </section>
+            <section className="section card">
+              <h2>SCOUTING REPORT · HIS TELLS</h2>
+              {!eo ? (
+                <div className="placeholder">Scouting data unavailable</div>
+              ) : (
+                <div className="grid g2">
+                  <div>
+                    {eo.patterns.map((x, i) => (
+                      <div
+                        key={i}
+                        className="muted"
+                        style={{ fontSize: 12, marginBottom: 8 }}
+                      >
+                        ▸ {x}
+                      </div>
+                    ))}
+                  </div>
+                  <div>
+                    {[
+                      ["EVERY WEEK", eo.watchlist_tiers.tier1_weekly, "gold"],
+                      ["CORE ROTATION", eo.watchlist_tiers.tier2_core, "cyan"],
+                      ["OCCASIONAL", eo.watchlist_tiers.tier3_rotation, ""],
+                    ].map(([n, x, c]) => (
+                      <div key={n} style={{ marginBottom: 10 }}>
+                        <div className="label">{n}:</div>
+                        {x.map((t) => (
+                          <span
+                            key={t}
+                            className={`badge ${c}`}
+                            style={{ margin: "4px 4px 0 0" }}
+                          >
+                            {new RegExp(`\\b${t}\\b`).test(openGuess) && (
+                              <span className="cyan">● </span>
+                            )}
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    ))}
+                    <div className="label">
+                      Prediction prior: every-week names are near-certain; core
+                      ≈ most weeks; occasional fills the basket.
+                    </div>
+                  </div>
+                </div>
+              )}
+            </section>
+            <section className="section card">
+              <h2>
+                PICK LEDGER · TRACKED WINDOW ({eo?.measured?.window || "—"})
+              </h2>
+              <div className="label" style={{ marginBottom: 8 }}>
+                aggregate above = sum of these rows
+              </div>
+              <div className="tabs">
+                {["ALL", "HIT", "MISS", "NO TRIG"].map((x) => (
+                  <button
+                    key={x}
+                    className={filter === x ? "on" : ""}
+                    onClick={() => setFilter(x)}
+                  >
+                    {x}
+                  </button>
+                ))}
+              </div>
+              {eo ? (
+                <PickTable rows={shown} />
+              ) : (
+                <div className="placeholder">Pick ledger unavailable</div>
+              )}
+              {ts && (
+                <div className="label" style={{ marginTop: 8 }}>
+                  TRIGGER-SCORED: {ts.hits}H/{ts.misses}M (
+                  {pc(ts.hit_rate_strict)}, CI {pc(ts.wilson_lo)}–
+                  {pc(ts.wilson_hi)}, n={ts.n}) · AMBIGUOUS: {ts.ambiguous} ·
+                  OPEN: {ts.open} · NO-TRIGGER: {ts.no_trigger}
+                  {` · ${recent.length} LEG ROWS`}
+                </div>
+              )}
+            </section>
+            <section className="section">
+              <h2>OUR PREDICTIONS · CAN WE FRONT-RUN HIS PICKS?</h2>
+              <div className="label" style={{ marginBottom: 8 }}>
+                predicting his next post — not a trade idea.
+              </div>
+              <div
+                className="inner gold"
+                style={{ fontSize: 20, marginBottom: 10 }}
+              >
+                {scored.length
+                  ? `AVG MATCH ${avg.toFixed(1)}/5 · ${scored.length} SCORED · BEST ${Math.max(...scored.map((x) => x.match_score))}/5`
+                  : `0 SCORED · first scoring after Sunday's basket`}
+              </div>
+              {!eo ? (
+                <div className="card placeholder">Predictions unavailable</div>
+              ) : (
+                eo.our_predictions.slice(0, all ? 99 : 4).map((x) => (
+                  <div className="card" key={x.id} style={{ marginBottom: 8 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <div className="label">{x.window}</div>
+                      {x.match_score == null ? (
+                        <span className="badge gold">
+                          OPEN · scores after his post
+                        </span>
+                      ) : (
+                        <span className="cyan" style={{ fontSize: 20 }}>
+                          {"★".repeat(x.match_score)}
+                          {"☆".repeat(5 - x.match_score)}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 12, margin: "10px 0" }}>
+                      {x.guess}
+                    </div>
+                    <div className="label">
+                      CONFIDENCE{" "}
+                      <span className="gold">
+                        {"●".repeat(x.confidence)}
+                        {"○".repeat(5 - x.confidence)}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+              {(eo?.our_predictions?.length || 0) > 4 && (
+                <button onClick={() => setAll(!all)}>
+                  {all ? "SHOW LESS" : "SHOW ALL"}
+                </button>
+              )}
+              <div className="label" style={{ marginTop: 8 }}>
+                Match scoring 0–5 per prediction: ticker / direction / strike
+                zone / expiry week / trigger style, one point each. Scored
+                manually in eo.json after his post — the page never re-scores.
+              </div>
+            </section>
+            <details className="section card">
+              <summary>
+                HISTORY · 2019–2026 SPOT CHECKS ({archive.length})
+              </summary>
+              {eo ? (
+                <PickTable rows={archive} />
+              ) : (
+                <div className="placeholder">History unavailable</div>
+              )}
+            </details>
+            <footer className="section card footer">
+              <p>{eo?.disclaimer || "EO data unavailable."}</p>
+              <p>
+                HIT/MISS scored only when price traded through his stated
+                trigger; picks that never trigger are excluded from his marketed
+                record but shown here — excluded from his win-rate math under
+                conditional framing. n is small; the CI says so on every gauge. This page scores a
+                process. It is not a signal and not financial advice.
+              </p>
+            </footer>
+          </div>
+        );
+      }
+      ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    </script>
+  </body>
+</html>

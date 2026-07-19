@@ -1,34 +1,1719 @@
-﻿<!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><title>BTC Signals</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23020817'/%3E%3Cpath d='M14 48 L14 42 L20 42 L20 22 L14 22 L14 16 L22 16 L22 10 L28 10 L28 16 L32 16 L32 10 L38 10 L38 16.5 Q46 17.5 46 24 Q46 29 42 30.5 Q48 32 48 38.5 Q48 46 38 47.5 L38 54 L32 54 L32 48 L28 48 L28 54 L22 54 L22 48 Z' fill='%23facc15'/%3E%3C/svg%3E">
-<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script><script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script><script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
-<style>@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');*{box-sizing:border-box}body{margin:0;background:#020817;color:#e2e8f0;font-family:'JetBrains Mono','Courier New',monospace}:root{--bg:#020817;--card:#070f1f;--inner:#040c1a;--border:#0f2035;--text:#e2e8f0;--muted:#8aaac8;--dim:#5a7fa0;--cyan:#22d3ee;--gold:#facc15;--red:#ef4444;--green:#34d399}button,select{font:inherit}a{color:var(--cyan)}.shell{max-width:1300px;margin:auto;padding:22px}.nav{display:flex;gap:22px;margin-bottom:22px;border-bottom:1px solid var(--border)}.nav a{padding:9px 2px;text-decoration:none;font-size:11px;letter-spacing:.16em;color:var(--muted)}.nav .active{color:var(--gold);border-bottom:2px solid var(--gold)}.grid{display:grid;gap:12px}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:15px}.inner{background:var(--inner);border:1px solid var(--border);border-radius:6px;padding:10px}.label{font-size:10px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase}.value{font-size:20px;font-weight:700;margin-top:5px}.section{margin-top:20px}.section h2{font-size:12px;color:var(--muted);letter-spacing:.14em;margin:0 0 10px}.strip{display:flex;gap:14px;overflow:auto}.badge{display:inline-block;border:1px solid var(--border);border-radius:12px;padding:3px 7px;font-size:9px;white-space:nowrap}.gold{color:var(--gold);border-color:#6a5b15}.green{color:var(--green)}.red{color:var(--red)}.muted{color:var(--muted)}table{width:100%;border-collapse:collapse;font-size:10px}th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border);vertical-align:top}th{color:var(--dim);letter-spacing:.08em}.scroll{overflow:auto}.tabs button{background:transparent;color:var(--muted);border:1px solid var(--border);padding:6px 10px}.tabs .on{color:var(--gold);border-color:var(--gold)}details summary{cursor:pointer;color:var(--cyan)}.placeholder{color:var(--dim);padding:18px;text-align:center}.bar{height:13px;background:var(--inner);position:relative;border-radius:3px;overflow:hidden}.bar i{position:absolute;height:100%;left:50%}.news a{text-decoration:none}.stale{border:1px solid var(--gold);padding:8px;color:var(--gold);font-size:10px;margin-top:10px}.footer{font-size:10px;line-height:1.7;color:var(--muted)}::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:#162840}</style></head>
-<body><div id="root"></div><script type="text/babel" data-presets="react">
-const {useEffect,useState}=React; const H={h24:"24H",d7:"7D",d30:"30D"};
-const fmt=(x,d=0)=>x==null?"—":Number(x).toFixed(d); const pc=x=>x==null?"—":`${(100*x).toFixed(0)}%`;
-function Nav(){return <div className="nav"><a href="index.html">LADDER</a><a className="active" href="signals.html">SIGNALS</a></div>}
-function useJson(path){const [v,setV]=useState(null),[bad,setBad]=useState(false);useEffect(()=>{fetch(path+"?t="+Date.now()).then(r=>{if(!r.ok)throw Error(r.status);return r.json()}).then(setV).catch(()=>setBad(true))},[path]);return [v,bad]}
-function Tile({label,children}){return <div className="card"><div className="label">{label}</div><div className="value">{children}</div></div>}
-function Stat({m}){if(!m)return <span className="badge">NO DATA</span>;let text=m.n<30?`WARMING UP (n=${m.n})`:m.edge_status==="SIGNIFICANT"?`EDGE (CI ${pc(m.wilson_lo)}-${pc(m.wilson_hi)})`:m.edge_status==="DECAYING"?"DECAYING":m.edge_status==="BELOW_BASELINE"?"BELOW BASELINE":"NO EDGE YET";return <div style={{fontSize:10,color:"var(--muted)"}}>{m.n?`${pc(m.hit_rate)} on decided calls (CI ${pc(m.wilson_lo)}-${pc(m.wilson_hi)}) · called ${pc(m.call_rate)} of windows · always-up ${pc(m.baseline_alwaysup)} · `:""}<span className="badge gold">{text}</span></div>}
-function Gauge({h,c,move,m}){let s=c?.score||0,a=-90+(s+100)*.9;return <div className="card"><div className="label">{H[h]}</div><svg viewBox="0 0 200 112" style={{width:"100%"}}><path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="#162840" strokeWidth="18"/><path d="M93 20 A80 80 0 0 1 107 20" fill="none" stroke="#6a5b15" strokeWidth="20"/><line x1="100" y1="100" x2="100" y2="30" stroke={s>=20?"#34d399":s<=-20?"#ef4444":"#facc15"} strokeWidth="3" transform={`rotate(${a} 100 100)`}/><circle cx="100" cy="100" r="5" fill="#e2e8f0"/></svg><div style={{textAlign:"center",marginTop:-8}}><div className={c?.tilt==="BULL"?"green":c?.tilt==="BEAR"?"red":"gold"} style={{fontSize:22,fontWeight:700}}>{c?.tilt||"—"}</div><div>P(up) {c?pc(c.p_up):"—"} {c&&"(capped)"}</div><div className="muted" style={{fontSize:10,margin:"5px 0 10px"}}>±{fmt(move,1)}% typical {H[h].toLowerCase()} move</div><Stat m={m}/></div></div>}
-function Spark({m}){let r=m?.rolling90||[]; if(!r.length)return <div className="placeholder">No resolved observations yet</div>;let pts=r.map((x,i)=>`${i/(r.length-1||1)*300},${100-(x.hit_rate-.3)/.4*100}`).join(" ");return <svg viewBox="0 0 300 110" style={{width:"100%"}}><rect x="0" y="37" width="300" height="26" fill="#0f203566"/><line x1="0" y1="50" x2="300" y2="50" stroke="#facc15" strokeDasharray="4 4"/><polyline points={pts} fill="none" stroke="#22d3ee" strokeWidth="2"/></svg>}
-function Calibration({bins}){let pts=bins||[];return <svg viewBox="0 0 220 130" style={{width:'100%'}}><line x1="25" y1="110" x2="205" y2="110" stroke="#5a7fa0"/><line x1="25" y1="110" x2="25" y2="10" stroke="#5a7fa0"/><line x1="25" y1="110" x2="205" y2="10" stroke="#5a7fa0" strokeDasharray="4 4"/>{pts.map(x=><circle key={x.p_up} cx={25+x.p_up*180} cy={110-x.realized_up*100} r={Math.min(8,2+Math.sqrt(x.n))} fill="#22d3ee"><title>{pc(x.p_up)} predicted · {pc(x.realized_up)} realized · n={x.n}</title></circle>)}<text x="85" y="127" fill="#5a7fa0" fontSize="8">PREDICTED P(UP)</text></svg>}
-function App(){const [ok,setOk]=useState(sessionStorage.getItem('bql_ok')==='1'),[pin,setPin]=useState(''),[latest,lbad]=useJson('data/latest.json'),[scores,sbad]=useJson('data/scores.json'),[ledger,lebad]=useJson('data/ledger_recent.json'),[news,nbad]=useJson('data/news.json'),[meta]=useJson('config/signals-meta.json'),[hz,setHz]=useState('h24'),[mode,setMode]=useState('live'),[expanded,setExpanded]=useState(false),[live,setLive]=useState({});
-useEffect(()=>{Promise.allSettled([fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true').then(r=>r.json()),fetch('https://api.alternative.me/fng/?limit=2').then(r=>r.json()),fetch('https://www.okx.com/api/v5/public/funding-rate?instId=BTC-USDT-SWAP').then(r=>r.json())]).then(x=>setLive({cg:x[0].value?.bitcoin,fg:x[1].value?.data?.[0],fund:x[2].value?.data?.[0]}))},[]);
-if(!ok)return <div style={{minHeight:'100vh',display:'grid',placeItems:'center'}}><div style={{textAlign:'center'}}><div className="label" style={{marginBottom:25}}>BTC SIGNALS</div><input type="password" value={pin} onChange={e=>setPin(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&pin==='4241'){sessionStorage.setItem('bql_ok','1');setOk(true)}}} style={{background:'#070f1f',border:'1px solid #0f2a42',color:'#facc15',padding:12,textAlign:'center',font:'inherit'}}/><br/><button onClick={()=>{if(pin==='4241'){sessionStorage.setItem('bql_ok','1');setOk(true)}}} style={{marginTop:14,background:'#070f1f',border:'1px solid #1a3a5c',color:'#8aaac8',padding:'9px 22px'}}>ENTER</button></div></div>;
-let stale=latest&&Date.now()-new Date(latest.generated_at)>12*3600000, rows=(ledger||[]).filter(r=>r.mode===mode&&r.composite?.[hz]).slice(-60).reverse(), prev=(ledger||[]).slice(-2,-1)[0], sigs=latest?.signals||{};let wk={h24:'weight_24h',d7:'weight_7d',d30:'weight_30d'}[hz],contributions=Object.entries(sigs).map(([id,s])=>[id,s.score,(s[wk]||0)]).filter(x=>x[2]);
-return <div className="shell"><Nav/><header><div className="label">Continuous, self-scoring direction model</div><h1 style={{margin:'5px 0'}}>BTC SIGNALS</h1><div className="grid g3"><Tile label="Live BTC"><span className={(live.cg?.usd_24h_change||0)>=0?'green':'red'}>${live.cg?.usd?.toLocaleString()||'—'} · {fmt(live.cg?.usd_24h_change,1)}%</span></Tile><Tile label="Fear & Greed">{live.fg?`${live.fg.value} · ${live.fg.value_classification}`:'—'}</Tile><Tile label="OKX Funding">{live.fund?`${(Number(live.fund.fundingRate)*100).toFixed(4)}%`:'—'}</Tile></div><div className="label" style={{marginTop:8}}>Snapshot {latest?.generated_at||'unavailable'}</div>{stale&&<div className="stale">SNAPSHOT STALE — collector may have failed</div>}{lbad&&<div className="stale">Latest snapshot unavailable — other sections remain usable.</div>}</header>
-<section className="section card strip"><span className="label">REGIME</span><span>VOL {latest?.regime?.vol_gate?.state||'—'} ×{latest?.regime?.vol_gate?.multiplier||'—'}</span><span>DVOL {latest?.regime?.dvol_flag||'—'}</span><span>EVENT {latest?.regime?.event_window?`${latest.regime.next_event?.name} ${latest.regime.next_event?.date}`:'CLEAR'}</span><span>HY VETO {latest?.regime?.hy_veto?'ON':'OFF'}</span><span>{latest?.regime?.halving_month||'HALVING —'}</span><span>PL FLOOR {latest?.regime?.pl_floor_watch?'WATCH':'CLEAR'}</span></section>
-<section className="section"><h2>COMPOSITE GAUGES</h2><div className="grid g3">{Object.keys(H).map(h=><Gauge key={h} h={h} c={latest?.composite?.[h]} move={latest?.expected_move?.[h]} m={scores?.composite?.[h]?.live}/>)}</div></section>
-<section className="section card"><h2>WHAT CHANGED</h2>{!latest||!prev?<div className="placeholder">Needs two snapshots</div>:<>{Object.keys(H).map(h=><div key={h}>{H[h]} composite {(latest.composite[h].score-prev.composite[h].score)>=0?'+':''}{fmt(latest.composite[h].score-prev.composite[h].score,1)}</div>)}{Object.entries(sigs).filter(([id,s])=>prev.signals?.[id]?.score!==s.score).map(([id,s])=><div key={id}>{id}: {prev.signals?.[id]?.score??'—'} → {s.score??'—'}</div>)}</>}</section>
-<section className="section"><h2>PILLAR WATERFALL</h2><div className="tabs">{Object.keys(H).map(h=><button className={hz===h?'on':''} onClick={()=>setHz(h)}>{H[h]}</button>)}</div><div className="card">{contributions.map(([id,s,w])=>{let v=s*w;return <div key={id} style={{display:'grid',gridTemplateColumns:'180px 1fr 50px',gap:8,margin:7}}><span>{id}</span><div className="bar"><i style={{width:`${Math.min(50,Math.abs(v)*12)}%`,left:v<0?`${50-Math.min(50,Math.abs(v)*12)}%`:'50%',background:v>=0?'#34d399':'#ef4444'}}/></div><span>{v>0?'+':''}{fmt(v,1)}</span></div>})}</div></section>
-<section className="section"><h2>SIGNAL DRILL-DOWN</h2><div className="card scroll"><table><thead><tr><th>SIGNAL / EVIDENCE</th><th>PILLAR</th><th>READING</th><th>SCORE</th><th>WEIGHTS</th><th>MEASURED RECORD</th><th>STATUS</th></tr></thead><tbody>{Object.entries(sigs).map(([id,s])=>{let m=scores?.signals?.[id]?.[hz]?.pooled,mm=meta?.[id];return <tr key={id}><td><details><summary>{id}</summary><div className="muted">{mm?.definition||'Metadata unavailable'} · evidence: {mm?.evidence_grade||'—'} {mm?.published_not_ours&&'· published, not ours'}<br/>{mm?.source_url&&<a href={mm.source_url} target="_blank" rel="noreferrer">source</a>}</div></details></td><td>{s.pillar}</td><td>{s.reading}</td><td><span className={`badge ${s.score>0?'green':s.score<0?'red':''}`}>{s.score??'—'}</span></td><td>{s.weight_24h}/{s.weight_7d}/{s.weight_30d}</td><td>{m&&m.n>=30?`${pc(m.hit_rate)} (${pc(m.wilson_lo)}–${pc(m.wilson_hi)}) n=${m.n} · Brier ${fmt(m.brier,3)}`:m?.n?`warming up (n=${m.n})`:'warming up'}</td><td><span className="badge">{s.status==='INCUBATING'?'INCUBATING w=0':m?.edge_status||s.status}</span></td></tr>})}</tbody></table>{!latest&&<div className="placeholder">Signal snapshot unavailable</div>}</div></section>
-<section className="section"><h2>EDGE VS COIN FLIP · ROLLING 90 OBSERVATIONS</h2><div className="grid g3">{Object.keys(H).map(h=><div className="card"><div className="label">{H[h]}</div><Spark m={scores?.composite?.[h]?.pooled}/></div>)}</div></section>
-<section className="section card"><h2>CALIBRATION</h2>{(scores?.composite?.h24?.pooled?.n||0)<50?<div className="placeholder">needs ≥50 resolved calls</div>:<div className="grid g3">{Object.keys(H).map(h=><div className="inner" key={h}><div className="label">{H[h]} reliability · 5% buckets</div><Calibration bins={scores?.calibration?.[h]?.pooled}/></div>)}</div>}</section>
-<section className="section"><h2>LEDGER EXPLORER · LAST 60</h2><div className="tabs"><select value={hz} onChange={e=>setHz(e.target.value)}>{Object.keys(H).map(h=><option value={h}>{H[h]}</option>)}</select><select value={mode} onChange={e=>setMode(e.target.value)}><option>live</option><option>backtest</option></select></div><div className="card scroll"><table><thead><tr><th>TIME</th><th>HORIZON</th><th>COMPOSITE</th><th>P(UP)</th><th>TILT</th><th>RETURN</th><th>RESULT</th></tr></thead><tbody>{rows.map(r=>{let o=r.outcomes?.[hz],c=r.composite[hz];return <tr key={`${r.ts}-${hz}`}><td>{r.ts}</td><td>{H[hz]}</td><td>{fmt(c.score,1)}</td><td>{pc(c.p_up)}</td><td>{c.tilt}</td><td>{o?pc(o.ret):'pending'}</td><td><span className={`badge ${o?.hit?'green':o?.hit===false?'red':''}`}>{o?.abstained?'ABSTAIN':o?.hit===true?'HIT':o?.hit===false?'MISS':o?.realized_class==='NO_DECISION'?'NO DECISION':o?.call==='NEUTRAL'?'NO CALL':'PENDING'}</span></td></tr>})}</tbody></table>{lebad&&<div className="placeholder">Ledger unavailable</div>}</div></section>
-<section className="section"><h2>NEWS CONTEXT · NOT A SIGNAL</h2><div className="card news">{news?.headlines?.slice(0,expanded?30:8).map(x=><div style={{padding:'7px 0',borderBottom:'1px solid var(--border)'}}><a href={x.url} target="_blank" rel="noreferrer">{x.title}</a> <span className="muted">· {x.source} · {Math.max(0,Math.round((Date.now()-new Date(x.published_at))/3600000))}h</span></div>)}{nbad&&<div className="placeholder">Headlines unavailable</div>}<button onClick={()=>setExpanded(!expanded)}>{expanded?'SHOW LESS':'SHOW ALL'}</button><div className="strip" style={{marginTop:12}}><a href="https://x.com/DeItaone">@DeItaone on X</a><a href="https://x.com/Tree_of_Alpha">@Tree_of_Alpha</a><a href="https://farside.co.uk/btc/">Farside ETF flows</a><a href="https://www.coinglass.com/LiquidationData">CoinGlass liquidations</a></div></div></section>
-<footer className="section card footer"><h2>METHODOLOGY</h2><p>Composite calls UP/DOWN only at score ±10; signals call at |score|≥1. Gauge labels: BULL/BEAR beyond ±20, LEAN UP/DOWN between ±10 and ±20 (leans are scored as directional calls), FLAT inside ±10. Realized windows decide only beyond ±0.75% / ±2% / ±5%. Event-window ABSTAIN forces a neutral call.</p><p>Directional hit rate uses only windows with both a directional call and directional realized move. Call rate and decided rate expose coverage; Brier uses decided windows only. Backtest and live remain distinct and pooled.</p><p><a href="https://github.com/kaim222/btc-quantile-ladder">Repository</a> · Personal research tool. Not financial advice.</p></footer></div>}
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
-</script><script>function applyMobileStyles(){const old=document.getElementById('m');if(innerWidth>700){if(old)old.remove();return}if(old)return;const s=document.createElement('style');s.id='m';s.textContent='.g3,.g4{grid-template-columns:1fr!important}.shell{padding:10px}.card{padding:10px}th,td{white-space:nowrap}.section{margin-top:14px}';document.head.appendChild(s)}const _observer=new MutationObserver(applyMobileStyles);_observer.observe(document.getElementById('root'),{childList:true,subtree:false});addEventListener('resize',applyMobileStyles);addEventListener('load',applyMobileStyles)</script></body></html>
-
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>BTC Signals</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23020817'/%3E%3Cpath d='M14 48 L14 42 L20 42 L20 22 L14 22 L14 16 L22 16 L22 10 L28 10 L28 16 L32 16 L32 10 L38 10 L38 16.5 Q46 17.5 46 24 Q46 29 42 30.5 Q48 32 48 38.5 Q48 46 38 47.5 L38 54 L32 54 L32 48 L28 48 L28 54 L22 54 L22 48 Z M26 22 L26 28 L34 28 Q38 28 38 25 Q38 22 34 22 Z M26 34 L26 42 L35 42 Q40 42 40 38 Q40 34 35 34 Z' fill='%23facc15'/%3E%3C/svg%3E"
+    />
+    <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap");
+      * {
+        box-sizing: border-box;
+      }
+      :root {
+        --bg: #020817;
+        --card: #070f1f;
+        --inner: #040c1a;
+        --border: #0f2035;
+        --text: #e2e8f0;
+        --muted: #8aaac8;
+        --dim: #6b8fb3;
+        --cyan: #22d3ee;
+        --gold: #facc15;
+        --red: #ef4444;
+        --green: #34d399;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "JetBrains Mono", "Courier New", monospace;
+        font-variant-numeric: tabular-nums;
+      }
+      button,
+      select,
+      input {
+        font: inherit;
+      }
+      .shell {
+        max-width: 1300px;
+        margin: auto;
+        padding: 22px;
+      }
+      .nav {
+        display: flex;
+        gap: 22px;
+        margin-bottom: 22px;
+        border-bottom: 1px solid var(--border);
+      }
+      .nav a {
+        padding: 9px 2px;
+        text-decoration: none;
+        font-size: 11px;
+        letter-spacing: 0.16em;
+        color: var(--muted);
+      }
+      .nav .active {
+        color: var(--gold);
+        border-bottom: 2px solid var(--gold);
+      }
+      a {
+        color: var(--cyan);
+      }
+      .grid {
+        display: grid;
+        gap: 12px;
+      }
+      .g2 {
+        grid-template-columns: 1fr 1fr;
+      }
+      .g3 {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      .g4 {
+        grid-template-columns: repeat(4, 1fr);
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 15px;
+      }
+      .inner {
+        background: var(--inner);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 10px;
+      }
+      .section {
+        margin-top: 20px;
+      }
+      .section h2,
+      details > summary {
+        font-size: 11px;
+        color: var(--muted);
+        letter-spacing: 0.14em;
+        margin: 0 0 10px;
+      }
+      .label {
+        font-size: 10px;
+        color: var(--dim);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      .badge {
+        display: inline-block;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 3px 7px;
+        font-size: 9px;
+        white-space: nowrap;
+      }
+      .gold {
+        color: var(--gold);
+        border-color: #6a5b15;
+      }
+      .cyan {
+        color: var(--cyan);
+        border-color: #15566a;
+      }
+      .green {
+        color: var(--green);
+      }
+      .red {
+        color: var(--red);
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .stale {
+        border: 1px solid var(--gold);
+        padding: 8px;
+        color: var(--gold);
+        font-size: 10px;
+        margin-top: 10px;
+      }
+      .placeholder {
+        color: var(--dim);
+        padding: 18px;
+        text-align: center;
+      }
+      .tabs {
+        display: flex;
+        gap: 6px;
+        margin: 8px 0;
+      }
+      .tabs button,
+      .tabs select,
+      button {
+        background: transparent;
+        color: var(--muted);
+        border: 1px solid var(--border);
+        padding: 8px 12px;
+        min-height: 44px;
+      }
+      .tabs .on {
+        color: var(--gold);
+        border-color: var(--gold);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 10px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 8px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+      th {
+        color: var(--dim);
+      }
+      .scroll {
+        overflow: auto;
+      }
+      details summary {
+        cursor: pointer;
+      }
+      .footer {
+        font-size: 10px;
+        line-height: 1.7;
+        color: var(--muted);
+      }
+      .card,
+      .inner {
+        transition: border-color 0.15s;
+      }
+      .marker-g {
+        transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      @keyframes pulseGold {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.35);
+        }
+        50% {
+          box-shadow: 0 0 0 7px rgba(250, 204, 21, 0);
+        }
+      }
+      .armed {
+        animation: pulseGold 2s ease-in-out infinite;
+        border-color: #6a5b15;
+      }
+      @keyframes pulseLive {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.55;
+        }
+      }
+      .livepulse {
+        animation: pulseLive 1.6s ease-in-out infinite;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .armed,
+        .livepulse {
+          animation: none;
+        }
+        .marker-g {
+          transition: none;
+        }
+      }
+      @media (max-width: 700px) {
+        .g3,
+        .g4,
+        .g2 {
+          grid-template-columns: 1fr !important;
+        }
+        .shell {
+          padding: 10px;
+        }
+        .card {
+          padding: 10px;
+        }
+        th,
+        td {
+          white-space: nowrap;
+        }
+        .section {
+          margin-top: 14px;
+        }
+        .verdict-word {
+          font-size: 26px !important;
+        }
+        .levels-rail {
+          display: none;
+        }
+        .level-chip {
+          flex: 1 1 45% !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="text/babel">
+      /* Color contract: green/red measured outcomes and direction only; gold caution/neutral verdict; cyan data/interaction; capped probability stays muted. */
+      const { useEffect, useRef, useState } = React,
+        H = { h24: "24H", d7: "7D", d30: "30D" },
+        HK = { h24: "weight_24h", d7: "weight_7d", d30: "weight_30d" },
+        CAP = { h24: 0.575, d7: 0.625, d30: 0.65 };
+      const fmt = (x, d = 0) => (x == null ? "—" : Number(x).toFixed(d)),
+        pc = (x) =>
+          x == null ? "—" : `${(100 * x).toFixed(1).replace(".0", "")}%`,
+        money = (x) => (x == null ? "—" : `$${Math.round(x).toLocaleString()}`),
+        signed = (x, d = 1) =>
+          x == null ? "—" : `${x >= 0 ? "+" : "−"}${Math.abs(x).toFixed(d)}`;
+      const SHORT = {
+        funding_extreme: "FUNDING",
+        oi_purge_flush: "OI FLUSH",
+        breakout_20d: "20D BREAK",
+        box_position: "BOX POS",
+        monday_asia: "MON ASIA",
+        autocorr_gate: "AUTOCORR",
+        momentum_7d: "MOM 7D",
+        sth_sopr: "STH SOPR",
+        etf_flow_5d: "ETF FLOW",
+        basis_regime: "BASIS",
+        oil_shock: "OIL",
+        dxy_trend: "DXY",
+        nasdaq_risk: "NDX",
+        hy_spread: "HY OAS",
+        regime_stretch: "MAYER",
+        momentum_28d: "MOM 28D",
+        net_liquidity: "NET LIQ",
+        stablecoin_30d: "STABLES",
+        sth_rp_regime: "STH BASIS",
+        fng_contrarian: "F&G",
+        mvrv_z: "MVRV-Z",
+        hash_ribbons: "HASH",
+        powerlaw_blend: "PWR LAW",
+        dat_stress: "DAT",
+        polymarket_ye: "POLYMKT",
+        weekly_structure: "WKLY MA",
+        halving_clock: "HALVING",
+        global_m2: "M2",
+        gli_phase: "GLI",
+        attention_apathy: "ATTN",
+        cwac_analyst: "CWAC",
+        ism_regime: "ISM",
+        pi_cycle: "PI CYC",
+        liquidity_sweep: "LIQ SWEEP",
+      };
+      const sn = (id) => SHORT[id] || id.toUpperCase().slice(0, 9);
+      function armed(levels, em) {
+        if (
+          !levels?.spot ||
+          levels.high_20d == null ||
+          levels.low_20d == null ||
+          em == null
+        )
+          return null;
+        let up = ((levels.high_20d - levels.spot) / levels.spot) * 100,
+          down = ((levels.spot - levels.low_20d) / levels.spot) * 100,
+          direction = up <= down ? "up" : "down",
+          distance = Math.min(up, down);
+        return distance <= Math.max(0.5 * em, 0.5)
+          ? {
+              armed: true,
+              direction,
+              distance_pct: +distance.toFixed(2),
+              level: direction === "up" ? levels.high_20d : levels.low_20d,
+            }
+          : null;
+      }
+      function verdict(h, latest, scores) {
+        if (!latest)
+          return {
+            state: "NO DATA",
+            reason: "snapshot unavailable — no verdict",
+          };
+        if (latest.verdict?.[h]) return latest.verdict[h];
+        let c = latest.composite?.[h] || {},
+          s = c.score,
+          r = latest.regime || {},
+          e = r.next_event || {};
+        if (c.abstain === true || r.event_window)
+          return {
+            state: "STAND ASIDE",
+            reason: `EVENT WINDOW${e.name ? ` — ${e.name} ${e.date}` : ""}`,
+            score: s,
+          };
+        if (r.hy_veto)
+          return {
+            state: "STAND ASIDE",
+            reason: "HY VETO — credit stress override",
+            score: s,
+          };
+        if (s == null)
+          return {
+            state: "NO DATA",
+            reason: "snapshot unavailable — no verdict",
+          };
+        if (Math.abs(s) >= 20)
+          return { state: s > 0 ? "LONG" : "SHORT", score: s };
+        if (Math.abs(s) >= 10)
+          return { state: s > 0 ? "LEAN LONG" : "LEAN SHORT", score: s };
+        let a =
+          h === "h24" ? armed(latest.levels, latest.expected_move?.h24) : null;
+        return a
+          ? { state: "WATCH TRIGGER", score: s, ...a }
+          : { state: "NO TRADE", score: s };
+      }
+      function drivers(latest, h, n = 3) {
+        return Object.entries(latest?.signals || {})
+          .map(([id, s]) => ({
+            id,
+            v: s.score == null ? null : s.score * s[HK[h]],
+          }))
+          .filter((x) => x.v != null && x.v !== 0)
+          .sort((a, b) => Math.abs(b.v) - Math.abs(a.v))
+          .slice(0, n);
+      }
+      function invalid(v, L) {
+        if (!L) return null;
+        if (/LONG/.test(v.state))
+          return Math.max(...[L.box_floor, L.low_20d].filter((x) => x != null));
+        if (/SHORT/.test(v.state))
+          return Math.min(
+            ...[L.box_ceiling, L.high_20d].filter((x) => x != null),
+          );
+        return null;
+      }
+      function dots(s) {
+        let a = Math.abs(s || 0),
+          n =
+            a < 10 ? 0 : a < 20 ? 1 : a < 35 ? 2 : a < 50 ? 3 : a < 70 ? 4 : 5;
+        return { n, text: "●".repeat(n) + "○".repeat(5 - n) };
+      }
+      function brief(latest, scores) {
+        if (!latest)
+          return "Snapshot unavailable. No verdict. Check collector.";
+        let v = verdict("h24", latest, scores),
+          v7 = verdict("d7", latest, scores),
+          s = latest.composite?.h24?.score,
+          s7 = latest.composite?.d7?.score,
+          L = latest.levels,
+          a = armed(L, latest.expected_move?.h24),
+          parts = [];
+        if (v.state === "WATCH TRIGGER")
+          parts.push(
+            `Flat but armed. Price is ${a.distance_pct.toFixed(1)}% ${a.direction === "up" ? "below the 20d breakout at " + money(L.high_20d) : "above the 20d breakdown at " + money(L.low_20d)} — a daily close through it flips the 24h book ${a.direction === "up" ? "long" : "short"}.`,
+          );
+        else if (v.state === "NO TRADE")
+          parts.push(
+            `Mixed tape. 24h composite ${signed(s)} — inside the no-trade zone (±10). Nothing here justifies a day trade.`,
+          );
+        else if (v.state === "STAND ASIDE")
+          parts.push(
+            `Stand aside: ${v.reason}. The model abstains — so should the book.`,
+          );
+        else if (v.state.startsWith("LEAN"))
+          parts.push(
+            `Lean ${v.state.includes("LONG") ? "long" : "short"} on 24h (composite ${signed(s)}).`,
+          );
+        else
+          parts.push(
+            `${v.state[0] + v.state.slice(1).toLowerCase()} bias, conviction ${dots(s).n}/5 (composite ${signed(s)}).`,
+          );
+        if (v7.state !== v.state) {
+          let iv = invalid(v7, L);
+          parts.push(
+            `Swing (7d): ${v7.state} at ${signed(s7)}${iv ? `, invalid ${v7.state.includes("LONG") ? "<" : ">"} ${money(iv)}` : ""}.`,
+          );
+        }
+        let ds = drivers(latest, "d7");
+        if (ds.length)
+          parts.push(
+            `Pushing hardest: ${ds.map((x) => `${sn(x.id)} ${signed(x.v)}`).join(", ")} (7d weights).`,
+          );
+        let e = (latest.calendar || [])[0];
+        if (e) {
+          let n = Math.ceil(
+            (new Date(e.date + "T00:00:00Z") - new Date(latest.generated_at)) /
+              86400000,
+          );
+          if (n <= 14)
+            parts.push(
+              `${e.name} in ${n} days (${new Date(e.date + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "2-digit", timeZone: "UTC" })}) — abstain window.`,
+            );
+        }
+        let narrated = ["h24"];
+        if (v7.state !== v.state) narrated.push("d7");
+        let records = narrated
+          .map((h) => {
+            let m = scores?.composite?.[h]?.pooled;
+            if (!m) return null;
+            let assessment =
+              m.edge_status === "SIGNIFICANT"
+                ? "measured edge"
+                : m.edge_status === "BELOW_BASELINE"
+                  ? "below baseline"
+                  : "no proven edge";
+            return `${H[h]}: ${pc(m.hit_rate)} vs ${pc(m.baseline_alwaysup)} always-up (n=${m.n}; Wilson CI ${pc(m.wilson_lo)}–${pc(m.wilson_hi)}) — ${assessment}`;
+          })
+          .filter(Boolean);
+        let trackRecord = records.length
+          ? `Track record: ${records.join("; ")}.`
+          : "";
+        let words = parts.join(" ").split(/\s+/);
+        return `${words.slice(0, 65).join(" ")}${trackRecord ? ` ${trackRecord}` : ""}`;
+      }
+      function streakWalk(rows, h) {
+        let xs = (rows || [])
+          .filter((r) => r.mode === "live")
+          .sort((a, b) => b.ts.localeCompare(a.ts))
+          .map((r) => r.outcomes?.[h])
+          .filter((o) => o?.hit != null);
+        if (!xs.length) return null;
+        let hit = xs[0].hit,
+          n = 0;
+        for (let x of xs) {
+          if (x.hit !== hit) break;
+          n++;
+        }
+        return { n, hit };
+      }
+      function useJson(path) {
+        const [v, setV] = useState(null),
+          [bad, setBad] = useState(false);
+        useEffect(() => {
+          fetch(path + "?t=" + Date.now())
+            .then((r) => {
+              if (!r.ok) throw Error(r.status);
+              return r.json();
+            })
+            .then(setV)
+            .catch(() => setBad(true));
+        }, [path]);
+        return [v, bad];
+      }
+      function Nav() {
+        return (
+          <div className="nav">
+            <a href="index.html">LADDER</a>
+            <a className="active" href="signals.html">
+              SIGNALS
+            </a>
+            <a href="eo.html">EO TRACKER</a>
+          </div>
+        );
+      }
+      function Gate({ go }) {
+        const [p, setP] = useState("");
+        let enter = () => {
+          if (p === "4241") {
+            sessionStorage.setItem("bql_ok", "1");
+            go();
+          }
+        };
+        return (
+          <div className="shell">
+            <div
+              className="card"
+              style={{ maxWidth: 420, margin: "18vh auto" }}
+            >
+              <div className="label">BTC SIGNALS</div>
+              <input
+                aria-label="passcode"
+                type="password"
+                value={p}
+                onChange={(e) => setP(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && enter()}
+                style={{
+                  width: "100%",
+                  margin: "15px 0",
+                  padding: 12,
+                  background: "var(--inner)",
+                  color: "var(--text)",
+                  border: "1px solid var(--border)",
+                }}
+              />
+              <button onClick={enter}>ENTER</button>
+            </div>
+          </div>
+        );
+      }
+      function Edge({ m }) {
+        if (!m) return <span className="muted">record unavailable</span>;
+        let warm = m.n < 30,
+          label = warm
+            ? `WARMING UP (n=${m.n})`
+            : m.edge_status === "SIGNIFICANT"
+              ? "EDGE"
+              : m.edge_status === "BELOW_BASELINE"
+                ? "BELOW BASELINE"
+                : m.edge_status === "DECAYING"
+                  ? "DECAYING"
+                  : "NO EDGE";
+        return (
+          <span>
+            {pc(m.hit_rate)} hit (CI {pc(m.wilson_lo)}–{pc(m.wilson_hi)}) n=
+            {m.n} · vs {pc(m.baseline_alwaysup)} always-up ·{" "}
+            <span
+              className={`badge ${m.edge_status === "SIGNIFICANT" && !warm ? "cyan" : "gold"}`}
+            >
+              {label}
+            </span>
+          </span>
+        );
+      }
+      function Conviction({ v, s }) {
+        let directional = /LONG|SHORT/.test(v.state),
+          color = v.state.includes("LONG")
+            ? "var(--green)"
+            : v.state.includes("SHORT")
+              ? "var(--red)"
+              : v.state === "WATCH TRIGGER" || v.state === "STAND ASIDE"
+                ? "var(--gold)"
+                : "var(--muted)",
+          x = Math.max(10, Math.min(310, ((s || 0) + 100) * 1.6)),
+          off = v.state === "NO DATA" || v.state === "STAND ASIDE";
+        return (
+          <svg viewBox="0 0 320 44" style={{ width: "100%" }}>
+            <g opacity={off ? 0.35 : 1}>
+              <rect
+                x="0"
+                y="16"
+                width="128"
+                height="10"
+                rx="3"
+                fill="rgba(239,68,68,.28)"
+              />
+              <rect
+                x="128"
+                y="16"
+                width="16"
+                height="10"
+                fill="rgba(239,68,68,.14)"
+              />
+              <rect x="144" y="16" width="32" height="10" fill="#17263d" />
+              <rect
+                x="176"
+                y="16"
+                width="16"
+                height="10"
+                fill="rgba(52,211,153,.14)"
+              />
+              <rect
+                x="192"
+                y="16"
+                width="128"
+                height="10"
+                rx="3"
+                fill="rgba(52,211,153,.28)"
+              />
+              {[128, 144, 176, 192].map((z, i) => (
+                <g key={z}>
+                  <line x1={z} x2={z} y1="14" y2="28" stroke="var(--border)" />
+                  <text
+                    x={z}
+                    y="40"
+                    textAnchor="middle"
+                    fontSize="8"
+                    fill="var(--dim)"
+                  >
+                    {["−20", "−10", "+10", "+20"][i]}
+                  </text>
+                </g>
+              ))}
+            </g>
+            {off ? (
+              <text
+                x="160"
+                y="24"
+                textAnchor="middle"
+                fontSize="10"
+                fill={v.state === "NO DATA" ? "var(--dim)" : "var(--gold)"}
+              >
+                {v.state === "NO DATA" ? "NO DATA" : "ABSTAIN — EVENT WINDOW"}
+              </text>
+            ) : (
+              <g className="marker-g" transform={`translate(${x} 0)`}>
+                <path d="M0 2 L5 10 L-5 10 Z" fill={color} />
+                <line y1="10" y2="30" stroke={color} strokeWidth="1.5" />
+              </g>
+            )}
+          </svg>
+        );
+      }
+      function VerdictCard({ h, latest, scores, scroll }) {
+        let v = verdict(h, latest, scores),
+          c = latest?.composite?.[h],
+          s = c?.score,
+          m = scores?.composite?.[h]?.pooled,
+          ds = drivers(latest, h),
+          L = latest?.levels,
+          iv = invalid(v, L),
+          color = v.state.includes("LONG")
+            ? "var(--green)"
+            : v.state.includes("SHORT")
+              ? "var(--red)"
+              : v.state === "WATCH TRIGGER" || v.state === "STAND ASIDE"
+                ? "var(--gold)"
+                : "var(--muted)",
+          stateLine = v.reason;
+        if (v.state === "WATCH TRIGGER")
+          stateLine = `ARMED · ${v.direction === "up" ? "break" : "breakdown"} ${money(v.level)} is ${fmt(v.distance_pct, 1)}% away · ${v.direction === "up" ? `Triggers > ${money(L?.high_20d)} · fails back < ${money(L?.box_floor)}` : `Triggers < ${money(L?.low_20d)} · fails back > ${money(L?.box_ceiling)}`}`;
+        else if (/LONG|SHORT/.test(v.state) && iv)
+          stateLine = `Flips at close ${v.state.includes("LONG") ? "<" : ">"} ${money(iv)}`;
+        else if (v.state === "NO TRADE" && L)
+          stateLine = `Wake me: > ${money(L.high_20d)} or < ${money(L.low_20d)}`;
+        let cap = latest?.caps?.[h] ?? CAP[h];
+        return (
+          <div
+            className={`card ${v.state === "WATCH TRIGGER" ? "armed" : ""}`}
+            style={{
+              borderColor: v.state.includes("LONG")
+                ? "#1d4a3a"
+                : v.state.includes("SHORT")
+                  ? "#4a1d1d"
+                  : undefined,
+            }}
+          >
+            <div className="label">
+              {H[h]} ·{" "}
+              {h === "h24"
+                ? "DAY TRADE"
+                : h === "d7"
+                  ? "SWING TRADE"
+                  : "POSITION"}
+            </div>
+            <div
+              className="verdict-word"
+              style={{ fontSize: 32, fontWeight: 700, color }}
+            >
+              {v.state}
+            </div>
+            <Conviction v={v} s={s} />
+            <div style={{ fontSize: 12, color }}>{dots(s).text}</div>
+            <div
+              title={`Probabilities are capped by design (${Object.keys(H).map((hz) => `${H[hz]} ${pc(latest?.caps?.[hz] ?? CAP[hz])}`).join(" / ")}). A near-50 read is a real reading: the tape is mixed.`}
+              style={{ fontSize: 10, color: "var(--muted)", margin: "5px 0" }}
+            >
+              score {signed(s)} · p(up) {pc(c?.p_up)} (capped {pc(cap)} by
+              design)
+            </div>
+            <div>
+              {ds.map((x) => (
+                <button
+                  key={x.id}
+                  className={`badge ${x.v > 0 ? "green" : "red"}`}
+                  style={{ fontSize: 12, margin: "2px" }}
+                  onClick={scroll}
+                >
+                  {sn(x.id)} {signed(x.v)}
+                </button>
+              ))}
+            </div>
+            <div
+              style={{ fontSize: 12, color: "var(--gold)", margin: "8px 0" }}
+            >
+              {stateLine || "snapshot unavailable — no verdict"}
+            </div>
+            {/LONG|SHORT/.test(v.state) &&
+              latest?.regime?.vol_gate?.state !== "NORMAL" && (
+                <div className="gold" style={{ fontSize: 12 }}>
+                  VOL {latest.regime.vol_gate.state} — halve size
+                </div>
+              )}
+            <hr style={{ borderColor: "var(--border)" }} />
+            <div
+              style={
+                m?.edge_status === "SIGNIFICANT"
+                  ? { fontSize: 10, color: "var(--muted)" }
+                  : { fontSize: 12, color: "var(--text)" }
+              }
+            >
+              <Edge m={m} />
+            </div>
+          </div>
+        );
+      }
+      function Spark({ m }) {
+        let r = m?.rolling90 || [];
+        if (!r.length)
+          return (
+            <div className="placeholder">No resolved observations yet</div>
+          );
+        let pts = r
+            .map(
+              (x, i) =>
+                `${(i / (r.length - 1 || 1)) * 300},${100 - ((x.hit_rate - 0.3) / 0.4) * 100}`,
+            )
+            .join(" "),
+          base = m.baseline_alwaysup;
+        return (
+          <svg viewBox="0 0 300 110" style={{ width: "100%" }}>
+            <rect x="0" y="37" width="300" height="26" fill="#0f203566" />
+            <line
+              x1="0"
+              y1="50"
+              x2="300"
+              y2="50"
+              stroke="white"
+              strokeDasharray="4 4"
+            />
+            <line
+              x1="0"
+              y1={100 - ((base - 0.3) / 0.4) * 100}
+              x2="300"
+              y2={100 - ((base - 0.3) / 0.4) * 100}
+              stroke="var(--gold)"
+              strokeDasharray="4 4"
+            />
+            <text
+              x="3"
+              y={95 - ((base - 0.3) / 0.4) * 100}
+              fontSize="8"
+              fill="var(--gold)"
+            >
+              ALWAYS-UP {pc(base)}
+            </text>
+            <polyline
+              points={pts}
+              fill="none"
+              stroke="var(--cyan)"
+              strokeWidth="2"
+            />
+          </svg>
+        );
+      }
+      function Calibration({ bins }) {
+        return (
+          <svg viewBox="0 0 220 130" style={{ width: "100%" }}>
+            <line x1="25" y1="110" x2="205" y2="110" stroke="var(--dim)" />
+            <line x1="25" y1="110" x2="25" y2="10" stroke="var(--dim)" />
+            <line
+              x1="25"
+              y1="110"
+              x2="205"
+              y2="10"
+              stroke="var(--dim)"
+              strokeDasharray="4 4"
+            />
+            {(bins || []).map((x) => (
+              <circle
+                key={x.p_up}
+                cx={25 + x.p_up * 180}
+                cy={110 - x.realized_up * 100}
+                r={Math.min(8, 2 + Math.sqrt(x.n))}
+                fill="var(--cyan)"
+              >
+                <title>
+                  {pc(x.p_up)} predicted · {pc(x.realized_up)} realized · n=
+                  {x.n}
+                </title>
+              </circle>
+            ))}
+          </svg>
+        );
+      }
+      function Discipline() {
+        let today = new Date().toLocaleDateString("en-CA"),
+          raw;
+        try {
+          raw = JSON.parse(localStorage.getItem("bql_discipline"));
+        } catch {}
+        let init = raw || {
+          date: today,
+          checks: [false, false, false],
+          streak: 0,
+        };
+        if (init.date !== today)
+          init = {
+            date: today,
+            checks: [false, false, false],
+            streak: init.checks?.every(Boolean) ? (init.streak || 0) + 1 : 0,
+          };
+        const [x, setX] = useState(init);
+        useEffect(
+          () => localStorage.setItem("bql_discipline", JSON.stringify(x)),
+          [x],
+        );
+        return (
+          <div className="inner">
+            <div className="label">OPERATOR DISCIPLINE · TODAY</div>
+            {[
+              "checked invalidation before entry",
+              "sized within plan (≤1R)",
+              "logged the trade",
+            ].map((t, i) => (
+              <label
+                key={t}
+                style={{
+                  display: "block",
+                  fontSize: 12,
+                  minHeight: 44,
+                  paddingTop: 10,
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={x.checks[i]}
+                  onChange={() =>
+                    setX({
+                      ...x,
+                      checks: x.checks.map((v, j) => (j === i ? !v : v)),
+                    })
+                  }
+                />{" "}
+                {t}
+              </label>
+            ))}
+            <div className="gold" style={{ fontSize: 20, fontWeight: 700 }}>
+              {x.streak}-DAY STREAK
+            </div>
+            <div className="label">
+              Self-reported. The model grades itself above; this grades you.
+            </div>
+          </div>
+        );
+      }
+      function App() {
+        const [ok, setOk] = useState(sessionStorage.getItem("bql_ok") === "1"),
+          [latest, lbad] = useJson("data/latest.json"),
+          [scores, sbad] = useJson("data/scores.json"),
+          [ledger, lebad] = useJson("data/ledger_recent.json"),
+          [news, nbad] = useJson("data/news.json"),
+          [meta] = useJson("config/signals-meta.json"),
+          [weights] = useJson("config/weights.json"),
+          [hz, setHz] = useState("h24"),
+          [mode, setMode] = useState("live"),
+          [expanded, setExpanded] = useState(false),
+          [allDrivers, setAllDrivers] = useState(false),
+          [callHz, setCallHz] = useState("h24"),
+          [live, setLive] = useState({}),
+          drill = useRef();
+        useEffect(() => {
+          Promise.allSettled([
+            fetch(
+              "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true",
+            ).then((r) => r.json()),
+            fetch("https://api.alternative.me/fng/?limit=1").then((r) =>
+              r.json(),
+            ),
+            fetch(
+              "https://www.okx.com/api/v5/public/funding-rate?instId=BTC-USDT-SWAP",
+            ).then((r) => r.json()),
+          ]).then((x) =>
+            setLive({
+              cg: x[0].value?.bitcoin,
+              fg: x[1].value?.data?.[0],
+              fund: x[2].value?.data?.[0],
+            }),
+          );
+        }, []);
+        if (!ok) return <Gate go={() => setOk(true)} />;
+        let age = latest
+            ? Math.max(
+                0,
+                (Date.now() - new Date(latest.generated_at)) / 3600000,
+              )
+            : null,
+          sigs = latest?.signals || {},
+          rows = (ledger || [])
+            .filter((r) => r.mode === mode)
+            .slice(-60)
+            .reverse(),
+          ds = drivers(latest, hz, 99),
+          v24 = verdict("h24", latest, scores),
+          L = latest?.levels,
+          events =
+            latest?.calendar || [latest?.regime?.next_event].filter(Boolean),
+          spot = L?.spot || latest?.btc?.price,
+          liveRows = (ledger || []).filter((r) => r.mode === "live"),
+          resolved = liveRows
+            .filter((r) => r.outcomes?.[callHz]?.hit != null)
+            .sort((a, b) => b.ts.localeCompare(a.ts)),
+          streak = streakWalk(ledger, callHz);
+        let significant = Object.keys(H).filter(
+          (h) => scores?.composite?.[h]?.pooled?.edge_status === "SIGNIFICANT",
+        );
+        let openDrill = () => {
+          drill.current.open = true;
+          setTimeout(
+            () => drill.current.scrollIntoView({ behavior: "smooth" }),
+            0,
+          );
+        };
+        return (
+          <div className="shell">
+            <Nav />
+            <div className="label">
+              BTC SIGNALS · SELF-SCORING DIRECTION MODEL
+            </div>
+            <div
+              className="card"
+              style={{
+                display: "flex",
+                gap: 14,
+                flexWrap: "wrap",
+                alignItems: "baseline",
+              }}
+            >
+              <b style={{ fontSize: 22 }}>
+                {money(live.cg?.usd || latest?.btc?.price)}
+              </b>
+              {live.cg ? (
+                <span
+                  className={
+                    (live.cg.usd_24h_change || 0) >= 0 ? "green" : "red"
+                  }
+                >
+                  {signed(live.cg.usd_24h_change)}%
+                </span>
+              ) : (
+                <span className="muted">snap</span>
+              )}
+              <span className="badge">
+                F&G {live.fg?.value || "—"}{" "}
+                {live.fg?.value_classification || ""}
+              </span>
+              <span className="badge">
+                FUNDING{" "}
+                {live.fund
+                  ? `${(Number(live.fund.fundingRate) * 100).toFixed(4)}%`
+                  : "—"}
+              </span>
+              <span
+                className={`badge ${latest?.regime?.vol_gate?.state !== "NORMAL" ? "gold" : ""}`}
+              >
+                VOL {latest?.regime?.vol_gate?.state || "—"}
+              </span>
+              <span
+                className={`badge ${latest?.regime?.dvol_flag !== "NORMAL" ? "gold" : ""}`}
+              >
+                DVOL {latest?.regime?.dvol_flag || "—"}
+              </span>
+              {latest?.regime?.hy_veto && (
+                <span className="badge gold">HY VETO ON</span>
+              )}
+              {latest?.regime?.pl_floor_watch && (
+                <span className="badge gold">PL FLOOR WATCH</span>
+              )}
+              <span className="label" style={{ marginLeft: "auto" }}>
+                SNAP {age == null ? "—" : fmt(age, 1) + "h AGO"}
+              </span>
+            </div>
+            {age > 12 && (
+              <div className="stale">
+                SNAPSHOT STALE — collector may have failed. Verdicts below are{" "}
+                {fmt(age, 1)}h old.
+              </div>
+            )}
+            {lbad && (
+              <div className="stale">
+                Latest snapshot unavailable — other sections remain usable.
+              </div>
+            )}
+            <section className="section">
+              <div className="grid g3">
+                {Object.keys(H).map((h) => (
+                  <VerdictCard
+                    key={h}
+                    h={h}
+                    latest={latest}
+                    scores={scores}
+                    scroll={() =>
+                      document
+                        .getElementById("drivers")
+                        .scrollIntoView({ behavior: "smooth" })
+                    }
+                  />
+                ))}
+              </div>
+              {scores && (
+                <div className="label" style={{ marginTop: 7 }}>
+                  {significant.length
+                    ? `measured edge on ${significant.map((h) => H[h]).join(", ")} — see model scoreboard for CIs.`
+                    : "this model has not yet beaten always-up on any horizon — verdicts are structure, not proven edge. size accordingly."}
+                </div>
+              )}
+            </section>
+            <section className="section card">
+              <h2>TODAY IN 10 SECONDS</h2>
+              <div
+                style={{
+                  fontSize: 14,
+                  lineHeight: 1.65,
+                  color: latest ? "var(--text)" : "var(--gold)",
+                }}
+              >
+                {brief(latest, scores)}
+              </div>
+            </section>
+            <section className="section card">
+              <h2>KEY LEVELS</h2>
+              {!L ? (
+                <div className="muted" style={{ fontSize: 10 }}>
+                  Levels pending collector update — 20d box from readings:{" "}
+                  {sigs.breakout_20d?.reading || "—"}
+                </div>
+              ) : (
+                <>
+                  <svg
+                    viewBox="0 0 1000 80"
+                    className="levels-rail"
+                    style={{ width: "100%" }}
+                  >
+                    {(() => {
+                      let names = {
+                          pl_floor: "PL FLOOR",
+                          low_20d: "20D LOW",
+                          box_floor: "BOX FLOOR",
+                          prior_day_low: "PRIOR LOW",
+                          dma_50: "50DMA",
+                          spot: "SPOT",
+                          prior_day_high: "PRIOR HIGH",
+                          box_ceiling: "BOX CEIL",
+                          high_20d: "20D HIGH",
+                          dma_200: "200DMA",
+                          sth_cost_basis: "STH COST",
+                        },
+                        raw = Object.entries(names)
+                          .map(([k, n]) => ({ keys: [k], names: [n], v: L[k] }))
+                          .filter(
+                            (x) => x.v && Math.abs(x.v / L.spot - 1) <= 0.15,
+                          )
+                          .sort((a, b) => a.v - b.v),
+                        a = [];
+                      for (let z of raw) {
+                        let group = a[a.length - 1];
+                        if (
+                          group &&
+                          Math.abs(z.v - group.v) / group.v <= 0.0015
+                        ) {
+                          group.keys.push(...z.keys);
+                          group.names.push(...z.names);
+                          if (z.keys.includes("spot")) group.v = z.v;
+                        } else a.push(z);
+                      }
+                      let lo = Math.min(...a.map((x) => x.v)) * 0.998,
+                        hi = Math.max(...a.map((x) => x.v)) * 1.002,
+                        x = (v) => ((v - lo) / (hi - lo)) * 960 + 20;
+                      let lastRight = [-Infinity, -Infinity];
+                      for (let z of a) {
+                        z.px = x(z.v);
+                        z.label = `${z.names.join(" = ")} ${money(z.v)}`;
+                        let halfWidth = z.label.length * 3,
+                          row = z.keys.includes("spot")
+                            ? 0
+                            : z.px - halfWidth > lastRight[0]
+                              ? 0
+                              : 1;
+                        z.row = row;
+                        lastRight[row] = z.px + halfWidth;
+                      }
+                      return (
+                        <>
+                          <line
+                            x1="20"
+                            x2="980"
+                            y1="55"
+                            y2="55"
+                            stroke="var(--border)"
+                            strokeWidth="2"
+                          />
+                          {a.map((z) => {
+                            let armedOne =
+                                v24.state === "WATCH TRIGGER" &&
+                                z.keys.some((k) => L[k] === v24.level),
+                              spotOne = z.keys.includes("spot");
+                            return (
+                              <g key={z.keys.join("|")}>
+                                <line
+                                  x1={z.px}
+                                  x2={z.px}
+                                  y1={z.row ? 36 : 18}
+                                  y2="65"
+                                  stroke={
+                                    armedOne ? "var(--gold)" : "var(--dim)"
+                                  }
+                                />
+                                {armedOne && (
+                                  <circle
+                                    className="livepulse"
+                                    cx={z.px}
+                                    cy="55"
+                                    r="8"
+                                    fill="none"
+                                    stroke="var(--gold)"
+                                  />
+                                )}
+                                <text
+                                  x={z.px}
+                                  y={z.row ? 34 : 16}
+                                  textAnchor="middle"
+                                  fontSize={spotOne ? 12 : 10}
+                                  fill={
+                                    spotOne || armedOne
+                                      ? "var(--gold)"
+                                      : "var(--muted)"
+                                  }
+                                >
+                                  {z.label}
+                                </text>
+                                {spotOne && (
+                                  <circle
+                                    cx={z.px}
+                                    cy="55"
+                                    r="5"
+                                    fill="var(--gold)"
+                                  />
+                                )}
+                              </g>
+                            );
+                          })}
+                        </>
+                      );
+                    })()}
+                  </svg>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {Object.entries({
+                      pl_floor: "PL FLOOR",
+                      low_20d: "20D LOW",
+                      box_floor: "BOX FLOOR",
+                      prior_day_low: "PRIOR LOW",
+                      dma_50: "50DMA",
+                      prior_day_high: "PRIOR HIGH",
+                      box_ceiling: "BOX CEIL",
+                      high_20d: "20D HIGH",
+                      dma_200: "200DMA",
+                      sth_cost_basis: "STH COST",
+                      pl_center: "PL CENTER",
+                    })
+                      .map(([k, n]) => ({ k, n, v: L[k] }))
+                      .filter((x) => x.v != null)
+                      .sort((a, b) => a.v - b.v)
+                      .map((x) => (
+                        <div
+                          key={x.k}
+                          className={`inner level-chip ${v24.state === "WATCH TRIGGER" && x.v === v24.level ? "armed" : ""}`}
+                          style={{ flex: "1 1 14%" }}
+                        >
+                          <div className="label">{x.n}</div>
+                          <div style={{ fontSize: 20, fontWeight: 700 }}>
+                            {money(x.v)}
+                          </div>
+                          <div className="muted" style={{ fontSize: 10 }}>
+                            {signed(((x.v - L.spot) / L.spot) * 100)}%
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </>
+              )}
+            </section>
+            <section className="section grid g3">
+              <div className="card">
+                <div className="label">NEXT EVENT</div>
+                {events.length ? (
+                  events.map((e, i) => {
+                    let d = Math.ceil(
+                      (new Date(e.date + "T00:00:00Z") -
+                        new Date(latest.generated_at)) /
+                        86400000,
+                    );
+                    return i === 0 ? (
+                      <div key={e.date}>
+                        <div className="gold" style={{ fontSize: 20 }}>
+                          {e.name}
+                        </div>
+                        <div style={{ fontSize: 20 }}>T−{d}d</div>
+                        <div className="label">
+                          {new Date(e.date + "T00:00Z").toLocaleDateString(
+                            "en-US",
+                            { month: "short", day: "numeric", timeZone: "UTC" },
+                          )}{" "}
+                          · model abstains inside event window
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        key={e.date}
+                        className="label"
+                        style={{ marginTop: 8 }}
+                      >
+                        {e.name} · {e.date} · T−{d}d
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="muted">No scheduled events tracked.</div>
+                )}
+              </div>
+              <div className="card">
+                <div className="label">EXPECTED MOVE (TYPICAL)</div>
+                {Object.keys(H).map((h) => {
+                  let em = latest?.expected_move?.[h];
+                  return (
+                    <div key={h} style={{ fontSize: 12, marginTop: 8 }}>
+                      {H[h]} ±{fmt(em, 1)}% →{" "}
+                      {spot && em
+                        ? `${money(spot * (1 - em / 100))} – ${money(spot * (1 + em / 100))}`
+                        : "—"}
+                    </div>
+                  );
+                })}
+                <hr style={{ borderColor: "var(--border)" }} />
+                <div className="muted" style={{ fontSize: 12 }}>
+                  {Object.keys(H).some((h) =>
+                    /LONG|SHORT/.test(verdict(h, latest, scores).state),
+                  )
+                    ? "Stops bind to the invalidation shown on the highest-conviction directional call."
+                    : "No live directional call — bands are context only."}
+                </div>
+              </div>
+              <div className="card">
+                <div className="tabs">
+                  {Object.keys(H).map((h) => (
+                    <button
+                      key={h}
+                      className={callHz === h ? "on" : ""}
+                      onClick={() => setCallHz(h)}
+                    >
+                      {H[h]}
+                    </button>
+                  ))}
+                </div>
+                {!ledger ? (
+                  <div className="placeholder">Ledger unavailable.</div>
+                ) : resolved.length ? (
+                  <>
+                    <div className="label">LAST RESOLVED CALL</div>
+                    <div style={{ fontSize: 12 }}>
+                      {resolved[0].ts.slice(0, 10)} ·{" "}
+                      {resolved[0].composite?.[callHz]?.tilt} @{" "}
+                      {fmt(resolved[0].composite?.[callHz]?.score, 1)} →{" "}
+                      <span
+                        className={
+                          resolved[0].outcomes[callHz].hit ? "green" : "red"
+                        }
+                      >
+                        {resolved[0].outcomes[callHz].hit ? "HIT" : "MISS"}
+                      </span>{" "}
+                      ({pc(resolved[0].outcomes[callHz].ret)})
+                    </div>
+                    <div
+                      className={streak?.hit ? "green" : "red"}
+                      style={{ fontSize: 20, marginTop: 10 }}
+                    >
+                      {streak?.n} {streak?.hit ? "HIT" : "MISS"} STREAK
+                    </div>
+                    <div className="label">live calls only</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="gold" style={{ fontSize: 20 }}>
+                      LIVE LEDGER WARMING UP
+                    </div>
+                    <div className="label">
+                      {liveRows.length} live calls logged · first resolutions
+                      pending
+                    </div>
+                  </>
+                )}
+              </div>
+            </section>
+            <section className="section">
+              <h2>
+                MODEL SCOREBOARD · CAN THIS THING ACTUALLY CALL DIRECTION?
+              </h2>
+              <div className="card">
+                {!scores ? (
+                  <div className="placeholder">Scoreboard unavailable</div>
+                ) : (
+                  <>
+                    <div className="grid g3">
+                      {Object.keys(H).map((h) => {
+                        let m = scores.composite?.[h]?.pooled;
+                        return (
+                          <div
+                            className="inner"
+                            key={h}
+                            title={`always-up would have hit ${pc(m?.baseline_alwaysup)} of these windows — beat that or it's not edge`}
+                          >
+                            <div className="label">{H[h]}</div>
+                            <div
+                              style={{
+                                fontSize: 20,
+                                color:
+                                  m?.edge_status === "SIGNIFICANT"
+                                    ? "var(--green)"
+                                    : "var(--text)",
+                              }}
+                            >
+                              {pc(m?.hit_rate)}
+                            </div>
+                            <div className="label">
+                              CI {pc(m?.wilson_lo)}–{pc(m?.wilson_hi)} · n=
+                              {m?.n} · Brier {fmt(m?.brier, 3)} · called{" "}
+                              {pc(m?.call_rate)}
+                            </div>
+                            <Edge m={m} />
+                            <Spark m={m} />
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="grid g3" style={{ marginTop: 12 }}>
+                      {Object.keys(H).map((h) => {
+                        let live = scores.composite?.[h]?.live,
+                          pooled = scores.composite?.[h]?.pooled,
+                          n = live?.n || 0;
+                        return (
+                          <div className="inner" key={h}>
+                            <div className="label">
+                              LIVE VERIFICATION · {n}/30 resolved calls
+                            </div>
+                            <div
+                              style={{
+                                height: 8,
+                                background: "var(--card)",
+                                margin: "8px 0",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  height: "100%",
+                                  width: `${Math.min(100, (n / 30) * 100)}%`,
+                                  background: "var(--cyan)",
+                                }}
+                              />
+                            </div>
+                            <div className="muted" style={{ fontSize: 10 }}>
+                              Backtest says {pooled?.edge_status || "—"}. Live
+                              grade unlocks at n=30 — no grade before that.{" "}
+                              <span className="badge gold">WARMING UP</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <Discipline />
+                  </>
+                )}
+              </div>
+            </section>
+            <section id="drivers" className="section">
+              <h2>DRIVERS</h2>
+              <div className="tabs">
+                {Object.keys(H).map((h) => (
+                  <button
+                    key={h}
+                    className={hz === h ? "on" : ""}
+                    onClick={() => setHz(h)}
+                  >
+                    {H[h]}
+                  </button>
+                ))}
+              </div>
+              <div className="card">
+                {!latest ? (
+                  <div className="placeholder">Driver snapshot unavailable</div>
+                ) : (
+                  ds.slice(0, allDrivers ? 99 : 8).map((x) => {
+                    let max = Math.max(
+                      ...ds
+                        .slice(0, allDrivers ? 99 : 8)
+                        .map((y) => Math.abs(y.v)),
+                      1,
+                    );
+                    return (
+                      <div
+                        key={x.id}
+                        onClick={openDrill}
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "100px 1fr 45px",
+                          gap: 8,
+                          margin: "8px 0",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <span title={x.id} className="label">
+                          {sn(x.id)}
+                        </span>
+                        <div style={{ height: 12, background: "var(--inner)" }}>
+                          <div
+                            style={{
+                              height: "100%",
+                              width: `${(Math.abs(x.v) / max) * 100}%`,
+                              background:
+                                x.v > 0 ? "var(--green)" : "var(--red)",
+                            }}
+                          />
+                        </div>
+                        <span className={x.v > 0 ? "green" : "red"}>
+                          {signed(x.v)}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
+                {ds.length > 8 && (
+                  <button onClick={() => setAllDrivers(!allDrivers)}>
+                    {allDrivers ? "SHOW TOP 8" : `SHOW ALL ${ds.length}`}
+                  </button>
+                )}
+              </div>
+            </section>
+            <details ref={drill} className="section card">
+              <summary>SIGNAL DRILL-DOWN</summary>
+              <div className="scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>SIGNAL / EVIDENCE</th>
+                      <th>PILLAR</th>
+                      <th>READING</th>
+                      <th>SCORE</th>
+                      <th>WEIGHTS</th>
+                      <th>MEASURED RECORD</th>
+                      <th>STATUS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(sigs).map(([id, s]) => {
+                      let m = scores?.signals?.[id]?.[hz]?.pooled,
+                        mm = meta?.[id],
+                        ver = weights?.rules?.[id]?.version;
+                      return (
+                        <tr key={id}>
+                          <td>
+                            <details>
+                              <summary>{id}</summary>
+                              <div className="muted">
+                                definition {ver || "—"} ·{" "}
+                                {mm?.definition || "Metadata unavailable"} ·
+                                evidence: {mm?.evidence_grade || "—"}
+                                <br />
+                                Definition changes freeze the prior ledger
+                                series — no silent retunes.
+                              </div>
+                            </details>
+                          </td>
+                          <td>{s.pillar}</td>
+                          <td>{s.reading}</td>
+                          <td>
+                            <span
+                              className={`badge ${s.score > 0 ? "green" : s.score < 0 ? "red" : ""}`}
+                            >
+                              {s.score ?? "—"}
+                            </span>
+                          </td>
+                          <td>
+                            {s.weight_24h}/{s.weight_7d}/{s.weight_30d}
+                          </td>
+                          <td>
+                            {(m?.n || 0) < 30 ? (
+                              <span className="gold">
+                                WARMING UP (n={m?.n || 0})
+                              </span>
+                            ) : (
+                              `${pc(m.hit_rate)} (CI ${pc(m.wilson_lo)}–${pc(m.wilson_hi)}) n=${m.n} · Brier ${fmt(m.brier, 3)}`
+                            )}
+                          </td>
+                          <td>
+                            {(m?.n || 0) >= 30 && (
+                              <>
+                                <span className="badge">
+                                  {s.status === "INCUBATING"
+                                    ? "INCUBATING w=0"
+                                    : m.edge_status || s.status}
+                                </span>
+                                {m.edge_status === "DECAYING" && (
+                                  <span className="badge gold">
+                                    RETIREMENT WATCH
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {!latest && (
+                  <div className="placeholder">Signal snapshot unavailable</div>
+                )}
+              </div>
+            </details>
+            <details className="section card">
+              <summary>
+                LEDGER EXPLORER · LAST 60 ·{" "}
+                {rows.filter((r) => r.outcomes?.[hz]?.hit).length}/
+                {rows.filter((r) => r.outcomes?.[hz]?.hit != null).length} hit
+              </summary>
+              <div className="tabs">
+                <select value={hz} onChange={(e) => setHz(e.target.value)}>
+                  {Object.keys(H).map((h) => (
+                    <option value={h}>{H[h]}</option>
+                  ))}
+                </select>
+                <select value={mode} onChange={(e) => setMode(e.target.value)}>
+                  <option>live</option>
+                  <option>backtest</option>
+                </select>
+              </div>
+              <div className="scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>TIME</th>
+                      <th>HORIZON</th>
+                      <th>COMPOSITE</th>
+                      <th>CAPPED P(UP)</th>
+                      <th>TILT</th>
+                      <th>RETURN</th>
+                      <th>RESULT</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((r) => {
+                      let o = r.outcomes?.[hz],
+                        c = r.composite?.[hz] || {};
+                      return (
+                        <tr key={r.ts}>
+                          <td>{r.ts}</td>
+                          <td>{H[hz]}</td>
+                          <td>{fmt(c.score, 1)}</td>
+                          <td title="probability cap by design">
+                            {pc(c.p_up)} / {pc(latest?.caps?.[hz] ?? CAP[hz])}{" "}
+                            by design
+                          </td>
+                          <td>{c.tilt}</td>
+                          <td>{o ? pc(o.ret) : "pending"}</td>
+                          <td>
+                            <span
+                              className={`badge ${o?.hit ? "green" : o?.hit === false ? "red" : ""}`}
+                            >
+                              {o?.abstained
+                                ? "ABSTAIN"
+                                : o?.hit === true
+                                  ? "HIT"
+                                  : o?.hit === false
+                                    ? "MISS"
+                                    : "PENDING"}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {lebad && <div className="placeholder">Ledger unavailable</div>}
+              </div>
+            </details>
+            <details className="section card">
+              <summary>CALIBRATION</summary>
+              {(scores?.composite?.h24?.pooled?.n || 0) < 50 ? (
+                <div className="placeholder">needs ≥50 resolved calls</div>
+              ) : (
+                <div className="grid g3">
+                  {Object.keys(H).map((h) => (
+                    <div className="inner">
+                      <div className="label">
+                        {H[h]} reliability · 5% buckets
+                      </div>
+                      <Calibration bins={scores?.calibration?.[h]?.pooled} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </details>
+            <details className="section card">
+              <summary>
+                SIGNAL GRAVEYARD ({weights?.retired?.length || 0})
+              </summary>
+              {(weights?.retired || []).map((x) => (
+                <div
+                  className="inner"
+                  key={x.id}
+                  style={{ opacity: 0.65, borderStyle: "dashed", marginTop: 8 }}
+                >
+                  <div className="label">
+                    † {x.id} · retired {x.retired}
+                  </div>
+                  <div className="muted" style={{ fontSize: 10 }}>
+                    {x.reason}
+                  </div>
+                </div>
+              ))}
+            </details>
+            <section className="section">
+              <h2>NEWS CONTEXT · NOT A SIGNAL</h2>
+              <div className="card">
+                {news?.headlines?.slice(0, expanded ? 30 : 5).map((x) => (
+                  <div
+                    key={x.url}
+                    style={{
+                      padding: "7px 0",
+                      borderBottom: "1px solid var(--border)",
+                    }}
+                  >
+                    <a href={x.url} target="_blank" rel="noreferrer">
+                      {x.title}
+                    </a>{" "}
+                    <span className="muted">· {x.source}</span>
+                  </div>
+                ))}
+                {nbad && (
+                  <div className="placeholder">Headlines unavailable</div>
+                )}
+                <button onClick={() => setExpanded(!expanded)}>
+                  {expanded ? "SHOW LESS" : "SHOW ALL"}
+                </button>
+              </div>
+            </section>
+            <details className="section card footer">
+              <summary>THE CONTRACT</summary>
+              <p>
+                Aggregation: each composite is a weighted sum normalized over
+                available live signals, then volatility-gated. Probability caps
+                are {Object.keys(H).map((h) => `${H[h]} ${pc(latest?.caps?.[h] ?? CAP[h])}`).join(" / ")} because small historical
+                edges do not justify false certainty. Calls require ±10; verdict
+                deadbands and realized-window deadbands are separate.
+              </p>
+              <p>
+                Decided-window scoring counts a directional hit only when both
+                the call and realized move clear their thresholds. Every rate
+                carries Wilson 95% CI and n. Always-up climatology is the
+                baseline to beat, not an assumed 50% coin flip.
+              </p>
+              <p>
+                Admission: Incubating weight-0 → Live only through the Wilson
+                gate at n≥385 → Graveyard when evidence dies. Definition changes
+                freeze the prior ledger series — no silent retunes.
+              </p>
+              <p>
+                Verdict zones: STAND ASIDE (abstain/event/HY veto) &gt;
+                LONG/SHORT (|score|≥20) &gt; LEAN (10–20) &gt; WATCH TRIGGER
+                (&lt;10 but near a 20d breakout) &gt; NO TRADE (&lt;10). The cap
+                is an honesty device, not a bug.
+              </p>
+              <p>
+                CHANGELOG · v1 2026-07-18 ship · v2 2026-07-19 verdict engine
+              </p>
+              <p>Personal research tool. Not financial advice.</p>
+            </details>
+          </div>
+        );
+      }
+      ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    </script>
+  </body>
+</html>

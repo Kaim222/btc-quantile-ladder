@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-07-19T02:01:54Z",
+  "generated_at": "2026-07-19T07:47:54Z",
   "btc": {
-    "price": 64728,
-    "change_24h": 1.2645927418769183,
+    "price": 64712,
+    "change_24h": 1.1502082392067552,
     "source": "CoinGecko"
   },
   "sources": {
@@ -102,9 +102,9 @@
       "stale": false
     },
     "bitcoin_data_sth_sopr": {
-      "ok": true,
-      "status": 200,
-      "stale": false
+      "ok": false,
+      "error": "HTTPError: 429 Client Error:  for url: https://bitcoin-data.com/v1/sth-sopr",
+      "stale": true
     },
     "bitcoin_data_sth_rp": {
       "ok": false,
@@ -205,9 +205,9 @@
       "status": "LIVE"
     },
     "sth_sopr": {
-      "raw": 0.998,
+      "raw": null,
       "score": null,
-      "reading": "SOPR 0.998",
+      "reading": "unavailable",
       "pillar": "On-chain",
       "weight_24h": 0,
       "weight_7d": 2,
@@ -227,7 +227,7 @@
     "basis_regime": {
       "raw": null,
       "score": 0,
-      "reading": "annualized 4.1%",
+      "reading": "annualized 4.2%",
       "pillar": "Derivatives",
       "weight_24h": 0,
       "weight_7d": 1.5,
@@ -287,7 +287,7 @@
     "momentum_28d": {
       "raw": null,
       "score": 0,
-      "reading": "28d +2.4%",
+      "reading": "28d +2.3%",
       "pillar": "Technical",
       "weight_24h": 0,
       "weight_7d": 0,
@@ -357,7 +357,7 @@
     "powerlaw_blend": {
       "raw": null,
       "score": 2,
-      "reading": "center $133,466; floor $60,963",
+      "reading": "center $133,495; floor $60,977",
       "pillar": "Valuation",
       "weight_24h": 0,
       "weight_7d": 0,
@@ -487,14 +487,14 @@
       "score": -16.67,
       "raw_weighted_sum": -4.0,
       "p_up": 0.4792,
-      "tilt": "FLAT",
+      "tilt": "LEAN DOWN",
       "abstain": false
     },
     "d30": {
       "score": -11.17,
       "raw_weighted_sum": -5.25,
       "p_up": 0.4832,
-      "tilt": "FLAT",
+      "tilt": "LEAN DOWN",
       "abstain": false
     }
   },
@@ -505,7 +505,7 @@
       "rv_percentile": 19.726027397260275
     },
     "dvol_flag": "NORMAL",
-    "dvol": 35.68,
+    "dvol": 35.84,
     "event_window": false,
     "next_event": {
       "date": "2026-07-29",
@@ -519,5 +519,60 @@
     "h24": 1.71,
     "d7": 4.53,
     "d30": 9.38
+  },
+  "levels": {
+    "spot": 64712,
+    "box_floor": 58524,
+    "box_ceiling": 64989,
+    "low_20d": 58524,
+    "high_20d": 64989,
+    "dma_50": 63354,
+    "dma_200": 73046,
+    "sth_cost_basis": null,
+    "pl_floor": 60977,
+    "pl_center": 133495,
+    "prior_day_high": 64828,
+    "prior_day_low": 63842
+  },
+  "caps": {
+    "h24": 0.575,
+    "d7": 0.625,
+    "d30": 0.65
+  },
+  "calendar": [
+    {
+      "date": "2026-07-29",
+      "name": "FOMC"
+    },
+    {
+      "date": "2026-07-31",
+      "name": "Monthly options expiry"
+    },
+    {
+      "date": "2026-08-12",
+      "name": "CPI"
+    },
+    {
+      "date": "2026-09-16",
+      "name": "FOMC"
+    }
+  ],
+  "verdict": {
+    "h24": {
+      "state": "WATCH TRIGGER",
+      "score": -3.33,
+      "armed": true,
+      "direction": "up",
+      "distance_pct": 0.43,
+      "level": 64989
+    },
+    "d7": {
+      "state": "LEAN SHORT",
+      "score": -16.67
+    },
+    "d30": {
+      "state": "LEAN SHORT",
+      "score": -11.17
+    }
   }
 }

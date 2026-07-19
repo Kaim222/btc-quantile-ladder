@@ -1,7 +1,13 @@
 {
-  "generated_at": "2026-07-19T02:01:54Z",
+  "generated_at": "2026-07-19T07:47:54Z",
   "crisis_ratio": 0.0,
   "headlines": [
+    {
+      "title": "Inside Zcash's new node that targets Visa-scale privacy at 50,000 transactions per second",
+      "url": "https://www.coindesk.com/tech/2026/07/16/inside-zcash-s-new-node-that-targets-visa-scale-privacy-at-50-000-transactions-per-second",
+      "source": "CoinDesk",
+      "published_at": "2026-07-19T05:37:34Z"
+    },
     {
       "title": "US regulators miss GENIUS Act\u2019s one-year deadline for final stablecoin rules",
       "url": "https://www.theblock.co/post/408843/us-regulators-miss-genius-acts-one-year-deadline-for-final-stablecoin-rules?utm_source=rss&utm_medium=rss",
@@ -175,12 +181,6 @@
       "url": "https://www.theblock.co/post/408782/bitcoin-etfs-ibit-mirror-golds-history-spectacular-gains-painful-drawdowns-analyst?utm_source=rss&utm_medium=rss",
       "source": "The Block",
       "published_at": "2026-07-17T15:40:50Z"
-    },
-    {
-      "title": "Inside Robinhood\u2019s high-stakes bet to onboard millions of casual users onto decentralized finance",
-      "url": "https://www.coindesk.com/business/2026/07/17/inside-robinhood-s-high-stakes-bet-to-onboard-10-million-casual-investors-onto-decentralized-finance",
-      "source": "CoinDesk",
-      "published_at": "2026-07-17T15:36:39Z"
     }
   ]
 }

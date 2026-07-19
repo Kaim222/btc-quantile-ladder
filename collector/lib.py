@@ -11,6 +11,7 @@ CONFIG = ROOT / "config"
 HOURS = {"h24": 24, "d7": 168, "d30": 720}
 DEADBANDS = {"h24": .0075, "d7": .02, "d30": .05}
 CAPS = {"h24": .15, "d7": .25, "d30": .30}
+PROBABILITY_CAPS = {h: .5 + .5*c for h,c in CAPS.items()}
 
 def read_json(path, default):
     try:
@@ -46,6 +47,35 @@ def mean(xs):
     return sum(xs)/len(xs) if xs else None
 def ret(prices, n): return pct(prices[-1], prices[-1-n]) if len(prices)>n else None
 def sma(xs,n): return mean(xs[-n:]) if len(xs)>=n else None
+
+def armed(levels, expected_move, horizon="h24"):
+    """Return breakout proximity details for the only armable horizon."""
+    if horizon != "h24" or not isinstance(levels, dict): return None
+    spot, high, low = levels.get("spot"), levels.get("high_20d"), levels.get("low_20d")
+    if not spot or high is None or low is None or expected_move is None: return None
+    up=(high-spot)/spot*100; down=(spot-low)/spot*100
+    direction="up" if up <= down else "down"; distance=min(up,down)
+    if distance > max(.5*expected_move,.5): return None
+    return {"armed":True,"direction":direction,"distance_pct":round(distance,2),"level":high if direction=="up" else low}
+
+def verdict(horizon, latest):
+    """Canonical Signals v2 verdict engine, also used for snapshot alerts."""
+    if not latest: return {"state":"NO DATA","reason":"snapshot unavailable — no verdict"}
+    comp=latest.get("composite",{}).get(horizon,{}) or {}; score=comp.get("score")
+    regime=latest.get("regime",{}) or {}; event=regime.get("next_event") or {}
+    if comp.get("abstain") is True or regime.get("event_window"):
+        suffix=f" — {event.get('name')} {event.get('date')}" if event else ""
+        return {"state":"STAND ASIDE","reason":"EVENT WINDOW"+suffix,"score":score}
+    if regime.get("hy_veto"):
+        return {"state":"STAND ASIDE","reason":"HY VETO — credit stress override","score":score}
+    if score is None: return {"state":"NO DATA","reason":"snapshot unavailable — no verdict"}
+    if abs(score)>=20: state="LONG" if score>0 else "SHORT"
+    elif abs(score)>=10: state="LEAN LONG" if score>0 else "LEAN SHORT"
+    else:
+        arm=armed(latest.get("levels"),latest.get("expected_move",{}).get("h24"),horizon)
+        if arm: return {"state":"WATCH TRIGGER","score":score,**arm}
+        state="NO TRADE"
+    return {"state":state,"score":score}
 
 def corr(a,b):
     pairs=[(x,y) for x,y in zip(a,b) if x is not None and y is not None]

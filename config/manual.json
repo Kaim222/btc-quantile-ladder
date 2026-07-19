@@ -1,4 +1,5 @@
 {
+  "ntfy_topic": "",
   "gli_phase": -1,
   "cwac_analyst": -1,
   "polymarket_ye": 1,
@@ -11,6 +12,7 @@
   "ism_level": 53.3,
   "ism_delta": -0.7,
   "notes": {
+    "ntfy_topic": "Optional ntfy topic; use a long random string because topics are public-by-obscurity. Empty disables alerts.",
     "gli_phase": "Operator assessment of the Global Liquidity Index phase.",
     "cwac_analyst": "Operator assessment from the weekly analyst review.",
     "polymarket_ye": "Operator-entered score derived from year-end prediction-market median.",

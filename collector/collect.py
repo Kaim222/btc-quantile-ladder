@@ -184,10 +184,35 @@ def main():
             sources["bitcoin_data_"+k]={"ok":False,"error":"parse-unrecognized","reason":"parse-unrecognized","stale":True}
     signals=calculate_signals(ctx,weights,manual,now); comp,mult=composites(signals,now,ctx,weights)
     expected={h:round(rv30/math.sqrt(365)*math.sqrt(hours/24)*100,2) for h,hours in HOURS.items()}
+    pl_center=pl_floor=None
+    if spot: _,pl_center,pl_floor,_=powerlaw(now,spot)
+    levels={
+      "spot":round(spot) if spot is not None else None,
+      "box_floor":round(min(prices[-30:])) if len(prices)>=30 else None,
+      "box_ceiling":round(max(prices[-30:])) if len(prices)>=30 else None,
+      "low_20d":round(min(prices[-20:])) if len(prices)>=20 else None,
+      "high_20d":round(max(prices[-20:])) if len(prices)>=20 else None,
+      "dma_50":round(sma(prices,50)) if sma(prices,50) is not None else None,
+      "dma_200":round(sma(prices,200)) if sma(prices,200) is not None else None,
+      "sth_cost_basis":round(ctx["sth_rp"]) if ctx.get("sth_rp") is not None else None,
+      "pl_floor":round(pl_floor) if pl_floor is not None else None,
+      "pl_center":round(pl_center) if pl_center is not None else None,
+      "prior_day_high":round(candles[-2]["high"]) if len(candles)>=2 else None,
+      "prior_day_low":round(candles[-2]["low"]) if len(candles)>=2 else None}
+    future_calendar=[]
+    for e in calendar:
+        try:
+            d=datetime.fromisoformat(e["date"]).replace(tzinfo=timezone.utc)
+            if now.date() <= d.date() <= (now+timedelta(days=60)).date(): future_calendar.append({"date":e["date"],"name":e["name"]})
+        except (KeyError,ValueError,TypeError): pass
+    future_calendar.sort(key=lambda e:e["date"])
     plsig=signals["powerlaw_blend"]; floor_watch="MODEL-BREAK" in plsig["reading"] or ("floor $" in plsig["reading"] and False)
     latest={"generated_at":iso(now),"btc":{"price":spot,"change_24h":change,"source":spot_source},"sources":sources,"signals":signals,"composite":comp,
-      "regime":{"vol_gate":{"state":"NORMAL" if mult==1 else "ELEVATED" if mult==.75 else "EXTREME","multiplier":mult,"rv_percentile":rv_pct},"dvol_flag":"COMPRESSION" if dv and dv[-1]<35 else "STRESS" if dv and dv[-1]>70 else "NORMAL","dvol":dv[-1] if dv else None,"event_window":event_window,"next_event":{"date":next_event[0].date().isoformat(),"name":next_event[1]} if next_event else None,"hy_veto":ctx.get("hy_delta20") is not None and ctx["hy_delta20"]>=50,"halving_month":signals["halving_clock"]["reading"],"pl_floor_watch":floor_watch},"expected_move":expected}
+      "regime":{"vol_gate":{"state":"NORMAL" if mult==1 else "ELEVATED" if mult==.75 else "EXTREME","multiplier":mult,"rv_percentile":rv_pct},"dvol_flag":"COMPRESSION" if dv and dv[-1]<35 else "STRESS" if dv and dv[-1]>70 else "NORMAL","dvol":dv[-1] if dv else None,"event_window":event_window,"next_event":{"date":next_event[0].date().isoformat(),"name":next_event[1]} if next_event else None,"hy_veto":ctx.get("hy_delta20") is not None and ctx["hy_delta20"]>=50,"halving_month":signals["halving_clock"]["reading"],"pl_floor_watch":floor_watch},"expected_move":expected,
+      "levels":levels,"caps":PROBABILITY_CAPS,"calendar":future_calendar}
+    latest["verdict"]={h:verdict(h,latest) for h in HOURS}
     write_json(DATA/"latest.json",latest)
+    send_alerts(previous,latest,manual)
     ledger=read_json(DATA/"ledger.json",[])
     if not ledger or (now-parse_ts(ledger[-1]["ts"])).total_seconds()>=4*3600:
         ledger_signals={k:{"score":v["score"]} for k,v in signals.items()}
@@ -195,6 +220,24 @@ def main():
     write_ledger_recent(ledger)
     collect_news(now)
     print(f"snapshot {latest['generated_at']}: {sum(s['score'] is not None for s in signals.values())} scored signals; ledger rows={len(ledger)}")
+
+def send_alerts(old,new,manual):
+    topic=manual.get("ntfy_topic","")
+    if not topic or not old:return
+    old_v=old.get("verdict") or {h:verdict(h,old) for h in HOURS}
+    changes=[h for h in HOURS if (old_v.get(h) or {}).get("state") != new["verdict"][h].get("state")]
+    old_armed=(old_v.get("h24") or {}).get("state")=="WATCH TRIGGER"
+    new_armed=new["verdict"]["h24"].get("state")=="WATCH TRIGGER"
+    old_failed={k for k,v in old.get("sources",{}).items() if not v.get("ok")}
+    new_failed={k for k,v in new.get("sources",{}).items() if not v.get("ok")}
+    newly_failed=len(new_failed-old_failed)
+    reasons=[]
+    if changes:reasons.append("verdict changed: "+", ".join(changes))
+    if new_armed and not old_armed:reasons.append("WATCH TRIGGER armed")
+    if newly_failed>=2:reasons.append(f"{newly_failed} sources newly failed")
+    if not reasons:return
+    try:S.post("https://ntfy.sh/"+topic,data=("BTC Signals: "+"; ".join(reasons)).encode("utf-8"),headers={"Content-Type":"text/plain"},timeout=10).raise_for_status()
+    except Exception as e:print(f"alert failed: {type(e).__name__}",file=sys.stderr)
 
 def collect_news(now):
     feeds=[("CoinDesk","https://www.coindesk.com/arc/outboundfeeds/rss/"),("Bitcoin Magazine","https://bitcoinmagazine.com/feed"),("Decrypt","https://decrypt.co/feed"),("The Block","https://www.theblock.co/rss.xml")]; items=[]

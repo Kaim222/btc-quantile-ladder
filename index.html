@@ -1785,16 +1785,22 @@ function BTCPowerLaw() {
 
 
     function App() {
-      const [unlocked, setUnlocked] = React.useState(false);
+      const [unlocked, setUnlocked] = React.useState(() => sessionStorage.getItem('bql_ok') === '1');
       const [pin, setPin] = React.useState("");
       const [err, setErr] = React.useState(false);
 
       const attempt = () => {
-        if (pin === "4241") { setUnlocked(true); }
+        if (pin === "4241") { sessionStorage.setItem('bql_ok','1'); setUnlocked(true); }
         else { setErr(true); setPin(""); setTimeout(() => setErr(false), 2000); }
       };
 
-      if (unlocked) return <BTCPowerLaw />;
+      if (unlocked) return <>
+        <div style={{maxWidth:"1200px",margin:"0 auto",padding:"12px 20px 0",display:"flex",gap:"22px",borderBottom:"1px solid #0f2035"}}>
+          <a href="index.html" style={{padding:"9px 2px",textDecoration:"none",fontSize:"11px",letterSpacing:"0.16em",color:"#facc15",borderBottom:"2px solid #facc15"}}>LADDER</a>
+          <a href="signals.html" style={{padding:"9px 2px",textDecoration:"none",fontSize:"11px",letterSpacing:"0.16em",color:"#8aaac8"}}>SIGNALS</a>
+        </div>
+        <BTCPowerLaw />
+      </>;
 
       return (
         <div style={{display:"flex",alignItems:"center",justifyContent:"center",

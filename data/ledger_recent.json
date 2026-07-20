@@ -1,111 +1,5 @@
 [
   {
-    "ts": "2025-10-16T00:00:00Z",
-    "mode": "backtest",
-    "btc": {
-      "price": 108198
-    },
-    "composite": {
-      "h24": {
-        "score": 35.71,
-        "raw_weighted_sum": 2.5,
-        "p_up": 0.5268,
-        "tilt": "BULL",
-        "abstain": false
-      },
-      "d7": {
-        "score": -62.5,
-        "raw_weighted_sum": -5,
-        "p_up": 0.4219,
-        "tilt": "BEAR",
-        "abstain": false
-      },
-      "d30": {
-        "score": -1.79,
-        "raw_weighted_sum": -0.5,
-        "p_up": 0.4973,
-        "tilt": "FLAT",
-        "abstain": false
-      }
-    },
-    "outcomes": {
-      "h24": {
-        "ret": -0.016032643856633166,
-        "realized_class": "DOWN",
-        "call": "UP",
-        "hit": false,
-        "abstained": false
-      },
-      "d7": {
-        "ret": 0.01772703746834514,
-        "realized_class": "NO_DECISION",
-        "call": "DOWN",
-        "hit": null,
-        "abstained": false
-      },
-      "d30": {
-        "ret": -0.11694356642451798,
-        "realized_class": "DOWN",
-        "call": "NEUTRAL",
-        "hit": null,
-        "abstained": false
-      }
-    }
-  },
-  {
-    "ts": "2025-10-17T00:00:00Z",
-    "mode": "backtest",
-    "btc": {
-      "price": 106463.3
-    },
-    "composite": {
-      "h24": {
-        "score": 35.71,
-        "raw_weighted_sum": 2.5,
-        "p_up": 0.5268,
-        "tilt": "BULL",
-        "abstain": false
-      },
-      "d7": {
-        "score": -25.0,
-        "raw_weighted_sum": -2,
-        "p_up": 0.4688,
-        "tilt": "BEAR",
-        "abstain": false
-      },
-      "d30": {
-        "score": -1.79,
-        "raw_weighted_sum": -0.5,
-        "p_up": 0.4973,
-        "tilt": "FLAT",
-        "abstain": false
-      }
-    },
-    "outcomes": {
-      "h24": {
-        "ret": 0.007003446258006196,
-        "realized_class": "NO_DECISION",
-        "call": "UP",
-        "hit": null,
-        "abstained": false
-      },
-      "d7": {
-        "ret": 0.043008529699906095,
-        "realized_class": "UP",
-        "call": "DOWN",
-        "hit": false,
-        "abstained": false
-      },
-      "d30": {
-        "ret": -0.11533861903585552,
-        "realized_class": "DOWN",
-        "call": "NEUTRAL",
-        "hit": null,
-        "abstained": false
-      }
-    }
-  },
-  {
     "ts": "2025-10-18T00:00:00Z",
     "mode": "backtest",
     "btc": {
@@ -13120,7 +13014,13 @@
       }
     },
     "outcomes": {
-      "h24": null,
+      "h24": {
+        "ret": -0.004290764267300573,
+        "realized_class": "NO_DECISION",
+        "call": "DOWN",
+        "hit": null,
+        "abstained": false
+      },
       "d7": null,
       "d30": null
     }
@@ -13155,6 +13055,88 @@
       }
     },
     "outcomes": {
+      "h24": {
+        "ret": -0.006847827768068471,
+        "realized_class": "NO_DECISION",
+        "call": "NEUTRAL",
+        "hit": null,
+        "abstained": false
+      },
+      "d7": null,
+      "d30": null
+    }
+  },
+  {
+    "ts": "2026-07-19T15:41:22Z",
+    "mode": "live",
+    "btc": {
+      "price": 64516
+    },
+    "composite": {
+      "h24": {
+        "score": -3.33,
+        "raw_weighted_sum": -0.5,
+        "p_up": 0.4975,
+        "tilt": "FLAT",
+        "abstain": false
+      },
+      "d7": {
+        "score": -28.57,
+        "raw_weighted_sum": -8.0,
+        "p_up": 0.4643,
+        "tilt": "BEAR",
+        "abstain": false
+      },
+      "d30": {
+        "score": -14.35,
+        "raw_weighted_sum": -7.75,
+        "p_up": 0.4785,
+        "tilt": "LEAN DOWN",
+        "abstain": false
+      }
+    },
+    "outcomes": {
+      "h24": {
+        "ret": 0.014539184078368184,
+        "realized_class": "UP",
+        "call": "NEUTRAL",
+        "hit": null,
+        "abstained": false
+      },
+      "d7": null,
+      "d30": null
+    }
+  },
+  {
+    "ts": "2026-07-20T16:37:13Z",
+    "mode": "live",
+    "btc": {
+      "price": 65390
+    },
+    "composite": {
+      "h24": {
+        "score": 13.33,
+        "raw_weighted_sum": 2.0,
+        "p_up": 0.51,
+        "tilt": "LEAN UP",
+        "abstain": false
+      },
+      "d7": {
+        "score": -17.86,
+        "raw_weighted_sum": -5.0,
+        "p_up": 0.4777,
+        "tilt": "LEAN DOWN",
+        "abstain": false
+      },
+      "d30": {
+        "score": -18.06,
+        "raw_weighted_sum": -9.75,
+        "p_up": 0.4729,
+        "tilt": "LEAN DOWN",
+        "abstain": false
+      }
+    },
+    "outcomes": {
       "h24": null,
       "d7": null,
       "d30": null
@@ -13167,19 +13149,19 @@
         "score": 0
       },
       "breakout_20d": {
-        "score": 0
+        "score": 2
       },
       "box_position": {
         "score": -1
       },
       "monday_asia": {
-        "score": 0
-      },
-      "autocorr_gate": {
         "score": 1
       },
+      "autocorr_gate": {
+        "score": -1
+      },
       "momentum_7d": {
-        "score": 0
+        "score": 1
       },
       "sth_sopr": {
         "score": -2
@@ -13212,7 +13194,7 @@
         "score": 1
       },
       "stablecoin_30d": {
-        "score": -1
+        "score": -2
       },
       "sth_rp_regime": {
         "score": -2
@@ -13265,30 +13247,30 @@
     }
   },
   {
-    "ts": "2026-07-19T15:41:22Z",
+    "ts": "2026-07-20T23:36:56Z",
     "mode": "live",
     "btc": {
-      "price": 64516
+      "price": 65201
     },
     "composite": {
       "h24": {
-        "score": -3.33,
-        "raw_weighted_sum": -0.5,
-        "p_up": 0.4975,
-        "tilt": "FLAT",
+        "score": 10.0,
+        "raw_weighted_sum": 1.5,
+        "p_up": 0.5075,
+        "tilt": "LEAN UP",
         "abstain": false
       },
       "d7": {
-        "score": -28.57,
-        "raw_weighted_sum": -8.0,
-        "p_up": 0.4643,
-        "tilt": "BEAR",
+        "score": -17.86,
+        "raw_weighted_sum": -5.0,
+        "p_up": 0.4777,
+        "tilt": "LEAN DOWN",
         "abstain": false
       },
       "d30": {
-        "score": -14.35,
-        "raw_weighted_sum": -7.75,
-        "p_up": 0.4785,
+        "score": -18.06,
+        "raw_weighted_sum": -9.75,
+        "p_up": 0.4729,
         "tilt": "LEAN DOWN",
         "abstain": false
       }
@@ -13306,7 +13288,7 @@
         "score": 0
       },
       "breakout_20d": {
-        "score": 0
+        "score": 2
       },
       "box_position": {
         "score": -1
@@ -13315,10 +13297,10 @@
         "score": 0
       },
       "autocorr_gate": {
-        "score": 1
+        "score": -1
       },
       "momentum_7d": {
-        "score": 0
+        "score": 1
       },
       "sth_sopr": {
         "score": -2
@@ -13351,7 +13333,7 @@
         "score": 1
       },
       "stablecoin_30d": {
-        "score": -1
+        "score": -2
       },
       "sth_rp_regime": {
         "score": -2

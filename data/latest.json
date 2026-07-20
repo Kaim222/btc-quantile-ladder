@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-07-19T15:41:22Z",
+  "generated_at": "2026-07-20T23:36:56Z",
   "btc": {
-    "price": 64516,
-    "change_24h": 0.7763213038139952,
+    "price": 65201,
+    "change_24h": 0.871360610843069,
     "source": "CoinGecko"
   },
   "sources": {
@@ -137,7 +137,7 @@
     "funding_extreme": {
       "raw": null,
       "score": 0,
-      "reading": "3d mean 4.9% annualized",
+      "reading": "3d mean 3.9% annualized",
       "pillar": "Derivatives",
       "weight_24h": 2,
       "weight_7d": 2,
@@ -147,7 +147,7 @@
     "oi_purge_flush": {
       "raw": null,
       "score": 0,
-      "reading": "OI 24h -0.7%",
+      "reading": "OI 24h +1.6%",
       "pillar": "Derivatives",
       "weight_24h": 2,
       "weight_7d": 0,
@@ -156,8 +156,8 @@
     },
     "breakout_20d": {
       "raw": null,
-      "score": 0,
-      "reading": "$58,524\u2013$64,989",
+      "score": 2,
+      "reading": "$59,961\u2013$65,201",
       "pillar": "Technical",
       "weight_24h": 1.5,
       "weight_7d": 0,
@@ -186,8 +186,8 @@
     },
     "autocorr_gate": {
       "raw": null,
-      "score": 1,
-      "reading": "\u03c11 -0.09",
+      "score": -1,
+      "reading": "\u03c11 -0.08",
       "pillar": "Technical",
       "weight_24h": 0.5,
       "weight_7d": 0,
@@ -196,8 +196,8 @@
     },
     "momentum_7d": {
       "raw": null,
-      "score": 0,
-      "reading": "7d +1.2%",
+      "score": 1,
+      "reading": "7d +4.7%",
       "pillar": "Technical",
       "weight_24h": 0,
       "weight_7d": 3,
@@ -205,9 +205,9 @@
       "status": "LIVE"
     },
     "sth_sopr": {
-      "raw": 1.0004,
+      "raw": 1.001,
       "score": -2,
-      "reading": "SOPR 1.000",
+      "reading": "SOPR 1.001",
       "pillar": "On-chain",
       "weight_24h": 0,
       "weight_7d": 2,
@@ -227,7 +227,7 @@
     "basis_regime": {
       "raw": null,
       "score": 0,
-      "reading": "annualized 4.2%",
+      "reading": "annualized 4.3%",
       "pillar": "Derivatives",
       "weight_24h": 0,
       "weight_7d": 1.5,
@@ -247,7 +247,7 @@
     "dxy_trend": {
       "raw": null,
       "score": 0,
-      "reading": "20d +0.5%; corr -0.30",
+      "reading": "20d +1.0%; corr -0.28",
       "pillar": "Macro",
       "weight_24h": 0,
       "weight_7d": 1,
@@ -267,7 +267,7 @@
     "hy_spread": {
       "raw": null,
       "score": 1,
-      "reading": "OAS 271bp; \u039420d +5bp",
+      "reading": "OAS 273bp; \u039420d +7bp",
       "pillar": "Macro",
       "weight_24h": 0,
       "weight_7d": 1,
@@ -277,7 +277,7 @@
     "regime_stretch": {
       "raw": null,
       "score": -1,
-      "reading": "Mayer 0.88",
+      "reading": "Mayer 0.89",
       "pillar": "Technical",
       "weight_24h": 0,
       "weight_7d": 0,
@@ -306,8 +306,8 @@
     },
     "stablecoin_30d": {
       "raw": null,
-      "score": -1,
-      "reading": "supply 30d -1.9%",
+      "score": -2,
+      "reading": "supply 30d -2.0%",
       "pillar": "Liquidity",
       "weight_24h": 0,
       "weight_7d": 0,
@@ -317,7 +317,7 @@
     "sth_rp_regime": {
       "raw": null,
       "score": -2,
-      "reading": "STH RP $68,039",
+      "reading": "STH RP $68,064",
       "pillar": "On-chain",
       "weight_24h": 0,
       "weight_7d": 0,
@@ -335,9 +335,9 @@
       "status": "LIVE"
     },
     "mvrv_z": {
-      "raw": 0.3845,
+      "raw": 0.4121,
       "score": 1,
-      "reading": "Z 0.38",
+      "reading": "Z 0.41",
       "pillar": "On-chain",
       "weight_24h": 0,
       "weight_7d": 0,
@@ -357,7 +357,7 @@
     "powerlaw_blend": {
       "raw": null,
       "score": 2,
-      "reading": "center $133,535; floor $60,995",
+      "reading": "center $133,696; floor $61,069",
       "pillar": "Valuation",
       "weight_24h": 0,
       "weight_7d": 0,
@@ -427,7 +427,7 @@
     "attention_apathy": {
       "raw": null,
       "score": 1,
-      "reading": "52w percentile 1",
+      "reading": "52w percentile 3",
       "pillar": "Sentiment",
       "weight_24h": 0,
       "weight_7d": 0,
@@ -477,23 +477,23 @@
   },
   "composite": {
     "h24": {
-      "score": -3.33,
-      "raw_weighted_sum": -0.5,
-      "p_up": 0.4975,
-      "tilt": "FLAT",
+      "score": 10.0,
+      "raw_weighted_sum": 1.5,
+      "p_up": 0.5075,
+      "tilt": "LEAN UP",
       "abstain": false
     },
     "d7": {
-      "score": -28.57,
-      "raw_weighted_sum": -8.0,
-      "p_up": 0.4643,
-      "tilt": "BEAR",
+      "score": -17.86,
+      "raw_weighted_sum": -5.0,
+      "p_up": 0.4777,
+      "tilt": "LEAN DOWN",
       "abstain": false
     },
     "d30": {
-      "score": -14.35,
-      "raw_weighted_sum": -7.75,
-      "p_up": 0.4785,
+      "score": -18.06,
+      "raw_weighted_sum": -9.75,
+      "p_up": 0.4729,
       "tilt": "LEAN DOWN",
       "abstain": false
     }
@@ -502,10 +502,10 @@
     "vol_gate": {
       "state": "NORMAL",
       "multiplier": 1,
-      "rv_percentile": 19.726027397260275
+      "rv_percentile": 19.45205479452055
     },
     "dvol_flag": "NORMAL",
-    "dvol": 35.93,
+    "dvol": 36.21,
     "event_window": false,
     "next_event": {
       "date": "2026-07-29",
@@ -517,22 +517,22 @@
   },
   "expected_move": {
     "h24": 1.71,
-    "d7": 4.54,
-    "d30": 9.39
+    "d7": 4.51,
+    "d30": 9.34
   },
   "levels": {
-    "spot": 64516,
+    "spot": 65201,
     "box_floor": 58524,
-    "box_ceiling": 64989,
-    "low_20d": 58524,
-    "high_20d": 64989,
-    "dma_50": 63350,
-    "dma_200": 73045,
-    "sth_cost_basis": 68039,
-    "pl_floor": 60995,
-    "pl_center": 133535,
-    "prior_day_high": 64828,
-    "prior_day_low": 63842
+    "box_ceiling": 65201,
+    "low_20d": 59961,
+    "high_20d": 65201,
+    "dma_50": 63186,
+    "dma_200": 72929,
+    "sth_cost_basis": 68064,
+    "pl_floor": 61069,
+    "pl_center": 133696,
+    "prior_day_high": 64919,
+    "prior_day_low": 64238
   },
   "caps": {
     "h24": 0.575,
@@ -559,20 +559,16 @@
   ],
   "verdict": {
     "h24": {
-      "state": "WATCH TRIGGER",
-      "score": -3.33,
-      "armed": true,
-      "direction": "up",
-      "distance_pct": 0.73,
-      "level": 64989
+      "state": "LEAN LONG",
+      "score": 10.0
     },
     "d7": {
-      "state": "SHORT",
-      "score": -28.57
+      "state": "LEAN SHORT",
+      "score": -17.86
     },
     "d30": {
       "state": "LEAN SHORT",
-      "score": -14.35
+      "score": -18.06
     }
   }
 }

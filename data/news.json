@@ -1,186 +1,186 @@
 {
-  "generated_at": "2026-07-19T15:41:22Z",
-  "crisis_ratio": 0.0,
+  "generated_at": "2026-07-20T23:36:56Z",
+  "crisis_ratio": 30.0,
   "headlines": [
     {
-      "title": "Bitcoin's biggest advocate, Michael Saylor, says new plan to clean up the blockchain is 'a bad idea'",
-      "url": "https://www.coindesk.com/tech/2026/07/19/bitcoin-s-biggest-advocate-michael-saylor-says-new-plan-to-clean-up-the-blockchain-is-a-bad-idea",
-      "source": "CoinDesk",
-      "published_at": "2026-07-19T15:19:21Z"
-    },
-    {
-      "title": "AI is destroying the internet. Math is our only hope.",
-      "url": "https://www.coindesk.com/opinion/2026/07/17/ai-is-destroying-the-internet-math-is-our-only-hope",
-      "source": "CoinDesk",
-      "published_at": "2026-07-19T14:00:00Z"
-    },
-    {
-      "title": "Tether's USDT hits 2-year countdown threatening its position on U.S. crypto platforms",
-      "url": "https://www.coindesk.com/news-analysis/2026/07/17/tether-s-usdt-hits-2-year-countdown-threatening-its-position-on-u-s-crypto-platforms",
-      "source": "CoinDesk",
-      "published_at": "2026-07-19T13:00:00Z"
-    },
-    {
-      "title": "Kraken says simpler options can unlock crypto's next derivatives market",
-      "url": "https://www.coindesk.com/business/2026/07/19/kraken-says-simpler-options-can-unlock-crypto-s-next-derivatives-market",
-      "source": "CoinDesk",
-      "published_at": "2026-07-19T13:00:00Z"
-    },
-    {
-      "title": "Bitcoin\u2019s quantum problem gets a recovery tool, but not for Satoshi\u2019s 1.1 million coins",
-      "url": "https://www.coindesk.com/tech/2026/07/19/bitcoin-s-quantum-problem-gets-a-recovery-tool-but-not-for-satoshi-s-1-1-million-coin",
-      "source": "CoinDesk",
-      "published_at": "2026-07-19T10:00:00Z"
-    },
-    {
-      "title": "Inside Zcash's new node that targets Visa-scale privacy at 50,000 transactions per second",
-      "url": "https://www.coindesk.com/tech/2026/07/16/inside-zcash-s-new-node-that-targets-visa-scale-privacy-at-50-000-transactions-per-second",
-      "source": "CoinDesk",
-      "published_at": "2026-07-19T05:37:34Z"
-    },
-    {
-      "title": "US regulators miss GENIUS Act\u2019s one-year deadline for final stablecoin rules",
-      "url": "https://www.theblock.co/post/408843/us-regulators-miss-genius-acts-one-year-deadline-for-final-stablecoin-rules?utm_source=rss&utm_medium=rss",
-      "source": "The Block",
-      "published_at": "2026-07-18T22:04:40Z"
-    },
-    {
-      "title": "France orders country's internet service providers to block Polymarket",
-      "url": "https://www.coindesk.com/policy/2026/07/18/france-orders-country-s-internet-service-providers-to-block-polymarket",
-      "source": "CoinDesk",
-      "published_at": "2026-07-18T21:52:18Z"
-    },
-    {
-      "title": "Bitcoin Japan, which holds no bitcoin, taps EVO Fund in planned $60 million raise to finally buy some",
-      "url": "https://www.theblock.co/post/408838/bitcoin-japan-which-holds-no-bitcoin-taps-evo-fund-in-planned-60-million-raise-to-finally-buy-some?utm_source=rss&utm_medium=rss",
-      "source": "The Block",
-      "published_at": "2026-07-18T18:47:49Z"
-    },
-    {
-      "title": "Crypto executives say digital native generations may never need a bank account",
-      "url": "https://www.coindesk.com/business/2026/07/17/crypto-executives-say-digital-native-generations-may-never-need-a-bank-account",
-      "source": "CoinDesk",
-      "published_at": "2026-07-18T18:30:00Z"
-    },
-    {
-      "title": "DOG Mode explains Bitcoin's next governance fight",
-      "url": "https://www.coindesk.com/tech/2026/07/18/dog-mode-explains-bitcoin-s-next-governance-fight",
-      "source": "CoinDesk",
-      "published_at": "2026-07-18T17:00:00Z"
-    },
-    {
-      "title": "Trump targets Brazil's payments system while dollar stablecoins are quietly overtaking country's payments",
-      "url": "https://www.coindesk.com/business/2026/07/18/trump-targets-brazil-s-payments-system-while-dollar-stablecoins-quietly-dominate-country-s-payments",
-      "source": "CoinDesk",
-      "published_at": "2026-07-18T16:09:59Z"
-    },
-    {
-      "title": "Here is why a massive $1.6 billion in crypto liquidity is sitting idle and wasting away",
-      "url": "https://www.coindesk.com/web3/2026/07/18/here-is-why-a-massive-usd1-6-billion-in-crypto-liquidity-is-sitting-idle-and-wasting-away",
-      "source": "CoinDesk",
-      "published_at": "2026-07-18T15:50:31Z"
-    },
-    {
-      "title": "GPT-5.6 vs Fable 5 Review: Which One You Pick Depends on These Factors",
-      "url": "https://decrypt.co/373770/openai-gpt-5-6-vs-anthropic-fable-5-review",
-      "source": "Decrypt",
-      "published_at": "2026-07-18T15:21:03Z"
-    },
-    {
-      "title": "Massive bitcoin call spreads target $72,000 by month end, right when the Fed meets",
-      "url": "https://www.coindesk.com/markets/2026/07/18/massive-bitcoin-call-spreads-target-usd72-000-by-month-end-right-when-the-fed-meets",
-      "source": "CoinDesk",
-      "published_at": "2026-07-18T14:15:15Z"
-    },
-    {
-      "title": "UNI burn poised to grow as Uniswap governance votes on v4 fees and Robinhood Chain expansion",
-      "url": "https://www.theblock.co/post/408836/uni-burn-poised-to-grow-as-uniswap-governance-votes-on-v4-fees-and-robinhood-chain-expansion?utm_source=rss&utm_medium=rss",
-      "source": "The Block",
-      "published_at": "2026-07-18T14:04:54Z"
-    },
-    {
-      "title": "Tokenization has become a strategic priority for 84% of financial firms",
-      "url": "https://www.coindesk.com/business/2026/07/16/tokenization-has-become-a-strategic-priority-for-84-of-financial-firms",
-      "source": "CoinDesk",
-      "published_at": "2026-07-18T14:00:00Z"
-    },
-    {
-      "title": "Bank of America taps new leaders to bridge crypto, AI and traditional finance",
-      "url": "https://www.theblock.co/post/408830/bank-america-taps-new-leaders-bridge-crypto-ai-traditional-finance?utm_source=rss&utm_medium=rss",
-      "source": "The Block",
-      "published_at": "2026-07-17T21:08:02Z"
-    },
-    {
-      "title": "ECB Warns Stablecoins May Drain Bank Deposits\u2014Here's What That Means",
-      "url": "https://decrypt.co/373767/ecb-warns-stablecoins-drain-bank-deposits",
-      "source": "Decrypt",
-      "published_at": "2026-07-17T20:17:44Z"
-    },
-    {
-      "title": "CryptoQuant says Strategy still needs disciplined bitcoin buying and selling framework",
-      "url": "https://www.theblock.co/post/408825/cryptoquant-strategy-bitcoin-buying-selling-framework-mstr?utm_source=rss&utm_medium=rss",
-      "source": "The Block",
-      "published_at": "2026-07-17T20:01:43Z"
-    },
-    {
-      "title": "Cardano Pumps as Network Moves to Further Decentralize Development",
-      "url": "https://decrypt.co/373749/caradno-ada-price-spikes-iohk-decentralizing-development",
-      "source": "Decrypt",
-      "published_at": "2026-07-17T19:12:41Z"
-    },
-    {
-      "title": "Bitcoin Sentiment Is Turning Bullish \u2014 But It\u2019s Too Early to Celebrate: Report",
-      "url": "https://bitcoinmagazine.com/markets/bitcoin-sentiment-is-bullish-coinshares",
+      "title": "Bitcoin Miner Hut 8 Shares Jump on $9.8 Billion AI Data Center Deal",
+      "url": "https://bitcoinmagazine.com/news/bitcoin-miner-hut-8-shares-jump-on-ai-deal",
       "source": "Bitcoin Magazine",
-      "published_at": "2026-07-17T19:07:30Z"
+      "published_at": "2026-07-20T22:16:30Z"
     },
     {
-      "title": "FTX to distribute roughly $900 million to creditors in fifth wave of payouts",
-      "url": "https://www.theblock.co/post/408803/ftx-to-distribute-roughly-900-million-to-creditors-in-fifth-wave-of-payouts?utm_source=rss&utm_medium=rss",
+      "title": "Grayscale could take Worldcoin to Wall Street after ETF filing with the SEC",
+      "url": "https://www.theblock.co/post/408995/grayscale-worldcoin-etf-filing-sec?utm_source=rss&utm_medium=rss",
       "source": "The Block",
-      "published_at": "2026-07-17T18:27:59Z"
+      "published_at": "2026-07-20T21:25:00Z"
     },
     {
-      "title": "Trezor exec pushes back on ZachXBT claim that hardware wallets are \u2018complete garbage\u2019",
-      "url": "https://www.theblock.co/post/408794/trezor-exec-pushes-back-zachxbt-claim-hardware-wallets-complete-garbage?utm_source=rss&utm_medium=rss",
+      "title": "Kalshi, Polymarket open interest falls 20% as World Cup frenzy winds down",
+      "url": "https://www.theblock.co/post/408965/kalshi-polymarket-open-interest-falls-20-as-world-cup-frenzy-winds-down?utm_source=rss&utm_medium=rss",
       "source": "The Block",
-      "published_at": "2026-07-17T18:13:25Z"
+      "published_at": "2026-07-20T21:12:50Z"
     },
     {
-      "title": "Polymarket traders cut Clarity Act passage odds to record low as Senate delay drags on",
-      "url": "https://www.coindesk.com/markets/2026/07/17/polymarket-traders-cut-clarity-act-passage-odds-to-record-low-as-senate-delay-drags-on",
-      "source": "CoinDesk",
-      "published_at": "2026-07-17T18:00:11Z"
-    },
-    {
-      "title": "Kimi K3 Just Triggered DeepSeek Flashbacks for the Stock Market",
-      "url": "https://decrypt.co/373736/kimi-k3-triggered-deepseek-flashbacks-stock-market",
+      "title": "Bank of Korea Scales Up CBDC Pilot With Half a Million Users",
+      "url": "https://decrypt.co/373905/bank-korea-scales-up-cbdc-pilot-half-million-users",
       "source": "Decrypt",
-      "published_at": "2026-07-17T17:55:32Z"
+      "published_at": "2026-07-20T21:12:03Z"
     },
     {
-      "title": "Ocean Mining VP Jason Hughes: BIP-110 on Track to Fail as Miner Signaling Stays Below 1%",
-      "url": "https://bitcoinmagazine.com/bitcoin-mining/ocean-mining-vp-jason-hughes-bip-110-on-track-to-fail-as-miner-signaling-stays-below-1",
+      "title": "Trump\u2019s crypto ethics stance leaves Clarity Act negotiations in limbo",
+      "url": "https://www.theblock.co/post/408804/president-trump-agrees-some-level-ethics-language-potentially-clearing-hurdles-pass-crypto-bill?utm_source=rss&utm_medium=rss",
+      "source": "The Block",
+      "published_at": "2026-07-20T20:26:38Z"
+    },
+    {
+      "title": "Metaplanet\u2019s Bitcoin Japan Announces Plan to Scoop Up Coins Despite Market Downturn",
+      "url": "https://bitcoinmagazine.com/news/bitcoin-japan-to-buy-bitcoin",
       "source": "Bitcoin Magazine",
-      "published_at": "2026-07-17T17:45:13Z"
+      "published_at": "2026-07-20T20:05:56Z"
     },
     {
-      "title": "SBI Holdings Takes Majority Stake in Singapore\u2019s Coinhako After MAS Approval",
-      "url": "https://bitcoinmagazine.com/news/sbi-holdings-takes-majority-stake-coinhako",
-      "source": "Bitcoin Magazine",
-      "published_at": "2026-07-17T17:38:02Z"
-    },
-    {
-      "title": "China\u2019s Kimi K3 Is Out\u2014And Beats Claude Fable and GPT 5.6 Sol on Key Benchmarks",
-      "url": "https://decrypt.co/373716/china-kimi-k3-largest-open-source-ai-model-ever-beats-claude-fable-gpt-5-6-sol",
+      "title": "Russia's First Comprehensive Crypto Law Is Two Votes Away From Passing",
+      "url": "https://decrypt.co/373880/russia-first-comprehensive-crypto-law",
       "source": "Decrypt",
-      "published_at": "2026-07-17T17:36:42Z"
+      "published_at": "2026-07-20T20:02:33Z"
     },
     {
-      "title": "Stripe and Swift race to control the next generation of global payments infrastructure",
-      "url": "https://www.coindesk.com/business/2026/07/17/stripe-and-swift-race-to-control-the-next-generation-of-global-payments-infrastructure",
+      "title": "Bitcoin-Treasury Capital B Plans 10-for-1 Reverse Stock Split for September",
+      "url": "https://bitcoinmagazine.com/news/bitcoin-treasury-capital-b-plans-10-for-1",
+      "source": "Bitcoin Magazine",
+      "published_at": "2026-07-20T19:52:47Z"
+    },
+    {
+      "title": "Vietnam sets new crypto trading fines on par with drunk-driving penalties",
+      "url": "https://www.theblock.co/post/408980/vietnam-new-unlicensed-crypto-trading-fines-on-par-drunk-driving-penalties?utm_source=rss&utm_medium=rss",
+      "source": "The Block",
+      "published_at": "2026-07-20T19:47:47Z"
+    },
+    {
+      "title": "Cardano Triggers Hard Fork With First Community-Voted Upgrade",
+      "url": "https://decrypt.co/373858/cardano-van-rossem-hard-fork-live-community-upgrade",
+      "source": "Decrypt",
+      "published_at": "2026-07-20T18:50:48Z"
+    },
+    {
+      "title": "Coinbase Executive Says Clarity Act Has \u2018Tremendous Momentum\u2019 in the Senate",
+      "url": "https://bitcoinmagazine.com/news/coinbase-executive-clarity-act-support",
+      "source": "Bitcoin Magazine",
+      "published_at": "2026-07-20T18:20:55Z"
+    },
+    {
+      "title": "AI-assisted hacking is outpacing traditional code reviews, NEAR co-founder says",
+      "url": "https://www.theblock.co/post/408943/ai-assisted-hacking-outpacing-traditional-code-reviews-near-co-founder-says?utm_source=rss&utm_medium=rss",
+      "source": "The Block",
+      "published_at": "2026-07-20T18:20:02Z"
+    },
+    {
+      "title": "Bitcoin ETFs Are Green Again\u2014Here\u2019s Why Investors Should Zoom Out",
+      "url": "https://decrypt.co/373850/bitcoin-etfs-green-inflows-why-investors-should-zoom-out",
+      "source": "Decrypt",
+      "published_at": "2026-07-20T17:59:51Z"
+    },
+    {
+      "title": "Russia Moves to Rein In Crypto Fraud With New Legislation",
+      "url": "https://bitcoinmagazine.com/news/russia-to-regulate-crypto-with-legislation",
+      "source": "Bitcoin Magazine",
+      "published_at": "2026-07-20T17:43:51Z"
+    },
+    {
+      "title": "Former NY Governor Cuomo joins OKX board, touts 24/7 tokenized trading",
+      "url": "https://www.theblock.co/post/408938/former-ny-governor-cuomo-joins-okx-board-touts-24-7-tokenized-trading?utm_source=rss&utm_medium=rss",
+      "source": "The Block",
+      "published_at": "2026-07-20T17:25:58Z"
+    },
+    {
+      "title": "New Onramp Report Makes the Case for Spot Bitcoin Over Paper Claims as Price Sits at Half Its Peak",
+      "url": "https://bitcoinmagazine.com/news/onramp-report-makes-case-spot-bitcoin",
+      "source": "Bitcoin Magazine",
+      "published_at": "2026-07-20T16:40:27Z"
+    },
+    {
+      "title": "Tom Lee's Bitmine Taps the Brakes on ETH Buys, Pivots $86M Into Stock Buyback",
+      "url": "https://decrypt.co/373847/tom-lee-bitmine-taps-brakes-eth-buys-86m-stock-buyback",
+      "source": "Decrypt",
+      "published_at": "2026-07-20T16:12:36Z"
+    },
+    {
+      "title": "Strategy Pads Cash Reserve By $225M With MSTR Sale, Bitcoin Stash Remains Untouched",
+      "url": "https://decrypt.co/373834/strategy-raises-225m-for-cash-reserve-mstr-sale-bitcoin",
+      "source": "Decrypt",
+      "published_at": "2026-07-20T15:57:29Z"
+    },
+    {
+      "title": "Benchmark backs Exodus after 25% workforce cut, says stablecoin pivot is being overlooked",
+      "url": "https://www.theblock.co/post/408924/benchmark-backs-exodus-workforce-cut-stablecoin-pivot-overlooked?utm_source=rss&utm_medium=rss",
+      "source": "The Block",
+      "published_at": "2026-07-20T15:07:52Z"
+    },
+    {
+      "title": "Strive (ASST) Adds 21 Bitcoin as Treasury Reaches 19,921 BTC and Cash Climbs to $157 Million",
+      "url": "https://bitcoinmagazine.com/news/strive-asst-adds-21-bitcoin",
+      "source": "Bitcoin Magazine",
+      "published_at": "2026-07-20T15:06:48Z"
+    },
+    {
+      "title": "Inside Cardano's 'Van Rossum' hard fork, and what it means for users",
+      "url": "https://www.coindesk.com/markets/2026/07/20/inside-cardano-s-van-rossum-hard-fork-and-what-it-means-for-users",
       "source": "CoinDesk",
-      "published_at": "2026-07-17T17:23:01Z"
+      "published_at": "2026-07-20T14:31:23Z"
+    },
+    {
+      "title": "Hut 8 fully commercializes 1 GW Texas AI campus with second $9.8B lease as IREN signs $2.8B in contracts; shares climb double digits",
+      "url": "https://www.theblock.co/post/408920/hut-8-fully-commercializes-1-gw-texas-ai-campus-with-second-9-8b-lease-as-iren-signs-2-8b-in-contracts-shares-climb-double-digits?utm_source=rss&utm_medium=rss",
+      "source": "The Block",
+      "published_at": "2026-07-20T14:12:46Z"
+    },
+    {
+      "title": "Exodus to cut 25% of global workforce in payments shift",
+      "url": "https://www.coindesk.com/business/2026/07/20/exodus-to-cut-25-of-global-workforce-in-payments-shift",
+      "source": "CoinDesk",
+      "published_at": "2026-07-20T13:53:08Z"
+    },
+    {
+      "title": "AI compute stocks bounce as Hut 8, IREN land billions in new contracts",
+      "url": "https://www.coindesk.com/business/2026/07/20/hut-8-surges-on-usd9-8-billion-ai-data-center-lease-lifting-compute-sector",
+      "source": "CoinDesk",
+      "published_at": "2026-07-20T13:49:24Z"
+    },
+    {
+      "title": "Allbridge Pauses Cross-Chain Protocol After $1.65M Flash Loan Attack",
+      "url": "https://decrypt.co/373831/allbridge-pauses-cross-chain-protocol-after-1-65m-flash-loan-attack",
+      "source": "Decrypt",
+      "published_at": "2026-07-20T13:47:06Z"
+    },
+    {
+      "title": "Bitmine expands Ethereum treasury to 5.78 million ETH, repurchases 5.5 million shares",
+      "url": "https://www.theblock.co/post/408913/bitmine-expands-ethereum-treasury-5-78-million-eth-repurchases-5-5-million-shares?utm_source=rss&utm_medium=rss",
+      "source": "The Block",
+      "published_at": "2026-07-20T13:43:15Z"
+    },
+    {
+      "title": "Tom Lee's Bitmine slowed ether purchases as it bought back $86 million in stock",
+      "url": "https://www.coindesk.com/business/2026/07/20/tom-lee-s-bitmine-slowed-ether-purchases-as-it-bought-back-usd86-million-in-stock",
+      "source": "CoinDesk",
+      "published_at": "2026-07-20T12:55:36Z"
+    },
+    {
+      "title": "Bernstein lifts Robinhood target to $160, sees prediction markets revenue overtaking crypto",
+      "url": "https://www.theblock.co/post/408903/bernstein-lifts-robinhood-target-to-160-sees-prediction-markets-revenue-overtaking-crypto?utm_source=rss&utm_medium=rss",
+      "source": "The Block",
+      "published_at": "2026-07-20T12:44:13Z"
+    },
+    {
+      "title": "Saylor's Strategy raises cash reserves to $3.2 billion, leaving bitcoin holdings unchanged",
+      "url": "https://www.coindesk.com/business/2026/07/20/saylor-s-strategy-raises-cash-reserves-to-usd3-225-billion-leaving-bitcoin-holdings-unchanged",
+      "source": "CoinDesk",
+      "published_at": "2026-07-20T12:35:02Z"
+    },
+    {
+      "title": "Strategy (MSTR) Sells $263.5 Million in MSTR Shares, Skips Bitcoin Purchase as USD Reserve Tops $3.2 Billion",
+      "url": "https://bitcoinmagazine.com/news/strategy-sells-263-5-million-in-mstr",
+      "source": "Bitcoin Magazine",
+      "published_at": "2026-07-20T12:29:51Z"
     }
   ]
 }

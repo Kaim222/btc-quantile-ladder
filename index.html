@@ -406,7 +406,17 @@ function nextOpex(ts, dir) { // dir +1 / -1: nearest monthly opex strictly beyon
 const tsToDateStr = ts => new Date(ts).toISOString().slice(0, 10);
 
 function PriceLookup({ btcPrice, modelA=JV_A, modelB=JV_B }) {
-  const [dateStr, setDateStr] = useState("2026-09-18");
+  // Default: saved date if still in the future, else next upcoming monthly opex
+  const [dateStr, setDateStr] = useState(() => {
+    try {
+      const saved = localStorage.getItem("lookupDate");
+      if (saved && Date.parse(saved + "T00:00:00Z") > Date.now()) return saved;
+    } catch(_) {}
+    return tsToDateStr(nextOpex(Date.now(), 1));
+  });
+  useEffect(() => {
+    try { localStorage.setItem("lookupDate", dateStr); } catch(_) {}
+  }, [dateStr]);
   const selTs = dateStr ? Date.parse(dateStr + "T00:00:00Z") : NaN;
   const stepOpex = (dir) => { if (!isNaN(selTs)) setDateStr(tsToDateStr(nextOpex(selTs, dir))); };
   const onOpex = !isNaN(selTs) && isThirdFriday(selTs);

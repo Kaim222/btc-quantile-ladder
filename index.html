@@ -249,7 +249,7 @@ const HYST = 1.0; // rotation buffer in quantile points — monitor fires past b
 
 const LADDER = [
   { name:"STRC Margin", color:"#22c55e", darkBg:"#071a0f", qMin:85, qMax:100.01, kind:"margin",
-    debt:"< 5%",
+    debt:"< 3%",
     desc:"Perpetual preferred, 12% variable yield on $100 par. No BTC beta.",
     typeNote:"shares only · 1.5× margin",
     margin:{ leverage:1.5, yield:0.12, rate:0.0475, maint:0.50 } },
@@ -259,12 +259,12 @@ const LADDER = [
     typeNote:"long ~12 mo · short ~9 mo",
     longQ:50, longMo:12, shortQ:85, shortMo:9 },
   { name:"MSTR PMCC", color:"#f97316", darkBg:"#1c0e00", qMin:15, qMax:50, kind:"pmcc",
-    debt:"< 12%",
+    debt:"< 9%",
     desc:"Strategy (MSTR) diagonal. ~4× beta on the long leg.",
     typeNote:"long ~9 mo · short ~6 mo",
     longQ:15, longMo:9, shortQ:50, shortMo:6 },
   { name:"MSTX PMCC", color:"#ef4444", darkBg:"#1c0505", qMin:0, qMax:15, kind:"pmcc",
-    debt:"< 14%",
+    debt:"< 12%",
     desc:"2× levered MSTR ETF diagonal. ~8× beta on the long leg.",
     typeNote:"long ~6 mo · short ~3 mo",
     longQ:0.1, longMo:6, shortQ:15, shortMo:3 },
@@ -789,9 +789,6 @@ function BTCPowerLaw() {
   const inBuffer = (q > tier.qMin && q < tier.qMin + HYST) || (q < tier.qMax && q > tier.qMax - HYST && tier.qMax <= 100);
   const displayName = (name) => name;
 
-  // ─── Alerts (Pushover) ────────────────────────────────────────────────────
-  const [alertsOn,  setAlertsOn]  = useState(false);
-  const [alertSent, setAlertSent] = useState(false);
   const [lightMode,  setLightMode]  = useState(false);
 
   // Inject/remove light mode CSS override on <head>
@@ -899,58 +896,6 @@ function BTCPowerLaw() {
     `;
     document.head.appendChild(s);
   }, [lightMode]);
-  const prevTierRef = useRef(null);
-
-  // Build the full notification message including short leg guidance
-  const buildAlertMessage = (t, btcPrice, quantilePct) => {
-    const parts = [];
-    parts.push('Bitcoin $' + Math.round(btcPrice).toLocaleString() + '  ·  Quantile ' + quantilePct.toFixed(1) + '%');
-    if (t.kind === "pmcc") {
-      const s = tierStrikes(t, todayTs, modelA, modelB);
-      parts.push('<b>Position</b>\n' + t.name);
-      parts.push('<b>Structure</b>\n' +
-        'Long ' + s.long.q + 'q · ' + fmtMonth(s.long.ts) + ' · ~' + fmt(s.long.price) + ' BTC\n' +
-        'Short ' + s.short.q + 'q · ' + fmtMonth(s.short.ts) + ' · ~' + fmt(s.short.price) + ' BTC');
-    } else {
-      const ms = marginStats(t.margin);
-      parts.push('<b>Position</b>\nSTRC on ' + t.margin.leverage + '× margin');
-      parts.push('<b>Framework</b>\n' +
-        'Net carry ~' + (ms.carry*100).toFixed(1) + '% on equity\n' +
-        'Margin call −' + (ms.callDD*100).toFixed(0) + '% · STRC ≈ $' + ms.callPx.toFixed(0));
-    }
-    return parts.join('\n\n');
-  };
-
-  useEffect(() => {
-    if (!alertsOn) return;
-    const prevTier = prevTierRef.current;
-    const changed  = prevTier !== null && prevTier !== tier.name;
-    if (changed) {
-      const title = prevTier + ' → ' + tier.name;
-      const message = buildAlertMessage(tier, price, q);
-      const formData = new FormData();
-      formData.append('token',   'a954fkhqk7cyphb64kyt6eikbmgpau');
-      formData.append('user',    'ub8xj2eks26ewu6dv9hubmri5rqswv');
-      formData.append('title',   '🪜 ' + title);
-      formData.append('message', message);
-      formData.append('sound',   'cashregister');
-      formData.append('html',    '1');
-      fetch('https://api.pushover.net/1/messages.json', {
-        method: 'POST',
-        body: formData,
-      }).then(r => r.json()).then(d => { if (d.status===1) setAlertSent(true); });
-    }
-    prevTierRef.current = tier.name;
-  }, [tier.name, alertsOn]);
-
-  const toggleAlerts = () => {
-    if (!alertsOn) {
-      setAlertsOn(true);
-      prevTierRef.current = tier.name;
-    } else {
-      setAlertsOn(false);
-    }
-  };
   const devPct = (price>0&&fv>0)?((price/fv-1)*100).toFixed(1):"0.0";
 
   const PRESETS = useMemo(()=>{
@@ -1056,13 +1001,6 @@ function BTCPowerLaw() {
                 padding:"4px 6px",fontSize:"16px",lineHeight:1,opacity:0.75,
                 transition:"opacity 0.2s"}}>
               {lightMode ? "🌙" : "☀️"}
-            </button>
-            <button onClick={toggleAlerts}
-              title={alertsOn ? "Push alerts ON — tap to disable" : "Enable push alerts to phone"}
-              style={{background:"transparent",border:"none",cursor:"pointer",
-                padding:"4px 6px",fontSize:"18px",lineHeight:1,
-                opacity:alertsOn?1:0.3,transition:"opacity 0.2s"}}>
-              🔔
             </button>
           </div>
         </div>
@@ -1199,8 +1137,8 @@ function BTCPowerLaw() {
                       display:"flex",alignItems:"center",justifyContent:"center",gap:"5px"}}>
                       <span style={{fontSize:"10px",fontWeight:700,letterSpacing:"0.08em",
                         color:active?t.color:t.color+"99",whiteSpace:"nowrap"}}>{t.name.split(" ")[0]}</span>
-                      {width > 20 && <span style={{fontSize:"9px",color:active?t.color+"cc":t.color+"66",
-                        whiteSpace:"nowrap"}}>{t.qMin.toFixed(0)}–{Math.min(100,t.qMax).toFixed(0)}</span>}
+                      <span style={{fontSize:"9px",color:active?t.color+"cc":t.color+"66",
+                        whiteSpace:"nowrap"}}>{t.qMin.toFixed(0)}–{Math.min(100,t.qMax).toFixed(0)}</span>
                     </div>
                   );
                 })}
@@ -1414,6 +1352,10 @@ function BTCPowerLaw() {
         #root [style*="justify-content: space-between"][style*="gap: 16px"] { 
           flex-direction: column !important; align-items: flex-start !important; 
         }
+        /* Quantile rail: stack name over range, taller container */
+        #root [style*="height: 40px"][style*="position: relative"] { height: 52px !important; }
+        #root [style*="overflow: hidden"][style*="gap: 5px"][style*="position: absolute"] { flex-direction: column !important; gap: 1px !important; }
+        #root [style*="overflow: hidden"][style*="gap: 5px"][style*="position: absolute"] > span { font-size: 8px !important; }
         /* Band dial: slightly smaller on mobile, keep two-line text proportions */
         #root [style*="width: 68px"][style*="height: 68px"] { width: 58px !important; height: 58px !important; }
         #root [style*="width: 68px"][style*="height: 68px"] > div:first-child { font-size: 13px !important; }

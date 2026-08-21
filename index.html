@@ -254,17 +254,17 @@ const LADDER = [
     margin:{ leverage:1.5, yield:0.12, rate:0.0475, maint:0.50 } },
   { name:"IBIT PMCC", color:"#22d3ee", darkBg:"#0c1e26", qMin:50, qMax:85, kind:"pmcc",
     debt:"< 6% APR",
-    desc:"Diagonal on spot BTC ETF. ~2× beta on the long leg, clean BTC→strike mapping.",
+    desc:"Spot BTC ETF diagonal. ~2× beta on the long leg.",
     typeNote:"long ~12 mo · short ~9 mo",
     longQ:50, longMo:12, shortQ:85, shortMo:9 },
   { name:"MSTR PMCC", color:"#f97316", darkBg:"#1c0e00", qMin:15, qMax:50, kind:"pmcc",
     debt:"< 12% APR",
-    desc:"Diagonal on Strategy (MSTR). ~4× beta on the long leg · mNAV drift in the mapping.",
+    desc:"Strategy (MSTR) diagonal. ~4× beta on the long leg.",
     typeNote:"long ~9 mo · short ~6 mo",
     longQ:15, longMo:9, shortQ:50, shortMo:6 },
   { name:"MSTX PMCC", color:"#ef4444", darkBg:"#1c0505", qMin:0, qMax:15, kind:"pmcc",
     debt:"< 14% APR",
-    desc:"Diagonal on 2× levered Strategy ETF. ~8× beta · decay drag baked into strike mapping.",
+    desc:"2× levered MSTR ETF diagonal. ~8× beta on the long leg.",
     typeNote:"long ~6 mo · short ~3 mo",
     longQ:0.1, longMo:6, shortQ:15, shortMo:3 },
 ];
@@ -305,538 +305,6 @@ function fmt(n) {
 function fmtFull(n) { return "$" + Math.round(n).toLocaleString(); }
 
 
-// ─────────────────────────────────────────────────────────────────────────────
-// QUANTILE GAUGE
-// ─────────────────────────────────────────────────────────────────────────────
-function QuantileGauge({ q, todayTs, tierColor }) {
-  // Pad top/bottom so extreme labels (99.9%, 0.1%) don't clip
-  // Inner bar sits between PAD and GH-PAD, labels map proportionally into that range
-  const GH = 280;
-  const PAD = 10; // px padding top and bottom inside the bar area
-  const BAR_H = GH - PAD * 2;
-  const clr = tierColor || getTier(q).tier.color;
-  const filled = BAR_H * (Math.min(100,Math.max(0,q))/100);
-
-  // Map a quantile 0–100 to a top pixel within the GH container
-  // 100 → PAD (top), 0 → GH-PAD (bottom)
-  const qToTop = pct => PAD + BAR_H * (1 - Math.min(100,Math.max(0,pct)) / 100);
-
-  return (
-    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"8px",paddingTop:"44px"}}>
-      <div style={{fontSize:"12px",color:"#8aaac8",textTransform:"uppercase",letterSpacing:"0.1em"}}>Rank</div>
-      <div style={{position:"relative",width:"32px",height:`${GH}px`}}>
-        {/* Bar track */}
-        <div style={{position:"absolute",top:`${PAD}px`,bottom:`${PAD}px`,left:"8px",right:"8px",
-          background:"#070f1f",border:"1px solid #162840",borderRadius:"3px",overflow:"hidden"}}>
-          <div style={{position:"absolute",bottom:0,left:0,right:0,
-            height:`${filled}px`,background:clr,opacity:0.9,
-            transition:"height 0.5s cubic-bezier(0.4,0,0.2,1)"}}/>
-        </div>
-        {/* Needle — sharp tick at exact current quantile */}
-        <div style={{position:"absolute",left:"4px",right:"-4px",
-          top:`${qToTop(q)}px`,transform:"translateY(-50%)",
-          pointerEvents:"none",zIndex:2}}>
-          <div style={{height:"2px",background:`linear-gradient(90deg,${clr},${clr}bb,transparent)`,
-            borderRadius:"1px",boxShadow:`0 0 5px ${clr}88`}}/>
-        </div>
-        {/* Band tick marks — proportionally placed */}
-        {BANDS.map(b=>{
-          const bp = bandPriceAt(todayTs, b);
-          const instrColor = b.color;
-          return (
-            <div key={b.q} style={{position:"absolute",left:0,right:"-92px",
-              top:`${qToTop(b.q)}px`,display:"flex",alignItems:"center",gap:"3px",
-              transform:"translateY(-50%)"}}>
-              <div style={{width:"8px",height:"1px",background:instrColor,opacity:0.9}}/>
-              <div style={{width:"16px"}}/>
-              <span style={{fontSize:"10px",color:instrColor,opacity:1,whiteSpace:"nowrap"}}>
-                {b.label} {fmt(bp)}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-      <div style={{fontSize:"26px",fontWeight:700,color:clr,marginTop:"4px"}}>
-        {q.toFixed(1)}<span style={{fontSize:"13px",color:clr,opacity:0.7}}>%</span>
-      </div>
-    </div>
-  );
-}
-
-
-// ─────────────────────────────────────────────────────────────────────────────
-// INCOME CONVERTER
-// Given a position in any instrument, compute equivalent STRC/EPD income
-// Chain: Position Value → BTC equivalent → STRC shares → Annual Income
-// Beta multipliers: IBIT=1x, IBIT LEAPs=2x, MSTR LEAPs=4x, MSTX LEAPs=8x
-// ─────────────────────────────────────────────────────────────────────────────
-const INCOME_INSTRUMENTS = [
-  { name:"MSTX PMCC",    beta:8,  color:"#ef4444", hint:"~8× BTC beta (long leg)" },
-  { name:"MSTR PMCC",    beta:4,  color:"#f97316", hint:"~4× BTC beta (long leg)" },
-  { name:"IBIT PMCC",    beta:2,  color:"#22d3ee", hint:"~2× BTC beta (long leg)" },
-  { name:"IBIT Shares",  beta:1,  color:"#94a3b8", hint:"~1,750 shares ≈ 1 BTC" },
-];
-
-const STRC_PAR    = 100;   // STRC trades near $100 par
-const STRC_YIELD  = 0.115; // 11.5% current rate
-const EPD_PAR     = 1;     // EPD is a regular stock ~$20s
-const EPD_PRICE   = 40;    // approximate
-const EPD_YIELD   = 0.10;  // ~7% yield
-
-function IncomeConverter({ btcPrice, fairValue, activeTier }) {
-  // Map active ladder tier → closest income instrument
-  const tierToInstrument = (t) => {
-    if (t === "MSTX PMCC")  return "MSTX PMCC";
-    if (t === "MSTR PMCC")  return "MSTR PMCC";
-    if (t === "IBIT PMCC")  return "IBIT PMCC";
-    return "IBIT Shares"; // STRC Margin → 1× reference
-  };
-  const [instrument, setInstrument]   = useState(() => tierToInstrument(activeTier));
-
-  // Sync to active tier when it changes (but don't override manual selection)
-  const [userPicked, setUserPicked] = React.useState(false);
-  React.useEffect(() => {
-    if (!userPicked) setInstrument(tierToInstrument(activeTier));
-  }, [activeTier, userPicked]);
-  const [posValue,   setPosValue]     = useState("100000");
-  const [strcPrice,  setStrcPrice]    = useState("100");
-  const [strcRate,   setStrcRate]     = useState("11.5");
-  const [epdPrice,   setEpdPrice]     = useState("40");
-  const [epdYield,   setEpdYield]     = useState("10.0");
-  const [marginPct,  setMarginPct]    = useState("50");    // % of position on margin
-  const [marginRate, setMarginRate]   = useState("4.5");   // margin interest rate %
-  const [callReq,    setCallReq]      = useState("50");    // STRC default — conservative baseline, overridden by broker data on load
-  const [target,     setTarget]       = useState("STRC");
-
-  const [marginData, setMarginData] = useState(null);
-  const [userEditedCallReq, setUserEditedCallReq] = useState(false);
-  useEffect(() => {
-    fetch("margin.json?v=" + Date.now())
-      .then(r => r.ok ? r.json() : null)
-      .then(j => { if (j) setMarginData(j); })
-      .catch(() => {});
-  }, []);
-  // Auto-fill callReq from margin.json when target changes (unless user edited it)
-  useEffect(() => {
-    if (!marginData || userEditedCallReq) return;
-    const req = marginData?.requirements?.[target];
-    if (req && typeof req.maintenance === "number") {
-      setCallReq(String(req.maintenance));
-    }
-  }, [target, marginData, userEditedCallReq]);
-
-  const inst      = INCOME_INSTRUMENTS.find(i => i.name === instrument) || INCOME_INSTRUMENTS[0];
-  const posVal    = parseFloat(posValue.replace(/[^0-9.]/g,"")) || 0;
-  const strcPx    = parseFloat(strcPrice)  || 100;
-  const strcRt    = parseFloat(strcRate)   / 100 || 0.115;
-  const epdPx     = parseFloat(epdPrice)   || 40;
-  const epdYld    = parseFloat(epdYield)   / 100 || 0.10;
-
-  // Step 1: BTC-equivalent value (beta-adjusted notional)
-  const btcEquiv  = posVal * inst.beta;
-
-  // Step 2: # of BTC equivalent
-  const btcCount  = btcPrice > 0 ? btcEquiv / btcPrice : 0;
-
-  // Step 3: STRC conversion — use beta-adjusted notional (btcEquiv)
-  const strcShares       = strcPx > 0 ? btcEquiv / strcPx : 0;
-  const strcAnnualIncome = strcShares * strcPx * strcRt;
-  const strcMonthly      = strcAnnualIncome / 12;
-
-  // Step 4: EPD conversion — use beta-adjusted notional (btcEquiv)
-  const epdShares        = epdPx > 0 ? btcEquiv / epdPx : 0;
-  const epdAnnualIncome  = epdShares * epdPx * epdYld;
-  const epdMonthly       = epdAnnualIncome / 12;
-
-  // Fair Value gain calculation
-  // When price >= FV, treat as already at FV with 1× beta (no leverage upside to model)
-  const aboveFV     = btcPrice > 0 && fairValue > 0 && btcPrice >= fairValue;
-  const effectiveBeta = aboveFV ? 1 : inst.beta;
-  const btcToFvPct  = btcPrice > 0 && fairValue > 0 ? (fairValue / btcPrice - 1) : 0;
-  const posGainPct  = aboveFV ? 0 : btcToFvPct * inst.beta;
-  const posGainVal  = posVal * posGainPct;
-  const fvPosValue  = aboveFV ? posVal : Math.max(0, posVal + posGainVal);
-  // How many income shares at FV position value
-  const fvStrcShares   = strcPx > 0 ? fvPosValue / strcPx : 0;
-  const fvEpdShares    = epdPx  > 0 ? fvPosValue / epdPx  : 0;
-  const fvStrcIncome   = fvStrcShares * strcPx * strcRt;
-  const fvEpdIncome    = fvEpdShares  * epdPx  * epdYld;
-
-  const isSTRC = target === "STRC";
-  const incomeShares  = isSTRC ? strcShares  : epdShares;
-  const annualIncome  = isSTRC ? strcAnnualIncome : epdAnnualIncome;
-  const monthlyIncome = isSTRC ? strcMonthly : epdMonthly;
-  const tgtPx         = isSTRC ? strcPx : epdPx;
-  const tgtYield      = isSTRC ? strcRt : epdYld;
-  const tgtColor      = isSTRC ? "#22c55e" : "#3b82f6";
-
-  const fmtD = n => "$" + Math.round(n).toLocaleString();
-  const fmtN = n => n >= 1000 ? (n/1000).toFixed(1)+"K" : Math.round(n).toLocaleString();
-
-  const steps = [
-    {
-      label: "Position Value",
-      value: fmtD(posVal),
-      sub: `${inst.beta}× BTC beta`,
-      color: inst.color,
-    },
-    {
-      label: "BTC-Adj. Notional",
-      value: fmtD(btcEquiv),
-      sub: `${inst.beta}× notional on ${fmtD(posVal)}`,
-      color: inst.color,
-      arrow: true,
-    },
-    
-    {
-      label: `${target} Shares`,
-      value: fmtN(incomeShares),
-      sub: `@ ${fmtD(tgtPx)} par`,
-      color: tgtColor,
-      arrow: true,
-    },
-    {
-      label: "Annual Income",
-      value: fmtD(annualIncome),
-      sub: `${fmtD(monthlyIncome)}/mo · ${(tgtYield*100).toFixed(1)}% yield`,
-      color: tgtColor,
-      highlight: true,
-      arrow: true,
-    },
-  ];
-
-  // FV gain card — separate from chain
-  // Income from total deployed capital (equity + margin) at FV
-  // marginDebt is already defined below but we need it here — compute inline
-  const _marginDebt  = fvPosValue * (parseFloat(marginPct) / 100 || 0);
-  const totalCapital = fvPosValue + _marginDebt;  // equity + borrowed
-  const fvIncomeStrc = strcPx > 0 ? (totalCapital / strcPx) * strcPx * strcRt : 0;
-  const fvIncomeEpd  = epdPx  > 0 ? (totalCapital / epdPx)  * epdPx  * epdYld : 0;
-  const fvIncome     = isSTRC ? fvIncomeStrc : fvIncomeEpd;
-
-  // Margin calculations (income sleeve only — STRC/EPD)
-  const marginFrac     = parseFloat(marginPct)  / 100 || 0;
-  const marginRateFrac = parseFloat(marginRate) / 100 || 0;
-  const callReqFrac    = parseFloat(callReq)    / 100 || 0;
-  const marginDebt     = fvPosValue * marginFrac;                     // $ borrowed at FV position value
-  const marginCarry    = marginDebt * marginRateFrac;                // annual interest $
-  const marginCallPx   = (1 - callReqFrac) > 0 ? (marginDebt / (1 - callReqFrac)) / ((fvPosValue + marginDebt) / tgtPx) : 0;
-  const marginCallVal  = marginCallPx > 0 ? (marginCallPx / tgtPx) * fvPosValue : 0; // position value at call price
-  const incomeCoversCarry = annualIncome > 0 && marginCarry > 0;
-  const coverageRatio  = marginCarry > 0 ? fvIncome / marginCarry : null;
-  const netAnnualIncome = fvIncome - marginCarry;  // full FV position income minus carry on borrowed portion
-  const netMonthlyIncome = netAnnualIncome / 12;
-
-  const gainShares = isSTRC ? fvStrcShares : fvEpdShares;
-  const gainIncome = isSTRC ? fvStrcIncome : fvEpdIncome;
-
-  const inputStyle = {
-    background:"#070f1f", border:"1px solid #0f2a42", borderRadius:"4px",
-    color:"#facc15", fontSize:"13px", fontFamily:"inherit", fontWeight:600,
-    padding:"4px 8px", width:"90px", outline:"none", textAlign:"right",
-  };
-
-  return (
-    <div style={{background:"#040c1a",border:"1px solid #0a1628",borderRadius:"5px",padding:"16px 18px",marginBottom:"12px"}}>
-      <div style={{fontSize:"11px",color:"#5a8fc0",textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:"14px",fontWeight:600}}>
-        Income Converter
-      </div>
-
-      {/* Controls row */}
-      <div style={{display:"flex",gap:"16px",flexWrap:"wrap",marginBottom:"16px",alignItems:"flex-end"}}>
-
-        {/* Instrument selector */}
-        <div>
-          <div style={{fontSize:"11px",color:"#8aaac8",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:"5px"}}>instrument</div>
-          <div style={{display:"flex",gap:"4px",flexWrap:"wrap",overflowX:"visible",paddingBottom:"0"}}>
-            {INCOME_INSTRUMENTS.map(i=>(
-              <button key={i.name} onClick={()=>{ setInstrument(i.name); setUserPicked(true); }} style={{
-                background: i.name===instrument ? i.color+"22" : "transparent",
-                border:`1px solid ${i.name===instrument ? i.color : i.color+"33"}`,
-                borderRadius:"3px", color: i.name===instrument ? i.color : i.color+"99",
-                fontSize:"10px", fontFamily:"inherit", fontWeight: i.name===instrument?700:400,
-                padding:"4px 9px", cursor:"pointer",
-              }}>
-                {i.name} <span style={{opacity:0.6}}>{i.beta}×</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Position value */}
-        <div>
-          <div style={{fontSize:"11px",color:"#8aaac8",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:"5px"}}>position value</div>
-          <div style={{position:"relative",display:"inline-block"}}>
-            <span style={{position:"absolute",left:"8px",top:"50%",transform:"translateY(-50%)",color:"#7a8fa8",fontSize:"13px"}}>$</span>
-            <input value={posValue} onChange={e=>setPosValue(e.target.value.replace(/[^0-9]/g,""))}
-              style={{...inputStyle, paddingLeft:"20px", width:"120px", textAlign:"left"}}/>
-          </div>
-        </div>
-
-        {/* Target income instrument */}
-        <div>
-          <div style={{fontSize:"11px",color:"#8aaac8",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:"5px"}}>convert to</div>
-          <div style={{display:"flex",gap:"4px"}}>
-            {["STRC","EPD"].map(t=>(
-              <button key={t} onClick={()=>{ setTarget(t); setUserEditedCallReq(false); }} style={{
-                background: t===target ? (t==="STRC"?"#22c55e22":"#3b82f622") : "transparent",
-                border:`1px solid ${t===target?(t==="STRC"?"#22c55e":"#3b82f6"):(t==="STRC"?"#22c55e33":"#3b82f633")}`,
-                borderRadius:"3px", color: t===target?(t==="STRC"?"#22c55e":"#3b82f6"):(t==="STRC"?"#22c55eaa":"#3b82f6aa"),
-                fontSize:"10px", fontFamily:"inherit", fontWeight:t===target?700:400,
-                padding:"4px 12px", cursor:"pointer",
-              }}>{t}</button>
-            ))}
-          </div>
-        </div>
-
-        {/* Yield inputs */}
-        <div>
-          <div style={{fontSize:"11px",color:"#8aaac8",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:"5px"}}>
-            {isSTRC ? "STRC Price / Rate" : "EPD Price / Yield"}
-          </div>
-          <div style={{display:"flex",gap:"6px",alignItems:"center"}}>
-            <div style={{position:"relative",display:"inline-block"}}>
-              <span style={{position:"absolute",left:"8px",top:"50%",transform:"translateY(-50%)",color:"#7a8fa8",fontSize:"13px"}}>$</span>
-              <input value={isSTRC?strcPrice:epdPrice}
-                onChange={e=>isSTRC?setStrcPrice(e.target.value.replace(/[^0-9.]/g,"")):setEpdPrice(e.target.value.replace(/[^0-9.]/g,""))}
-                style={{...inputStyle,paddingLeft:"20px"}}/>
-            </div>
-            <div style={{position:"relative",display:"inline-block"}}>
-              <input value={isSTRC?strcRate:epdYield}
-                onChange={e=>isSTRC?setStrcRate(e.target.value.replace(/[^0-9.]/g,"")):setEpdYield(e.target.value.replace(/[^0-9.]/g,""))}
-                style={{...inputStyle, paddingRight:"22px"}}/>
-              <span style={{position:"absolute",right:"8px",top:"50%",transform:"translateY(-50%)",color:"#7a8fa8",fontSize:"13px"}}>%</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Chain visualization */}
-      <div style={{display:"flex",alignItems:"stretch",flexWrap:"wrap",gap:"2px"}}>
-        {steps.map((s,i)=>(
-          <div key={i} style={{display:"flex",alignItems:"center",gap:"2px",flex:"1 1 auto",minWidth:"120px"}}>
-            <div style={{
-              flex:1, background: s.highlight ? s.color+"18" : "#070f1f",
-              border:`1px solid ${s.highlight ? s.color+"66" : "#0a1628"}`,
-              borderRadius:"5px", padding:"12px 14px",
-              borderLeft: s.highlight ? `3px solid ${s.color}` : undefined,
-            }}>
-              <div style={{fontSize:"11px",color:"#8aaac8",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:"4px"}}>{s.label}</div>
-              <div style={{fontSize:"16px",fontWeight:700,color:s.color,lineHeight:1}}>{s.value}</div>
-              <div style={{fontSize:"11px",color:"#7a9ab8",marginTop:"3px"}}>{s.sub}</div>
-            </div>
-            {i < steps.length-1 && (
-              <div style={{fontSize:"16px",color:"#5a8fc0",flexShrink:0,padding:"0 2px"}}>→</div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Fair Value Gain Panel */}
-      {btcPrice > 0 && fairValue > 0 && (
-        <div style={{marginTop:"10px",background:"#070f1f",border:"1px solid #0a1628",borderRadius:"6px",padding:"14px 16px"}}>
-          <div style={{fontSize:"12px",color:"#8aaac8",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:"10px",display:"flex",alignItems:"center",gap:"8px",fontWeight:600}}>
-            {aboveFV ? (
-              <>
-                <span>At current price</span>
-                <span style={{color:"#facc15",fontWeight:700}}>{fmtD(btcPrice)}</span>
-                <span style={{color:"#8aaac8"}}>above fair value</span>
-                <span style={{color:"#ef4444",fontWeight:700,fontSize:"13px"}}>
-                  ({(btcToFvPct*100).toFixed(1)}% to FV)
-                </span>
-              </>
-            ) : (
-              <>
-                <span>At fair value</span>
-                <span style={{color:"#22d3ee",fontWeight:700}}>{fmtD(fairValue)}</span>
-                <span style={{color:"#8aaac8"}}>from {fmtD(btcPrice)}</span>
-                <span style={{color:"#22c55e",fontWeight:700,fontSize:"13px"}}>
-                  (+{(btcToFvPct*100).toFixed(1)}% BTC)
-                </span>
-              </>
-            )}
-          </div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:"8px"}}>
-            {[
-              {
-                label: aboveFV ? "above fair value" : "position gain",
-                value: aboveFV ? fmtD(0) : fmtD(posGainVal),
-                sub: aboveFV ? "already at or above FV" : `${posGainPct>=0?"+":""}${(posGainPct*100).toFixed(0)}% · ${inst.beta}× beta`,
-                color: aboveFV ? "#334155" : "#22c55e",
-              },
-              {
-                label: aboveFV ? "position value" : "value at FV",
-                value: fmtD(fvPosValue),
-                sub: aboveFV ? "1× beta assumed" : `up from ${fmtD(posVal)}`,
-                color:"#f1f5f9",
-              },
-              {
-                label: aboveFV ? "BTC equiv." : "BTC equiv. at FV",
-                value: (aboveFV ? btcPrice : fairValue) > 0 ? (fvPosValue / (aboveFV ? btcPrice : fairValue)).toFixed(3) + " BTC" : "—",
-                sub: aboveFV ? "at current price" : "fair value price",
-                color:"#f7931a",
-              },
-              {
-                label:`${target} Shares`,
-                value: fmtN(gainShares),
-                sub:`${fmtD(fvPosValue)} ÷ ${fmtD(tgtPx)} par`,
-                color: tgtColor,
-              },
-              {
-                label: aboveFV ? "annual income" : "Annual income at FV",
-                value: fmtD(gainIncome),
-                sub:`${fmtD(gainIncome/12)}/mo`,
-                color: tgtColor,
-              },
-            ].map((c,i)=>(
-              <div key={i} style={{background:"#040c1a",border:`1px solid ${c.color}22`,borderRadius:"4px",padding:"8px 10px"}}>
-                <div style={{fontSize:"11px",color:"#8aaac8",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:"4px"}}>{c.label}</div>
-                <div style={{fontSize:"17px",fontWeight:700,color:c.color,lineHeight:1}}>{c.value}</div>
-                <div style={{fontSize:"11px",color:"#7a9ab8",marginTop:"3px"}}>{c.sub}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Margin Panel — income sleeve only */}
-      {(target === "STRC" || target === "EPD") && posVal > 0 && (() => {
-        const req = marginData?.requirements?.[target] || null;
-        const liveMaint = req && typeof req.maintenance === "number" ? req.maintenance : null;
-        const liveInit  = req && typeof req.initial === "number" ? req.initial : null;
-        const brokerSrc = marginData?.broker || "—";
-        const callReqStale = liveMaint !== null && parseFloat(callReq) !== liveMaint && !userEditedCallReq;
-        return (
-        <div style={{marginTop:"10px",background:"#070f1f",border:"1px solid #0f1e32",borderRadius:"6px",padding:"14px 16px"}}>
-          <div style={{fontSize:"11px",color:"#5a8fc0",textTransform:"uppercase",letterSpacing:"0.12em",
-            marginBottom:"10px",display:"flex",alignItems:"center",gap:"10px",fontWeight:600,flexWrap:"wrap"}}>
-            <span style={{color:"#8aaac8"}}>Margin Analysis</span>
-            <span style={{color:"#334a5e",fontWeight:400}}>·</span>
-            <span style={{color:"#8aaac8",fontWeight:400,fontSize:"11px"}}>Income Sleeve</span>
-            {liveMaint !== null && (
-              <span style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:"6px",fontSize:"10px",
-                fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase"}}
-                title="Sourced from Interactive Brokers public margin policy. Robinhood sets requirements dynamically and may differ by ~10 pts — verify in-app before opening large positions.">
-                <span style={{color:"#7a9ab8"}}>{brokerSrc}</span>
-                <span style={{color:"#334a5e"}}>·</span>
-                <span style={{color:tgtColor,fontWeight:700}}>
-                  {target} {liveMaint}%{liveInit !== null && liveInit !== liveMaint ? ` MAINT · ${liveInit}% INIT` : " MAINT"}
-                </span>
-              </span>
-            )}
-          </div>
-          {/* Inputs row */}
-          <div style={{display:"flex",gap:"10px",marginBottom:"14px",flexWrap:"wrap"}}>
-            {[
-              { label:"Margin %",   val:marginPct,  set:setMarginPct,  trackEdit:false },
-              { label:"Rate %",     val:marginRate, set:setMarginRate, trackEdit:false },
-              { label:"Call Req %", val:callReq,    set:setCallReq,    trackEdit:true  },
-            ].map(f=>(
-              <div key={f.label} style={{display:"flex",flexDirection:"column",gap:"5px"}}>
-                <div style={{fontSize:"11px",color:"#8aaac8",textTransform:"uppercase",
-                  letterSpacing:"0.06em",fontWeight:600,display:"flex",alignItems:"center",gap:"6px"}}>
-                  {f.label}
-                  {f.trackEdit && callReqStale && (
-                    <button onClick={()=>{ setCallReq(String(liveMaint)); setUserEditedCallReq(false); }}
-                      title={`Reset to ${liveMaint}% (broker baseline)`}
-                      style={{background:"#052e16",border:"1px solid #14532d",borderRadius:"3px",
-                        color:"#22c55e",fontSize:"9px",fontWeight:700,padding:"1px 5px",
-                        cursor:"pointer",letterSpacing:"0.04em",textTransform:"uppercase",
-                        fontFamily:"inherit"}}>
-                      reset {liveMaint}%
-                    </button>
-                  )}
-                  {f.trackEdit && userEditedCallReq && liveMaint !== null && (
-                    <span title="Manually edited. Click reset to restore broker default."
-                      style={{color:"#eab308",fontSize:"10px"}}>●</span>
-                  )}
-                </div>
-                <div style={{display:"flex",alignItems:"center",background:"#040c1a",
-                  border:"1px solid #162840",borderRadius:"4px",padding:"5px 10px",gap:"3px"}}>
-                  <input value={f.val}
-                    onChange={e=>{
-                      f.set(e.target.value.replace(/[^0-9.]/g,""));
-                      if (f.trackEdit) setUserEditedCallReq(true);
-                    }}
-                    style={{background:"transparent",border:"none",outline:"none",color:"#e2e8f0",
-                      fontSize:"14px",fontFamily:"inherit",fontWeight:700,width:"52px",textAlign:"right"}}/>
-                  <span style={{fontSize:"12px",color:"#5a7fa0"}}>%</span>
-                </div>
-              </div>
-            ))}
-          </div>
-          {/* Stats row */}
-          <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:"8px"}}>
-            {[
-              {
-                label:"Margin Debt",
-                value: fmtD(marginDebt),
-                sub:`${marginPct}% of ${fmtD(fvPosValue)}`,
-                color:"#f1f5f9",
-              },
-              {
-                label:"Annual Carry",
-                value: fmtD(marginCarry),
-                sub:`${fmtD(marginCarry/12)}/mo interest`,
-                color:"#ef4444",
-              },
-              {
-                label:`Call @ ${callReq}%`,
-                value: marginCallVal >= fvPosValue * 0.90 ? "⚠ TOO CLOSE" : fmtD(marginCallPx),
-                sub: marginCallVal >= fvPosValue * 0.90
-                  ? `strike ${fmtD(marginCallPx)} — within 10% of FV`
-                  : `triggers at ${fmtD(marginCallVal)}`,
-                color: marginCallVal >= fvPosValue * 0.90 ? "#ef4444" : "#f97316",
-              },
-              {
-                label:`${target} w/ Margin`,
-                value: fmtN(totalCapital / tgtPx),
-                sub:`${fmtD(totalCapital)} total`,
-                color: tgtColor,
-              },
-              {
-                label:"Net Annual Income",
-                value: fmtD(netAnnualIncome),
-                sub:`${fmtD(fvIncome)} − ${fmtD(marginCarry)} carry`,
-                color: netAnnualIncome >= 0 ? "#22c55e" : "#ef4444",
-              },
-            ].map((c,i)=>(
-              <div key={i} style={{background:"#040c1a",border:`1px solid ${c.color}22`,
-                borderRadius:"5px",padding:"10px 12px"}}>
-                <div style={{fontSize:"11px",color:"#8aaac8",textTransform:"uppercase",
-                  letterSpacing:"0.06em",marginBottom:"5px"}}>{c.label}</div>
-                <div style={{fontSize:"17px",fontWeight:700,color:c.color,lineHeight:1}}>{c.value}</div>
-                <div style={{fontSize:"11px",color:"#7a9ab8",marginTop:"4px"}}>{c.sub}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-        );
-      })()}
-      {/* Beta reference — 2 rows */}
-      <div style={{marginTop:"12px",display:"flex",flexDirection:"column",gap:"5px"}}>
-        {[[0,1],[2,3]].map((pair,ri)=>(
-          <div key={ri} style={{display:"flex",gap:"20px",flexWrap:"wrap"}}>
-            {pair.map(idx=>{
-              const i=INCOME_INSTRUMENTS[idx];
-              return (
-                <div key={i.name} style={{display:"flex",alignItems:"center",gap:"5px"}}>
-                  <div style={{width:"8px",height:"8px",borderRadius:"50%",background:i.color,opacity:0.7}}/>
-                  <span style={{fontSize:"11px",color:"#8b9db0"}}>{i.name}</span>
-                  <span style={{fontSize:"11px",color:i.color,fontWeight:700}}>{i.beta}×</span>
-                  <span style={{fontSize:"11px",color:"#8aaac8"}}>{i.hint}</span>
-                </div>
-              );
-            })}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// FORWARD PROJECTION TABLE
 // ─────────────────────────────────────────────────────────────────────────────
 function ForwardTable({ todayTs, modelA=JV_A, modelB=JV_B }) {
   // Safe date offset: always derive from todayTs, never mutate
@@ -1434,7 +902,7 @@ function BTCPowerLaw() {
 
   const PRESETS = useMemo(()=>{
     const base=[];
-    for(let p=62500;p<=250000;p+=12500) base.push(p);
+    for(let p=75000;p<=250000;p+=25000) base.push(p);
     return base;
   },[]);
 
@@ -1467,7 +935,7 @@ function BTCPowerLaw() {
               </span>
             </div>
             <div style={{height:"1px",
-              background:"linear-gradient(90deg,#22d3ee 0%,#eab308 35%,#f97316 60%,transparent 85%)",marginTop:"8px",opacity:0.7}}/>
+              background:"linear-gradient(90deg,#ef4444 0%,#f97316 30%,#22d3ee 60%,#22c55e 80%,transparent 95%)",marginTop:"8px",opacity:0.7}}/>
           </div>
           <div style={{display:"flex",gap:"8px",alignItems:"center",flexWrap:"wrap"}}>
             <span style={{fontSize:"11px",padding:"2px 8px",borderRadius:"3px",
@@ -1663,34 +1131,38 @@ function BTCPowerLaw() {
                   )}
                 </div>
               </div>
-              {/* Band position dial */}
-              <div style={{display:"flex",gap:"10px",alignItems:"center",flexShrink:0}}>
-                <div style={{textAlign:"center"}}>
-                  <div style={{fontSize:"10px",color:"#8aaac8",textTransform:"uppercase",
-                    letterSpacing:"0.08em",marginBottom:"5px"}}>Band</div>
-                  <div style={{width:"68px",height:"68px",borderRadius:"50%",
-                    border:`3px solid ${tier.color}`,display:"flex",flexDirection:"column",alignItems:"center",
-                    justifyContent:"center",background:tier.darkBg}}>
-                    <div style={{fontSize:"15px",fontWeight:700,color:tier.color,lineHeight:1.1}}>{tier.qMin.toFixed(0)}–{Math.min(100,tier.qMax).toFixed(0)}</div>
-                    <div style={{fontSize:"9px",color:tier.color,opacity:0.7,letterSpacing:"0.08em"}}>QUANTILE</div>
-                  </div>
-                </div>
               </div>
-            </div>
-            <div style={{marginTop:"12px",display:"flex",gap:"5px",overflowX:"auto",
-              WebkitOverflowScrolling:"touch",scrollbarWidth:"none",paddingBottom:"2px"}}>
-              {LADDER.slice().reverse().map(t=>{
-                const active=t.name===tier.name;
-                return <div key={t.name} style={{padding:"3px 9px",borderRadius:"3px",fontSize:"11px",
-                  whiteSpace:"nowrap",flexShrink:0,
-                  border:`1px solid ${active?t.color:t.color+"55"}`,
-                  color:active?t.color:t.color+"88",
-                  background:active?t.darkBg:"transparent",
-                  fontWeight:active?700:400,
-                  boxShadow:active?`0 0 8px ${t.color}55`:"none"}}>
-                  {t.name}<span style={{marginLeft:"5px",fontWeight:400,opacity:0.55,fontSize:"10px"}}>{t.qMin.toFixed(0)}–{Math.min(100,t.qMax).toFixed(0)}</span>
-                </div>;
-              })}
+            <div style={{marginTop:"14px"}}>
+              <div style={{position:"relative",height:"40px"}}>
+                {LADDER.map(t=>{
+                  const left = t.qMin, width = Math.min(100,t.qMax) - t.qMin;
+                  const active = t.name === tier.name;
+                  return (
+                    <div key={t.name} style={{position:"absolute",top:"6px",bottom:"6px",
+                      left:`${left}%`,width:`calc(${width}% - 2px)`,
+                      background:active?t.color+"30":t.color+"0d",
+                      border:`1px solid ${active?t.color:t.color+"40"}`,
+                      borderRadius:"4px",overflow:"hidden",
+                      boxShadow:active?`0 0 12px ${t.color}44`:"none",
+                      display:"flex",alignItems:"center",justifyContent:"center",gap:"5px"}}>
+                      <span style={{fontSize:"10px",fontWeight:700,letterSpacing:"0.08em",
+                        color:active?t.color:t.color+"99",whiteSpace:"nowrap"}}>{t.name.split(" ")[0]}</span>
+                      {width > 20 && <span style={{fontSize:"9px",color:active?t.color+"cc":t.color+"66",
+                        whiteSpace:"nowrap"}}>{t.qMin.toFixed(0)}–{Math.min(100,t.qMax).toFixed(0)}</span>}
+                    </div>
+                  );
+                })}
+                {/* current quantile needle */}
+                <div style={{position:"absolute",top:"0",bottom:"0",
+                  left:`${Math.min(100,Math.max(0,q))}%`,width:"2px",marginLeft:"-1px",
+                  background:tier.color,boxShadow:`0 0 6px ${tier.color}`,borderRadius:"1px",
+                  transition:"left 0.4s cubic-bezier(0.4,0,0.2,1)"}}/>
+                <div style={{position:"absolute",top:"-3px",
+                  left:`${Math.min(100,Math.max(0,q))}%`,transform:"translateX(-50%)",
+                  width:0,height:0,borderLeft:"4px solid transparent",borderRight:"4px solid transparent",
+                  borderTop:`5px solid ${tier.color}`,
+                  transition:"left 0.4s cubic-bezier(0.4,0,0.2,1)"}}/>
+              </div>
             </div>
           </div>
 
@@ -1705,7 +1177,7 @@ function BTCPowerLaw() {
                 <div style={{fontSize:"10px",color:"#8aaac8",textTransform:"uppercase",
                   letterSpacing:"0.1em",fontWeight:600}}>Structure</div>
                 <div style={{fontSize:"10px",color:"#5a7fa0",letterSpacing:"0.04em"}}>
-                  BTC-level anchors · translate to {tier.name.split(" ")[0]} strikes in mapping workbook
+                  BTC anchors
                 </div>
               </div>
               {[
@@ -1787,9 +1259,6 @@ function BTCPowerLaw() {
             </div>
           </div>
       </div>
-      {/* INCOME CONVERTER */}
-      <IncomeConverter btcPrice={price} fairValue={fv} activeTier={tier.name}/>
-
       {/* FORWARD PROJECTION TABLE */}
       <ForwardTable todayTs={todayTs} modelA={modelA} modelB={modelB}/>
 
@@ -1894,12 +1363,6 @@ function BTCPowerLaw() {
         /* Model selector: wrap */
         #root [style*="margin-left: 4px"][style*="gap: 8px"] { flex-wrap: wrap !important; }
         #root [style*="margin-left: 4px"][style*="gap: 8px"] > * { min-width: 0 !important; }
-        /* Income converter chain: stack vertically */
-        #root [style*="flex: 1 1 auto"][style*="min-width: 120px"] { min-width: 100% !important; }
-        /* Legend rows: 2-col grid, hide hint text */
-        #root [style*="gap: 20px"][style*="flex-wrap: wrap"] { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 4px 8px !important; }
-        #root [style*="gap: 20px"][style*="flex-wrap: wrap"] > div { flex-wrap: nowrap !important; overflow: hidden !important; }
-        #root [style*="gap: 20px"][style*="flex-wrap: wrap"] > div span:last-child { display: none !important; }
         /* Forward projection table: smaller font */
         #root [style*="gridTemplateColumns"][style*="60px"] { font-size: 10px !important; }
         /* Instrument name: smaller on mobile */

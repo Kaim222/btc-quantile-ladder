@@ -1659,7 +1659,7 @@ function BTCPowerLaw() {
               border:`1px solid ${tier.color}30`,
               borderLeft:`3px solid ${tier.color}`,
               borderRadius:"6px",padding:"14px 16px"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"10px"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"10px",flexWrap:"wrap",gap:"4px 12px"}}>
                 <div style={{fontSize:"10px",color:"#8aaac8",textTransform:"uppercase",
                   letterSpacing:"0.1em",fontWeight:600}}>Structure</div>
                 <div style={{fontSize:"10px",color:"#5a7fa0",letterSpacing:"0.04em"}}>
@@ -1849,9 +1849,10 @@ function BTCPowerLaw() {
         #root [style*="justify-content: space-between"][style*="gap: 16px"] { 
           flex-direction: column !important; align-items: flex-start !important; 
         }
-        /* Allocation circles: smaller on mobile */
-        #root [style*="width: 68px"][style*="height: 68px"] { width: 52px !important; height: 52px !important; }
-        #root [style*="width: 68px"][style*="height: 68px"] > div { font-size: 17px !important; }
+        /* Band dial: slightly smaller on mobile, keep two-line text proportions */
+        #root [style*="width: 68px"][style*="height: 68px"] { width: 58px !important; height: 58px !important; }
+        #root [style*="width: 68px"][style*="height: 68px"] > div:first-child { font-size: 13px !important; }
+        #root [style*="width: 68px"][style*="height: 68px"] > div:last-child { font-size: 8px !important; }
         /* Model selector: wrap */
         #root [style*="margin-left: 4px"][style*="gap: 8px"] { flex-wrap: wrap !important; }
         #root [style*="margin-left: 4px"][style*="gap: 8px"] > * { min-width: 0 !important; }

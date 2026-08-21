@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow, noarchive">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -1335,8 +1336,14 @@ function BTCPowerLaw() {
       const [err, setErr] = React.useState(false);
 
       const attempt = () => {
-        if (pin === "4241") { sessionStorage.setItem('bql_ok','1'); setUnlocked(true); }
-        else { setErr(true); setPin(""); setTimeout(() => setErr(false), 2000); }
+        crypto.subtle.digest("SHA-256", new TextEncoder().encode(pin)).then(h => {
+          const hex = [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,"0")).join("");
+          if (hex === "60cafa03272449d4129f58adaa38cc9604e1d4c9c74362084ac4fac09b4d6f0d") {
+            sessionStorage.setItem('bql_ok','1'); setUnlocked(true);
+          } else {
+            setErr(true); setPin(""); setTimeout(() => setErr(false), 2000);
+          }
+        });
       };
 
       if (unlocked) return <>

@@ -249,7 +249,7 @@ const HYST = 1.0; // rotation buffer in quantile points — monitor fires past b
 const LADDER = [
   { name:"STRC Margin", color:"#22c55e", darkBg:"#071a0f", qMin:85, qMax:100.01, kind:"margin",
     debt:"< 5% APR",
-    desc:"Cycle top. Exit BTC beta into levered STRC carry — income while the curve cools.",
+    desc:"Perpetual preferred, 12% variable yield on $100 par. No BTC beta.",
     typeNote:"shares only · 1.5× margin",
     margin:{ leverage:1.5, yield:0.12, rate:0.0475, maint:0.50 } },
   { name:"IBIT PMCC", color:"#22d3ee", darkBg:"#0c1e26", qMin:50, qMax:85, kind:"pmcc",
@@ -1750,8 +1750,8 @@ function BTCPowerLaw() {
                   ))}
                 </div>
                 <div style={{marginTop:"10px",fontSize:"11px",color:"#7aaac8",lineHeight:1.5}}>
-                  STRC below par usually means the preferred ATM is stalled — the margin call and the flywheel
-                  stall arrive together. Size to survive a par break, not the average day.
+                  STRC below par usually means the preferred ATM is stalled. Margin calls hit at the same
+                  time. Size for a par break, not the average day.
                 </div>
               </div>
             );

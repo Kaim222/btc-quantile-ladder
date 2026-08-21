@@ -248,22 +248,22 @@ const HYST = 1.0; // rotation buffer in quantile points — monitor fires past b
 
 const LADDER = [
   { name:"STRC Margin", color:"#22c55e", darkBg:"#071a0f", qMin:85, qMax:100.01, kind:"margin",
-    debt:"< 5% APR",
+    debt:"< 5%",
     desc:"Perpetual preferred, 12% variable yield on $100 par. No BTC beta.",
     typeNote:"shares only · 1.5× margin",
     margin:{ leverage:1.5, yield:0.12, rate:0.0475, maint:0.50 } },
   { name:"IBIT PMCC", color:"#22d3ee", darkBg:"#0c1e26", qMin:50, qMax:85, kind:"pmcc",
-    debt:"< 6% APR",
+    debt:"< 6%",
     desc:"Spot BTC ETF diagonal. ~2× beta on the long leg.",
     typeNote:"long ~12 mo · short ~9 mo",
     longQ:50, longMo:12, shortQ:85, shortMo:9 },
   { name:"MSTR PMCC", color:"#f97316", darkBg:"#1c0e00", qMin:15, qMax:50, kind:"pmcc",
-    debt:"< 12% APR",
+    debt:"< 12%",
     desc:"Strategy (MSTR) diagonal. ~4× beta on the long leg.",
     typeNote:"long ~9 mo · short ~6 mo",
     longQ:15, longMo:9, shortQ:50, shortMo:6 },
   { name:"MSTX PMCC", color:"#ef4444", darkBg:"#1c0505", qMin:0, qMax:15, kind:"pmcc",
-    debt:"< 14% APR",
+    debt:"< 14%",
     desc:"2× levered MSTR ETF diagonal. ~8× beta on the long leg.",
     typeNote:"long ~6 mo · short ~3 mo",
     longQ:0.1, longMo:6, shortQ:15, shortMo:3 },
@@ -1158,7 +1158,7 @@ function BTCPowerLaw() {
                 )}
                 <div style={{fontSize:"13px",color:"#b0c4d8",marginTop:"3px"}}>{tier.desc}</div>
                 <div style={{fontSize:"12px",color:"#7aaac8",marginTop:"4px"}}>
-                  Max APR: <span style={{color:"#d0dde8",fontWeight:600}}>{tier.debt}</span>
+                  Max interest rate: <span style={{color:"#d0dde8",fontWeight:600}}>{tier.debt}</span>
                 </div>
                 <div style={{marginTop:"10px",display:"flex",gap:"14px",flexWrap:"wrap",alignItems:"center"}}>
                   {rotateUp && (

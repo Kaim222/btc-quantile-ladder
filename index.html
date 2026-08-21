@@ -210,57 +210,87 @@ function priceToQuantile(price, ts, A=JV_A, B=JV_B) {
 // ─────────────────────────────────────────────────────────────────────────────
 // INSTRUMENT LADDER
 // ─────────────────────────────────────────────────────────────────────────────
-const SHORT_LEG = {
-  "IBIT Shares": [
-    { size:100, delta:"0.15", expiry:"~12 mo", action:"Initiate", note:"Sell OTM covered call at 0.15Δ / ~12 mo. Full allocation, maximum conviction — low delta preserves upside while collecting steady premium." },
-    { size:75,  delta:"0.25", expiry:"~9 mo",  action:"Roll",     note:"Roll to 0.25Δ / ~9 mo. Quantile rising — tighten cap incrementally, reduce tenor to accelerate theta." },
-    { size:50,  delta:"0.35", expiry:"~6 mo",  action:"Roll",     note:"Roll to 0.35Δ / ~6 mo. Half size; closer strike and shorter tenor extracts meaningful premium relative to remaining exposure." },
-    { size:25,  delta:"0.45", expiry:"~3 mo",  action:"Roll",     note:"Roll to 0.45Δ / ~3 mo. Minimal allocation — near-money short-dated call maximises theta as position approaches full exit." },
-  ],
-  "IBIT LEAPs": [
-    { size:100, delta:"0.15", expiry:"~12 mo", action:"Initiate", note:"Sell 0.15Δ call at identical expiry to the long leg, forming a debit call spread. Reduces net premium paid while preserving the majority of upside." },
-    { size:75,  delta:"0.25", expiry:"~9 mo",  action:"Roll",     note:"Roll short leg to 0.25Δ / ~9 mo. Rising quantile warrants a tighter cap; rolling forward preserves time value and avoids early assignment risk." },
-    { size:50,  delta:"0.35", expiry:"~6 mo",  action:"Roll",     note:"Roll to 0.35Δ / ~6 mo. Closer strike with shorter tenor accelerates premium realisation as conviction moderates." },
-    { size:25,  delta:"0.45", expiry:"~3 mo",  action:"Roll",     note:"Roll to 0.45Δ / ~3 mo. High-delta, short-duration call maximises theta at minimum position size — pre-positioning for full exit." },
-  ],
-  "MSTR LEAPs": [
-    { size:100, delta:"0.15", expiry:"~12 mo", action:"Initiate", note:"Sell 0.15Δ call at identical expiry to form a debit spread. Caps upside while significantly reducing net debit on the long leg." },
-    { size:75,  delta:"0.25", expiry:"~9 mo",  action:"Roll",     note:"Roll to 0.25Δ / ~9 mo. Quantile rising — roll down and forward to recapture premium while keeping the strike comfortably OTM given MSTR's idiosyncratic vol." },
-    { size:50,  delta:"0.35", expiry:"~6 mo",  action:"Roll",     note:"Roll to 0.35Δ / ~6 mo. Mid-cycle; 6-month tenor accelerates theta accrual against remaining long exposure without crowding the strike." },
-    { size:25,  delta:"0.45", expiry:"~3 mo",  action:"Roll",     note:"Roll to 0.45Δ / ~3 mo. Conservative cap at minimum allocation — avoids assignment risk on a position that is costly to re-enter." },
-  ],
-  "MSTX LEAPs": [
-    { size:100, delta:"0.15", expiry:"~12 mo", action:"Initiate", note:"Sell 0.15Δ call at identical expiry to form a debit spread. High IV on MSTX means excellent premium even at low delta — no need to push the strike closer." },
-    { size:75,  delta:"0.25", expiry:"~9 mo",  action:"Roll",     note:"Roll to 0.25Δ / ~9 mo. High IV delivers strong premium at conservative delta; avoid tighter strikes given 2× leverage can cause rapid strike breach." },
-    { size:50,  delta:"0.35", expiry:"~6 mo",  action:"Roll",     note:"Roll to 0.35Δ / ~6 mo. Even at half size, MSTX IV generates meaningful theta at this delta. Protect the position — re-entry after assignment is expensive." },
-    { size:25,  delta:"0.45", expiry:"~3 mo",  action:"Roll",     note:"Roll to 0.45Δ / ~3 mo. Minimum allocation, short-dated cap. Monitor closely — 2× leverage means strikes can be breached quickly on BTC moves." },
-  ],
-};
+// Quantile → price at any date (inverse of priceToQuantile; interpolates band offsets)
+function quantileToPrice(qq, ts, A=JV_A, B=JV_B) {
+  const fv = fairValueAt(ts, A, B);
+  const bands = BAND_DEFS.map(b => ({ q: b.q, offset: bandOffset(b.m, b.c, ts) }));
+  let offset;
+  if (qq >= bands[0].q) {
+    const s = (bands[0].offset - bands[1].offset) / (bands[0].q - bands[1].q);
+    offset = bands[0].offset + s * (qq - bands[0].q);
+  } else if (qq <= bands[bands.length-1].q) {
+    const a = bands[bands.length-2], z = bands[bands.length-1];
+    const s = (a.offset - z.offset) / (a.q - z.q);
+    offset = z.offset + s * (qq - z.q);
+  } else {
+    for (let i = 0; i < bands.length - 1; i++) {
+      const hi = bands[i], lo = bands[i+1];
+      if (qq <= hi.q && qq >= lo.q) {
+        const t = (qq - lo.q) / (hi.q - lo.q);
+        offset = lo.offset + t * (hi.offset - lo.offset);
+        break;
+      }
+    }
+  }
+  return fv * Math.pow(10, offset);
+}
+
+function addMonths(ts, mo) { const d = new Date(ts); d.setMonth(d.getMonth() + mo); return d.getTime(); }
+function fmtMonth(ts) { return new Date(ts).toLocaleDateString("en-US", { month: "short", year: "numeric" }); }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INSTRUMENT LADDER — 4 bands, one position per band, quantile-anchored strikes
+// Long  = band floor quantile projected at the long expiry
+// Short = band ceiling quantile projected at the short expiry
+//         (short strike doubles as the rotation trigger)
+// ─────────────────────────────────────────────────────────────────────────────
+const HYST = 1.0; // rotation buffer in quantile points — monitor fires past boundary ± HYST
 
 const LADDER = [
-  { name:"EPD",         color:"#3b82f6", darkBg:"#050f1f", qMin:100, qMax:101, debt:"< 3% APR",   desc:"Cycle top. High STRC demand likely compresses its yield — EPD holds rate.",        sizes:[100],          typeNote:"equity" },
-  { name:"STRC",        color:"#22c55e", darkBg:"#071a0f", qMin:80,  qMax:100, debt:"< 5% APR",   desc:"Perpetual preferred, 10%+ variable yield on $100 par.",    sizes:[100,75,50,25], typeNote:"equity" },
-  { name:"IBIT Shares", color:"#22d3ee", darkBg:"#0c1e26", qMin:60,  qMax:80,  debt:"< 6% APR",   desc:"Spot BTC ETF. ~1× beta.",             sizes:[100,75,50,25], typeNote:"equity" },
-  { name:"IBIT LEAPs",  color:"#eab308", darkBg:"#1c1700", qMin:40,  qMax:60,  debt:"< 10% APR",  desc:"Deep ITM calls on spot BTC ETF. ~2× beta.",          sizes:[100,75,50,25], typeNote:"0.80+ delta · 24+ mo to expiry" },
-  { name:"MSTR LEAPs",  color:"#f97316", darkBg:"#1c0e00", qMin:20,  qMax:40,  debt:"< 12% APR",  desc:"Deep ITM calls on Strategy (MSTR). ~4× beta.",           sizes:[100,75,50,25], typeNote:"0.80+ delta · 18+ mo to expiry" },
-  { name:"MSTX LEAPs",  color:"#ef4444", darkBg:"#1c0505", qMin:0,   qMax:20,  debt:"< 14% APR",  desc:"Deep ITM calls on 2× levered Strategy ETF. ~8× beta.",        sizes:[100,75,50,25], typeNote:"0.80+ delta · 12+ mo to expiry" },
+  { name:"STRC Margin", color:"#22c55e", darkBg:"#071a0f", qMin:85, qMax:100.01, kind:"margin",
+    debt:"< 5% APR",
+    desc:"Cycle top. Exit BTC beta into levered STRC carry — income while the curve cools.",
+    typeNote:"shares only · 1.5× margin",
+    margin:{ leverage:1.5, yield:0.12, rate:0.0475, maint:0.50 } },
+  { name:"IBIT PMCC", color:"#22d3ee", darkBg:"#0c1e26", qMin:50, qMax:85, kind:"pmcc",
+    debt:"< 6% APR",
+    desc:"Diagonal on spot BTC ETF. ~2× beta on the long leg, clean BTC→strike mapping.",
+    typeNote:"long ~12 mo · short ~9 mo",
+    longQ:50, longMo:12, shortQ:85, shortMo:9 },
+  { name:"MSTR PMCC", color:"#f97316", darkBg:"#1c0e00", qMin:15, qMax:50, kind:"pmcc",
+    debt:"< 12% APR",
+    desc:"Diagonal on Strategy (MSTR). ~4× beta on the long leg · mNAV drift in the mapping.",
+    typeNote:"long ~9 mo · short ~6 mo",
+    longQ:15, longMo:9, shortQ:50, shortMo:6 },
+  { name:"MSTX PMCC", color:"#ef4444", darkBg:"#1c0505", qMin:0, qMax:15, kind:"pmcc",
+    debt:"< 14% APR",
+    desc:"Diagonal on 2× levered Strategy ETF. ~8× beta · decay drag baked into strike mapping.",
+    typeNote:"long ~6 mo · short ~3 mo",
+    longQ:0.1, longMo:6, shortQ:15, shortMo:3 },
 ];
 
-function getTierAndSize(q) {
-  // Clamp: q >= top tier's qMax → safest tier (index 0); q < bottom tier's qMin → riskiest (last)
-  const tierIdx = LADDER.findIndex(t => q >= t.qMin && q < t.qMax);
-  const idx = tierIdx >= 0 ? tierIdx : (q >= LADDER[0].qMax ? 0 : LADDER.length - 1);
-  const tier = LADDER[idx];
-  const pos = Math.max(0, Math.min(0.9999, (q - tier.qMin) / (tier.qMax - tier.qMin)));
-  const size = tier.sizes[Math.min(tier.sizes.length - 1, Math.floor(pos * tier.sizes.length))];
-  // Remainder goes to next rung UP (lower index = higher in ladder)
-  const remainder = 100 - size;
-  const splitTier = remainder > 0 && idx > 0 ? LADDER[idx - 1] : null;
-  // If split has larger allocation, promote it to primary
-  if (splitTier && remainder > size) {
-    return { tier: splitTier, size: remainder, remainder: size, splitTier: tier };
-  }
-  return { tier, size, remainder, splitTier };
+function getTier(q) {
+  const idx = LADDER.findIndex(t => q >= t.qMin && q < t.qMax);
+  const i = idx >= 0 ? idx : (q >= LADDER[0].qMax ? 0 : LADDER.length - 1);
+  return { tier: LADDER[i], idx: i };
+}
+
+// Strike computation for a pmcc tier at a given "now"
+function tierStrikes(t, nowTs, A=JV_A, B=JV_B) {
+  if (t.kind !== "pmcc") return null;
+  const longTs  = addMonths(nowTs, t.longMo);
+  const shortTs = addMonths(nowTs, t.shortMo);
+  return {
+    long:  { q: t.longQ,  ts: longTs,  price: quantileToPrice(t.longQ,  longTs,  A, B), mo: t.longMo },
+    short: { q: t.shortQ, ts: shortTs, price: quantileToPrice(t.shortQ, shortTs, A, B), mo: t.shortMo },
+  };
+}
+
+// Margin framework math (per $1 equity): position = L, borrowed = L-1
+function marginStats(m) {
+  const carry = m.leverage * m.yield - (m.leverage - 1) * m.rate;           // net carry on equity
+  const callDD = 1 - (m.leverage - 1) / (m.leverage * (1 - m.maint));      // drawdown to margin call
+  return { carry, callDD, callPx: 100 * (1 - callDD) };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -284,7 +314,7 @@ function QuantileGauge({ q, todayTs, tierColor }) {
   const GH = 280;
   const PAD = 10; // px padding top and bottom inside the bar area
   const BAR_H = GH - PAD * 2;
-  const clr = tierColor || (() => { const {tier:t}=getTierAndSize(q); return t.color; })();
+  const clr = tierColor || getTier(q).tier.color;
   const filled = BAR_H * (Math.min(100,Math.max(0,q))/100);
 
   // Map a quantile 0–100 to a top pixel within the GH container
@@ -341,10 +371,10 @@ function QuantileGauge({ q, todayTs, tierColor }) {
 // Beta multipliers: IBIT=1x, IBIT LEAPs=2x, MSTR LEAPs=4x, MSTX LEAPs=8x
 // ─────────────────────────────────────────────────────────────────────────────
 const INCOME_INSTRUMENTS = [
-  { name:"MSTX LEAPs",   beta:8,  color:"#ef4444", hint:"~8× BTC beta" },
-  { name:"MSTR LEAPs",   beta:4,  color:"#f97316", hint:"~4× BTC beta" },
-  { name:"IBIT LEAPs",   beta:2,  color:"#eab308", hint:"~2× BTC beta" },
-  { name:"IBIT Shares",  beta:1,  color:"#22d3ee", hint:"~1,750 shares ≈ 1 BTC" },
+  { name:"MSTX PMCC",    beta:8,  color:"#ef4444", hint:"~8× BTC beta (long leg)" },
+  { name:"MSTR PMCC",    beta:4,  color:"#f97316", hint:"~4× BTC beta (long leg)" },
+  { name:"IBIT PMCC",    beta:2,  color:"#22d3ee", hint:"~2× BTC beta (long leg)" },
+  { name:"IBIT Shares",  beta:1,  color:"#94a3b8", hint:"~1,750 shares ≈ 1 BTC" },
 ];
 
 const STRC_PAR    = 100;   // STRC trades near $100 par
@@ -356,10 +386,10 @@ const EPD_YIELD   = 0.10;  // ~7% yield
 function IncomeConverter({ btcPrice, fairValue, activeTier }) {
   // Map active ladder tier → closest income instrument
   const tierToInstrument = (t) => {
-    if (t === "MSTX LEAPs")  return "MSTX LEAPs";
-    if (t === "MSTR LEAPs")  return "MSTR LEAPs";
-    if (t === "IBIT LEAPs")  return "IBIT LEAPs";
-    return "IBIT Shares"; // IBIT Shares, STRC, EPD → IBIT Shares as most relevant
+    if (t === "MSTX PMCC")  return "MSTX PMCC";
+    if (t === "MSTR PMCC")  return "MSTR PMCC";
+    if (t === "IBIT PMCC")  return "IBIT PMCC";
+    return "IBIT Shares"; // STRC Margin → 1× reference
   };
   const [instrument, setInstrument]   = useState(() => tierToInstrument(activeTier));
 
@@ -1197,17 +1227,27 @@ function BTCPowerLaw() {
   // Fetch live BTC price + history
   useEffect(()=>{
     async function fetchPrice(){
+      const apply = (p) => {
+        setLivePrice(p);
+        setPriceStr(Math.round(p).toString());
+        setLiveFetch("live");
+        setLiveUpdatedAt(new Date());
+      };
       try {
         const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd");
         if(!res.ok) throw new Error();
         const j = await res.json();
         const p = j?.bitcoin?.usd;
-        if(p){
-          setLivePrice(p);
-          setPriceStr(Math.round(p).toString());
-          setLiveFetch("live");
-          setLiveUpdatedAt(new Date());
-        }
+        if(p) { apply(p); return; }
+        throw new Error();
+      } catch(_){}
+      try { // fallback: Coinbase spot
+        const res = await fetch("https://api.coinbase.com/v2/prices/BTC-USD/spot");
+        if(!res.ok) throw new Error();
+        const j = await res.json();
+        const p = parseFloat(j?.data?.amount);
+        if(p) { apply(p); return; }
+        throw new Error();
       } catch(_){
         setLiveFetch("unavailable");
       }
@@ -1232,8 +1272,12 @@ function BTCPowerLaw() {
   const price = parseFloat(priceStr.replace(/[^0-9.]/g,""))||0;
   const fv    = fairValueAt(todayTs, modelA, modelB);
   const q     = priceToQuantile(price, todayTs, modelA, modelB);
-  const {tier, size, remainder, splitTier} = getTierAndSize(q);
-  const displayName = (name) => name === "STRC" ? "STRC Shares" : name === "EPD" ? "EPD Shares" : name;
+  const {tier, idx: tierIdx} = getTier(q);
+  const strikes = tierStrikes(tier, todayTs, modelA, modelB);
+  const rotateUp   = tierIdx > 0 ? { t: LADDER[tierIdx-1], q: tier.qMax + HYST } : null;
+  const rotateDown = tierIdx < LADDER.length-1 ? { t: LADDER[tierIdx+1], q: tier.qMin - HYST } : null;
+  const inBuffer = (q > tier.qMin && q < tier.qMin + HYST) || (q < tier.qMax && q > tier.qMax - HYST && tier.qMax <= 100);
+  const displayName = (name) => name;
 
   // ─── Alerts (Pushover) ────────────────────────────────────────────────────
   const [alertsOn,  setAlertsOn]  = useState(false);
@@ -1293,80 +1337,34 @@ function BTCPowerLaw() {
     document.head.appendChild(s);
   }, [lightMode]);
   const prevTierRef = useRef(null);
-  const prevSizeRef = useRef(null);
 
   // Build the full notification message including short leg guidance
-  const buildAlertMessage = (tierName, sz, splitName, splitSz, btcPrice, quantilePct) => {
+  const buildAlertMessage = (t, btcPrice, quantilePct) => {
     const parts = [];
-
-    // Line 1: market snapshot
-    const priceStr = btcPrice ? 'Bitcoin $' + Math.round(btcPrice).toLocaleString() : '';
-    const qStr = quantilePct != null ? 'Quantile ' + quantilePct.toFixed(1) + '%' : '';
-    parts.push([priceStr, qStr].filter(Boolean).join('  ·  '));
-
-    // Active position
-    let posLines = ['<b>Active Position</b>'];
-    if (splitName && splitSz > 0) {
-      const t = LADDER.find(l=>l.name===tierName);
-      const s = LADDER.find(l=>l.name===splitName);
-      // Safer instrument (higher qMin) = scaling in. Riskier (lower qMin) = scaling out.
-      const tierIsSafer = t && s && t.qMin > s.qMin;
-      posLines.push(`${displayName(tierName)}  <b>${sz}%</b>  <i>${tierIsSafer ? 'scaling in' : 'scaling out'}</i>`);
-      posLines.push(`${displayName(splitName)}  <b>${splitSz}%</b>  <i>${tierIsSafer ? 'scaling out' : 'scaling in'}</i>`);
+    parts.push('Bitcoin $' + Math.round(btcPrice).toLocaleString() + '  ·  Quantile ' + quantilePct.toFixed(1) + '%');
+    if (t.kind === "pmcc") {
+      const s = tierStrikes(t, todayTs, modelA, modelB);
+      parts.push('<b>Position</b>\n' + t.name);
+      parts.push('<b>Structure</b>\n' +
+        'Long ' + s.long.q + 'q · ' + fmtMonth(s.long.ts) + ' · ~' + fmt(s.long.price) + ' BTC\n' +
+        'Short ' + s.short.q + 'q · ' + fmtMonth(s.short.ts) + ' · ~' + fmt(s.short.price) + ' BTC');
     } else {
-      posLines.push(`${displayName(tierName)}  <b>${sz}%</b>`);
+      const ms = marginStats(t.margin);
+      parts.push('<b>Position</b>\nSTRC on ' + t.margin.leverage + '× margin');
+      parts.push('<b>Framework</b>\n' +
+        'Net carry ~' + (ms.carry*100).toFixed(1) + '% on equity\n' +
+        'Margin call −' + (ms.callDD*100).toFixed(0) + '% · STRC ≈ $' + ms.callPx.toFixed(0));
     }
-    parts.push(posLines.join('\n'));
-
-    // Short leg
-    // At 100% with no split = fully in = Initiate. Only "Roll" when scaling out (size < 100, split is riskier)
-    const primaryScalingIn = !splitName || sz === 100 || (() => {
-      const t = LADDER.find(l=>l.name===tierName);
-      const s = LADDER.find(l=>l.name===splitName);
-      return s && t && s.qMin < t.qMin;
-    })();
-
-    const shortLegRows = [];
-    const collectShortLeg = (name, alloc, scalingIn) => {
-      if (!SHORT_LEG[name]) return;
-      const cfg = scalingIn
-        ? SHORT_LEG[name][0]
-        : SHORT_LEG[name].find(s=>s.size===alloc)
-          || SHORT_LEG[name].reduce((a,b)=>Math.abs(b.size-alloc)<Math.abs(a.size-alloc)?b:a);
-      shortLegRows.push({ name, action: scalingIn ? 'Initiate' : 'Roll', delta: cfg.delta, expiry: cfg.expiry });
-    };
-
-    collectShortLeg(tierName, sz, primaryScalingIn);
-    if (splitName && splitSz > 0 && SHORT_LEG[splitName]) {
-      const t = LADDER.find(l=>l.name===tierName);
-      const s = LADDER.find(l=>l.name===splitName);
-      collectShortLeg(splitName, splitSz, s && t && s.qMin > t.qMin);
-    }
-
-    if (shortLegRows.length > 0) {
-      let slLines = ['<b>Short Leg</b>'];
-      shortLegRows.forEach(({name, action, delta, expiry}) => {
-        slLines.push(`${name}  <b>${action}</b>  Δ${delta}  ·  ${expiry}`);
-      });
-      parts.push(slLines.join('\n'));
-    }
-
     return parts.join('\n\n');
   };
 
   useEffect(() => {
     if (!alertsOn) return;
     const prevTier = prevTierRef.current;
-    const prevSize = prevSizeRef.current;
-    const changed  = prevTier !== null && (prevTier !== tier.name || prevSize !== size);
+    const changed  = prevTier !== null && prevTier !== tier.name;
     if (changed) {
-      const splitName = splitTier?.name || null;
-      const splitSz   = remainder || 0;
-      const title = prevTier !== tier.name
-        ? `${displayName(prevTier)} → ${displayName(tier.name)}`
-        : `${displayName(tier.name)}: ${prevSize}% → ${size}%`;
-      const message = buildAlertMessage(tier.name, size, splitName, splitSz, price, q);
-      // Call Pushover API directly (supports CORS)
+      const title = prevTier + ' → ' + tier.name;
+      const message = buildAlertMessage(tier, price, q);
       const formData = new FormData();
       formData.append('token',   'a954fkhqk7cyphb64kyt6eikbmgpau');
       formData.append('user',    'ub8xj2eks26ewu6dv9hubmri5rqswv');
@@ -1380,14 +1378,12 @@ function BTCPowerLaw() {
       }).then(r => r.json()).then(d => { if (d.status===1) setAlertSent(true); });
     }
     prevTierRef.current = tier.name;
-    prevSizeRef.current = size;
-  }, [tier.name, size, alertsOn]);
+  }, [tier.name, alertsOn]);
 
   const toggleAlerts = () => {
     if (!alertsOn) {
       setAlertsOn(true);
       prevTierRef.current = tier.name;
-      prevSizeRef.current = size;
     } else {
       setAlertsOn(false);
     }
@@ -1602,128 +1598,119 @@ function BTCPowerLaw() {
                 <div style={{fontSize:"12px",color:"#7aaac8",marginTop:"4px"}}>
                   Max APR: <span style={{color:"#d0dde8",fontWeight:600}}>{tier.debt}</span>
                 </div>
-                <div style={{marginTop:"10px",display:"flex",gap:"4px",flexWrap:"wrap",overflowX:"visible",paddingBottom:"0",alignItems:"center"}}>
-                  <span style={{fontSize:"11px",color:"#8aaac8",textTransform:"uppercase",
-                    letterSpacing:"0.08em",marginRight:"2px"}}>Size:</span>
-                  {tier.sizes.map((s,i)=>(
-                    <div key={i} style={{padding:"2px 8px",borderRadius:"3px",fontSize:"12px",
-                      fontWeight:s===size?700:400,
-                      background:s===size?tier.color+"22":"transparent",
-                      border:`1px solid ${s===size?tier.color:tier.color+"55"}`,
-                      color:s===size?tier.color:tier.color+"99"}}>{s}%</div>
-                  ))}
+                <div style={{marginTop:"10px",display:"flex",gap:"14px",flexWrap:"wrap",alignItems:"center"}}>
+                  {rotateUp && (
+                    <span style={{fontSize:"12px",color:"#8aaac8"}}>
+                      ↑ <span style={{color:rotateUp.t.color,fontWeight:700}}>{rotateUp.t.name}</span>
+                      {" at "}<span style={{color:"#d0dde8",fontWeight:600}}>{rotateUp.q.toFixed(0)}q</span>
+                      {" · "}<span style={{color:"#d0dde8"}}>{fmt(quantileToPrice(rotateUp.q, todayTs, modelA, modelB))}</span>
+                    </span>
+                  )}
+                  {rotateDown && (
+                    <span style={{fontSize:"12px",color:"#8aaac8"}}>
+                      ↓ <span style={{color:rotateDown.t.color,fontWeight:700}}>{rotateDown.t.name}</span>
+                      {" at "}<span style={{color:"#d0dde8",fontWeight:600}}>{rotateDown.q.toFixed(0)}q</span>
+                      {" · "}<span style={{color:"#d0dde8"}}>{fmt(quantileToPrice(rotateDown.q, todayTs, modelA, modelB))}</span>
+                    </span>
+                  )}
+                  {inBuffer && (
+                    <span style={{fontSize:"11px",color:"#eab308",border:"1px solid #3d2e00",
+                      background:"#1c1700",borderRadius:"3px",padding:"2px 8px",letterSpacing:"0.04em"}}>
+                      ±{HYST.toFixed(0)}q rotation buffer — alerts fire beyond it
+                    </span>
+                  )}
                 </div>
               </div>
-              {/* Allocation circles */}
+              {/* Band position dial */}
               <div style={{display:"flex",gap:"10px",alignItems:"center",flexShrink:0}}>
                 <div style={{textAlign:"center"}}>
                   <div style={{fontSize:"10px",color:"#8aaac8",textTransform:"uppercase",
-                    letterSpacing:"0.08em",marginBottom:"5px"}}>{displayName(tier.name)}</div>
+                    letterSpacing:"0.08em",marginBottom:"5px"}}>Band</div>
                   <div style={{width:"68px",height:"68px",borderRadius:"50%",
-                    border:`3px solid ${tier.color}`,display:"flex",alignItems:"center",
+                    border:`3px solid ${tier.color}`,display:"flex",flexDirection:"column",alignItems:"center",
                     justifyContent:"center",background:tier.darkBg}}>
-                    <div style={{fontSize:"22px",fontWeight:700,color:tier.color}}>{size}%</div>
+                    <div style={{fontSize:"15px",fontWeight:700,color:tier.color,lineHeight:1.1}}>{tier.qMin.toFixed(0)}–{Math.min(100,tier.qMax).toFixed(0)}</div>
+                    <div style={{fontSize:"9px",color:tier.color,opacity:0.7,letterSpacing:"0.08em"}}>QUANTILE</div>
                   </div>
                 </div>
-                {splitTier&&remainder>0&&(
-                  <>
-                    <div style={{fontSize:"16px",color:"#5a8fc0"}}>+</div>
-                    <div style={{textAlign:"center"}}>
-                      <div style={{fontSize:"10px",color:"#8aaac8",textTransform:"uppercase",
-                        letterSpacing:"0.08em",marginBottom:"5px"}}>{displayName(splitTier.name)}</div>
-                      <div style={{width:"68px",height:"68px",borderRadius:"50%",
-                        border:`3px solid ${splitTier.color}`,display:"flex",alignItems:"center",
-                        justifyContent:"center",background:splitTier.darkBg}}>
-                        <div style={{fontSize:"22px",fontWeight:700,color:splitTier.color}}>{remainder}%</div>
-                      </div>
-                    </div>
-                  </>
-                )}
               </div>
             </div>
             <div style={{marginTop:"12px",display:"flex",gap:"5px",overflowX:"auto",
               WebkitOverflowScrolling:"touch",scrollbarWidth:"none",paddingBottom:"2px"}}>
               {LADDER.slice().reverse().map(t=>{
                 const active=t.name===tier.name;
-                const isSplit=splitTier&&t.name===splitTier.name;
                 return <div key={t.name} style={{padding:"3px 9px",borderRadius:"3px",fontSize:"11px",
                   whiteSpace:"nowrap",flexShrink:0,
-                  border:`1px solid ${active||isSplit?t.color:t.color+"55"}`,
-                  color:active||isSplit?t.color:t.color+"88",
-                  background:active?t.darkBg:isSplit?t.darkBg:"transparent",
-                  fontWeight:active||isSplit?700:400,
-                  boxShadow:active?`0 0 8px ${t.color}55`:isSplit?`0 0 4px ${t.color}33`:"none"}}>
-                  {displayName(t.name)}{active&&<span style={{marginLeft:"5px",fontWeight:400,opacity:0.8}}>{size}%</span>}{isSplit&&<span style={{marginLeft:"5px",fontWeight:400,opacity:0.8}}>{remainder}%</span>}
+                  border:`1px solid ${active?t.color:t.color+"55"}`,
+                  color:active?t.color:t.color+"88",
+                  background:active?t.darkBg:"transparent",
+                  fontWeight:active?700:400,
+                  boxShadow:active?`0 0 8px ${t.color}55`:"none"}}>
+                  {t.name}<span style={{marginLeft:"5px",fontWeight:400,opacity:0.55,fontSize:"10px"}}>{t.qMin.toFixed(0)}–{Math.min(100,t.qMax).toFixed(0)}</span>
                 </div>;
               })}
             </div>
           </div>
 
-          {/* Short Leg Guidance */}
-          {(() => {
-            const rows = [];
-            const primaryScalingIn = !splitTier || size === 100 || splitTier.qMin < tier.qMin;
-            if (SHORT_LEG[tier.name]) {
-              const cfg = primaryScalingIn
-                ? SHORT_LEG[tier.name][0]
-                : SHORT_LEG[tier.name].find(s=>s.size===size)
-                  || SHORT_LEG[tier.name].reduce((a,b)=>Math.abs(b.size-size)<Math.abs(a.size-size)?b:a);
-              rows.push({t:tier, cfg, scalingIn:primaryScalingIn});
-            }
-            if (splitTier && remainder>0 && SHORT_LEG[splitTier.name]) {
-              const splitScalingIn = splitTier.qMin > tier.qMin;
-              const cfg2 = splitScalingIn
-                ? SHORT_LEG[splitTier.name][0]
-                : SHORT_LEG[splitTier.name].find(s=>s.size===remainder)
-                  || SHORT_LEG[splitTier.name].reduce((a,b)=>Math.abs(b.size-remainder)<Math.abs(a.size-remainder)?b:a);
-              rows.push({t:splitTier, cfg:cfg2, scalingIn:splitScalingIn});
-            }
-            if (rows.length===0) return null;
+          {/* Structure — quantile-anchored strikes or margin framework */}
+          {tier.kind === "pmcc" && strikes && (
+            <div style={{
+              background:tier.darkBg,
+              border:`1px solid ${tier.color}30`,
+              borderLeft:`3px solid ${tier.color}`,
+              borderRadius:"6px",padding:"14px 16px"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"10px"}}>
+                <div style={{fontSize:"10px",color:"#8aaac8",textTransform:"uppercase",
+                  letterSpacing:"0.1em",fontWeight:600}}>Structure</div>
+                <div style={{fontSize:"10px",color:"#5a7fa0",letterSpacing:"0.04em"}}>
+                  BTC-level anchors · translate to {tier.name.split(" ")[0]} strikes in mapping workbook
+                </div>
+              </div>
+              {[
+                { leg:"LONG",  s:strikes.long,  sub:`band floor · ~${strikes.long.mo} mo` },
+                { leg:"SHORT", s:strikes.short, sub:`band ceiling · ~${strikes.short.mo} mo · rotation trigger` },
+              ].map(({leg,s,sub})=>(
+                <div key={leg} style={{display:"flex",alignItems:"baseline",gap:"12px",flexWrap:"wrap",
+                  padding:"7px 0",borderTop:leg==="SHORT"?"1px solid #ffffff10":"none"}}>
+                  <span style={{fontSize:"11px",fontWeight:700,letterSpacing:"0.1em",color:tier.color,
+                    width:"46px"}}>{leg}</span>
+                  <span style={{fontSize:"15px",fontWeight:700,color:"#f1f5f9"}}>{s.q}q</span>
+                  <span style={{fontSize:"13px",color:"#a0b8cc"}}>{fmtMonth(s.ts)}</span>
+                  <span style={{fontSize:"15px",fontWeight:700,color:tier.color}}>≈ {fmtFull(s.price)}</span>
+                  <span style={{fontSize:"10px",color:"#5a7fa0",letterSpacing:"0.05em",textTransform:"uppercase"}}>{sub}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {tier.kind === "margin" && (() => {
+            const ms = marginStats(tier.margin);
             return (
-              <div style={{display:"flex",flexDirection:"column",gap:"8px",marginTop:"8px"}}>
-                {rows.map(({t,cfg,scalingIn})=>{
-                  const isInitiate = scalingIn || cfg.action==="Initiate";
-                  return (
-                    <div key={t.name} style={{
-                      background:t.darkBg,
-                      border:`1px solid ${t.color}30`,
-                      borderLeft:`3px solid ${t.color}`,
-                      borderRadius:"6px",padding:"12px 16px"}}>
-                      {/* Header row */}
-                      <div style={{display:"flex",alignItems:"center",
-                        justifyContent:"space-between",marginBottom:"8px"}}>
-                        <div>
-                          <div style={{fontSize:"10px",color:"#8aaac8",textTransform:"uppercase",
-                            letterSpacing:"0.1em",marginBottom:"3px",fontWeight:600}}>Short Leg</div>
-                          <div style={{fontSize:"20px",fontWeight:700,color:t.color,
-                            letterSpacing:"0.08em",textTransform:"uppercase"}}>{t.name}</div>
-                        </div>
-                        {/* Action badge — green for Initiate, instrument color for Roll */}
-                        <div style={{padding:"3px 10px",borderRadius:"3px",
-                          fontSize:"11px",fontWeight:700,letterSpacing:"0.08em",
-                          textTransform:"uppercase",
-                          background:isInitiate?"#052e16":t.color+"18",
-                          border:`1px solid ${isInitiate?"#14532d":t.color+"55"}`,
-                          color:isInitiate?"#22c55e":t.color}}>
-                          {isInitiate?"Initiate":"Roll"}
-                        </div>
-                      </div>
-                      {/* Data badges — same style as 0.80+ DELTA / 24+ MO TO EXPIRY */}
-                      <div style={{display:"inline-flex",alignItems:"center",gap:"6px",flexWrap:"wrap"}}>
-                        <div style={{padding:"3px 9px",borderRadius:"3px",fontSize:"11px",
-                          fontWeight:700,letterSpacing:"0.06em",
-                          background:t.color+"18",border:`1px solid ${t.color}40`,color:t.color}}>
-                          Δ {cfg.delta} SHORT
-                        </div>
-                        <div style={{padding:"3px 9px",borderRadius:"3px",fontSize:"11px",
-                          fontWeight:700,letterSpacing:"0.06em",
-                          background:t.color+"18",border:`1px solid ${t.color}40`,color:t.color}}>
-                          {cfg.expiry.toUpperCase()}
-                        </div>
-                      </div>
+              <div style={{
+                background:tier.darkBg,
+                border:`1px solid ${tier.color}30`,
+                borderLeft:`3px solid ${tier.color}`,
+                borderRadius:"6px",padding:"14px 16px"}}>
+                <div style={{fontSize:"10px",color:"#8aaac8",textTransform:"uppercase",
+                  letterSpacing:"0.1em",fontWeight:600,marginBottom:"10px"}}>Margin Framework</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:"10px"}}>
+                  {[
+                    { label:"Leverage",     val:`${tier.margin.leverage}×` },
+                    { label:"Net carry",    val:`~${(ms.carry*100).toFixed(1)}%`, hint:"on equity" },
+                    { label:"Margin call",  val:`−${(ms.callDD*100).toFixed(0)}%`, hint:`STRC ≈ $${ms.callPx.toFixed(0)}` },
+                    { label:"Maintenance",  val:`${(tier.margin.maint*100).toFixed(0)}%` },
+                  ].map(x=>(
+                    <div key={x.label}>
+                      <div style={{fontSize:"10px",color:"#5a8fc0",textTransform:"uppercase",
+                        letterSpacing:"0.1em",marginBottom:"3px",fontWeight:600}}>{x.label}</div>
+                      <div style={{fontSize:"18px",fontWeight:700,color:tier.color}}>{x.val}</div>
+                      {x.hint && <div style={{fontSize:"10px",color:"#7a9ab8"}}>{x.hint}</div>}
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
+                <div style={{marginTop:"10px",fontSize:"11px",color:"#7aaac8",lineHeight:1.5}}>
+                  STRC below par usually means the preferred ATM is stalled — the margin call and the flywheel
+                  stall arrive together. Size to survive a par break, not the average day.
+                </div>
               </div>
             );
           })()}
@@ -1776,7 +1763,7 @@ function BTCPowerLaw() {
 
       <div style={{marginTop:"24px",paddingTop:"16px",borderTop:"1px solid #0a1628"}}>
         <div style={{fontSize:"10px",color:"#3a5a78",textAlign:"center",letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:500}}>
-          Kaim Power Law Model  ·  A=5.82  ·  B=−17.029
+          Kaim Power Law Model  ·  A=5.82  ·  B=−17.029  ·  v2 — quantile-anchored PMCC ladder
         </div>
       </div>
     </div>
@@ -1795,11 +1782,6 @@ function BTCPowerLaw() {
       };
 
       if (unlocked) return <>
-        <div style={{maxWidth:"1200px",margin:"0 auto",padding:"12px 20px 0",display:"flex",gap:"22px",borderBottom:"1px solid #0f2035"}}>
-          <a href="index.html" style={{padding:"9px 2px",textDecoration:"none",fontSize:"11px",letterSpacing:"0.16em",color:"#facc15",borderBottom:"2px solid #facc15"}}>LADDER</a>
-          <a href="signals.html" style={{padding:"9px 2px",textDecoration:"none",fontSize:"11px",letterSpacing:"0.16em",color:"#8aaac8"}}>SIGNALS</a>
-          <a href="eo.html" style={{padding:"9px 2px",textDecoration:"none",fontSize:"11px",letterSpacing:"0.16em",color:"#8aaac8"}}>EO TRACKER</a>
-        </div>
         <BTCPowerLaw />
       </>;
 

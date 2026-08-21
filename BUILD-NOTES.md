@@ -39,7 +39,10 @@ exact within the 0.01–99.99 clamps.
 ### Removed in v2
 SIGNALS page, EO TRACKER page, collector/, config/, data/ (stale since Jul).
 IBIT Shares and EPD tiers. All sizing/split/scaling machinery. Delta-ladder
-SHORT_LEG config.
+SHORT_LEG config. Income converter + margin.json (v2.3). Unused QuantileGauge.
+
+v2.3 also replaced the tier chip row and band dial with a quantile rail:
+full-width 0-100 bar, four band segments, needle at current quantile.
 
 ### Revert
 `index_v6tier_backup.html` (this repo) and `monitor_v6tier_backup.py`

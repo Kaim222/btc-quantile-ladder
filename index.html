@@ -380,8 +380,36 @@ function ForwardTable({ todayTs, modelA=JV_A, modelB=JV_B }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // PRICE LOOKUP
 // ─────────────────────────────────────────────────────────────────────────────
+function thirdFriday(year, month) { // month 0-11, returns UTC ts
+  const first = new Date(Date.UTC(year, month, 1));
+  const dow = first.getUTCDay();
+  const firstFri = 1 + ((5 - dow + 7) % 7);
+  return Date.UTC(year, month, firstFri + 14);
+}
+function isThirdFriday(ts) {
+  const d = new Date(ts);
+  return thirdFriday(d.getUTCFullYear(), d.getUTCMonth()) === ts;
+}
+function nextOpex(ts, dir) { // dir +1 / -1: nearest monthly opex strictly beyond ts
+  const d = new Date(ts);
+  let y = d.getUTCFullYear(), m = d.getUTCMonth();
+  for (let i = 0; i < 24; i++) {
+    const tf = thirdFriday(y, m);
+    if (dir > 0 && tf > ts) return tf;
+    if (dir < 0 && tf < ts) return tf;
+    m += dir;
+    if (m > 11) { m = 0; y++; }
+    if (m < 0)  { m = 11; y--; }
+  }
+  return ts;
+}
+const tsToDateStr = ts => new Date(ts).toISOString().slice(0, 10);
+
 function PriceLookup({ btcPrice, modelA=JV_A, modelB=JV_B }) {
   const [dateStr, setDateStr] = useState("2026-09-18");
+  const selTs = dateStr ? Date.parse(dateStr + "T00:00:00Z") : NaN;
+  const stepOpex = (dir) => { if (!isNaN(selTs)) setDateStr(tsToDateStr(nextOpex(selTs, dir))); };
+  const onOpex = !isNaN(selTs) && isThirdFriday(selTs);
   const results = useMemo(() => {
     if (!dateStr) return null;
     const d = new Date(dateStr + "T00:00:00Z");
@@ -411,8 +439,15 @@ function PriceLookup({ btcPrice, modelA=JV_A, modelB=JV_B }) {
           <div style={{fontSize:"11px",color:"#5a8fc0",textTransform:"uppercase",letterSpacing:"0.12em",fontWeight:600}}>
             Price Lookup
           </div>
+          <button onClick={()=>stepOpex(-1)} title="Previous monthly expiration"
+            style={{...inputStyle, color:"#7dd3fc", cursor:"pointer", padding:"6px 9px", fontSize:"12px"}}>◀</button>
           <input type="date" value={dateStr} onChange={e=>setDateStr(e.target.value)}
             style={{...inputStyle, colorScheme:"dark"}}/>
+          <button onClick={()=>stepOpex(1)} title="Next monthly expiration"
+            style={{...inputStyle, color:"#7dd3fc", cursor:"pointer", padding:"6px 9px", fontSize:"12px"}}>▶</button>
+          {onOpex && (
+            <span style={{fontSize:"10px",color:"#7dd3fc",letterSpacing:"0.1em",fontWeight:700}}>OPEX</span>
+          )}
         </div>
         {results && (
           <div style={{fontSize:"11px",color:"#4a6a80",letterSpacing:"0.08em",

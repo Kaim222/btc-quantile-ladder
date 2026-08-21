@@ -1333,6 +1333,48 @@ function BTCPowerLaw() {
       /* Price input bg */
       #root input[style*="background: rgb(7, 15, 31)"]   { background: #e4ecf4 !important; color: #1a2a3a !important; }
       #root input[style*="background: rgb(4, 12, 26)"]   { background: #dde7f2 !important; color: #1a2a3a !important; }
+      /* ── Tier darkBg tints → light tints ── */
+      #root [style*="background: rgb(28, 5, 5)"]         { background: #fbe9e9 !important; }  /* MSTX red */
+      #root [style*="background: rgb(28, 14, 0)"]        { background: #fbf0e3 !important; }  /* MSTR orange */
+      #root [style*="background: rgb(12, 30, 38)"]       { background: #e3f2f7 !important; }  /* IBIT cyan */
+      #root [style*="background: rgb(7, 26, 15)"]        { background: #e6f5ec !important; }  /* STRC green */
+      #root [style*="background: rgb(28, 23, 0)"]        { background: #faf3d9 !important; }  /* yellow badge */
+      #root [style*="background: rgb(5, 46, 22)"]        { background: #ddf2e5 !important; }  /* green badge */
+      #root [style*="background: rgb(21, 4, 4)"]         { background: #fbe9e9 !important; }  /* vsFV red */
+      #root [style*="background: rgb(4, 18, 9)"]         { background: #e6f5ec !important; }  /* vsFV green */
+      #root [style*="background: rgb(10, 26, 46)"]       { background: #dce8f2 !important; }  /* proximity hl */
+      #root [style*="background: rgb(12, 32, 64)"]       { background: #d6e6f5 !important; }  /* active button */
+      /* Badge borders */
+      #root [style*="border: 1px solid rgb(20, 83, 45)"] { border-color: #8ec9a8 !important; }
+      #root [style*="border: 1px solid rgb(61, 46, 0)"]  { border-color: #d8c88a !important; }
+      /* Text inside dark tier cards → darken */
+      #root [style*="color: rgb(176, 196, 216)"]         { color: #33475a !important; }
+      #root [style*="color: rgb(208, 221, 232)"]         { color: #24384c !important; }
+      #root [style*="color: rgb(160, 184, 204)"]         { color: #33475a !important; }
+      #root [style*="color: rgb(122, 170, 200)"]         { color: #2a5878 !important; }
+      #root [style*="color: rgb(122, 154, 184)"]         { color: #33506a !important; }
+      #root [style*="color: rgb(138, 192, 216)"]         { color: #1a5878 !important; }
+      #root [style*="color: rgb(90, 127, 160)"]          { color: #33506a !important; }
+      /* Bright accents that wash out on light bg → darker variants */
+      #root [style*="color: rgb(34, 211, 238)"]          { color: #0a8ca8 !important; }  /* cyan */
+      #root [style*="color: rgb(34, 197, 94)"]           { color: #15803d !important; }  /* green */
+      #root [style*="color: rgb(234, 179, 8)"]           { color: #9a7700 !important; }  /* yellow */
+      #root [style*="color: rgb(250, 204, 21)"]          { color: #946f00 !important; }  /* gold price */
+      #root [style*="color: rgb(239, 68, 68)"]           { color: #dc2626 !important; }  /* red */
+      #root [style*="color: rgb(249, 115, 22)"]          { color: #c2570a !important; }  /* orange */
+      #root [style*="color: rgb(125, 211, 252)"]         { color: #0369a1 !important; }  /* sky */
+      #root [style*="color: rgb(56, 189, 248)"]          { color: #0369a1 !important; }  /* FV row */
+      #root input[style*="color: rgb(250, 204, 21)"]     { color: #946f00 !important; }
+      /* Alpha-suffixed tier colors (inactive chips etc.) — prefix match rgba */
+      #root [style*="color: rgba(239, 68, 68"]           { color: rgba(185, 28, 28, 0.65) !important; }
+      #root [style*="color: rgba(249, 115, 22"]          { color: rgba(154, 66, 5, 0.65) !important; }
+      #root [style*="color: rgba(34, 211, 238"]          { color: rgba(8, 110, 133, 0.65) !important; }
+      #root [style*="color: rgba(34, 197, 94"]           { color: rgba(20, 108, 58, 0.65) !important; }
+      #root [style*="color: rgba(234, 179, 8"]           { color: rgba(133, 100, 0, 0.65) !important; }
+      /* $ prefix + muted input placeholder */
+      #root [style*="color: rgb(122, 143, 168)"]         { color: #4a6078 !important; }
+      /* Forward table FV row highlight */
+      #root [style*="background: rgb(6, 22, 40)"]        { background: #d6e8f5 !important; }
     `;
     document.head.appendChild(s);
   }, [lightMode]);

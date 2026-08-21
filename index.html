@@ -356,7 +356,7 @@ function ForwardTable({ todayTs, modelA=JV_A, modelB=JV_B }) {
             const rowColor = band.color;
             return [
               <div key={q+"label"} style={{padding:"5px 6px",borderBottom:"1px solid #070f1f",
-                color:rowColor,fontWeight:700,fontSize:"13px"}}>{band.label}</div>,
+                color:rowColor,fontWeight:700,fontSize:"12px"}}>{band.label}</div>,
               ...cols.map(c=>{
                 const p = bandPriceAt(c.ts, band, modelA, modelB);
                 const isPast = c.label==="1yr ago"||c.label==="6mo ago";
@@ -472,7 +472,7 @@ function PriceLookup({ btcPrice, modelA=JV_A, modelB=JV_B }) {
             return (
               <div key={r.label} style={{background:"#070f1f",border:`1px solid ${r.color}22`,
                 borderRadius:"5px",padding:"8px 10px",textAlign:"center"}}>
-                <div style={{fontSize:"11px",color:r.color,fontWeight:700,letterSpacing:"0.06em",marginBottom:"4px"}}>{r.label}</div>
+                <div style={{fontSize:"12px",color:r.color,fontWeight:700,letterSpacing:"0.06em",marginBottom:"4px"}}>{r.label}</div>
                 <div style={{fontSize:"14px",color:"#d0dde8",fontWeight:600}}>{fmtFull(r.price)}</div>
                 {aboveBelow !== null && (
                   <div style={{fontSize:"10px",marginTop:"3px",
@@ -637,12 +637,12 @@ function PowerLawChart({ btcPrice, todayTs, liveHistory, modelA=JV_A, modelB=JV_
         <div style={{display:"flex",gap:"10px",flexWrap:"wrap",alignItems:"center"}}>
           <div style={{display:"flex",alignItems:"center",gap:"5px"}}>
             <div style={{width:"14px",height:"2.5px",background:"#f1f5f9",borderRadius:"1px"}}/>
-            <span style={{fontSize:"12px",color:"#8aaac8"}}>BTC</span>
+            <span style={{fontSize:"12px",color:"#8aaac8",fontWeight:700}}>BTC</span>
           </div>
           {[...BAND_DEFS].reverse().map(b => (
             <div key={b.q} style={{display:"flex",alignItems:"center",gap:"5px"}}>
-              <div style={{width:"14px",height:"2.5px",background:b.color,borderRadius:"1px",opacity:b.dim?0.5:0.9}}/>
-              <span style={{fontSize:"12px",color:b.color,opacity:b.dim?0.6:0.9}}>{b.label}</span>
+              <div style={{width:"14px",height:"2.5px",background:b.color,borderRadius:"1px",opacity:0.9}}/>
+              <span style={{fontSize:"12px",color:b.color,fontWeight:700}}>{b.label}</span>
             </div>
           ))}
         </div>
@@ -695,7 +695,7 @@ function PowerLawChart({ btcPrice, todayTs, liveHistory, modelA=JV_A, modelB=JV_
           {yLabels.map(v => {
             const y = ty(Math.log10(v));
             return y >= PAD.t && y <= PAD.t + ch ? (
-              <text key={v} x={PAD.l-6} y={y+4} fill="#7aa5c8" fontSize="12" textAnchor="end">
+              <text key={v} x={PAD.l-6} y={y+4} fill="#7aa5c8" fontSize="11" textAnchor="end">
                 {v >= 1e6 ? "$"+v/1e6+"M" : v >= 1e3 ? "$"+v/1e3+"K" : "$"+v}
               </text>
             ) : null;
@@ -703,7 +703,7 @@ function PowerLawChart({ btcPrice, todayTs, liveHistory, modelA=JV_A, modelB=JV_
 
           {/* X-axis labels */}
           {xLabels.map(({yr,ts}) => (
-            <text key={yr} x={tx(ts)} y={PAD.t+ch+18} fill="#7aa5c8" fontSize="12" textAnchor="middle">{yr}</text>
+            <text key={yr} x={tx(ts)} y={PAD.t+ch+18} fill="#7aa5c8" fontSize="11" textAnchor="middle">{yr}</text>
           ))}
         </svg>
       </div>

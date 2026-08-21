@@ -843,6 +843,17 @@ function BTCPowerLaw() {
       #root [style*="color: rgb(122, 143, 168)"]         { color: #4a6078 !important; }
       /* Forward table FV row highlight */
       #root [style*="background: rgb(6, 22, 40)"]        { background: #d6e8f5 !important; }
+      /* Weighted-model slider track + dividers */
+      #root [style*="background: rgb(13, 30, 48)"]       { background: #b8cfe0 !important; }
+      #root [style*="border-bottom: 1px solid rgb(10, 25, 48)"] { border-bottom-color: #c8d6e4 !important; }
+      /* Chart: SVG light theme (CSS beats presentation attrs) */
+      #root svg rect[fill="#070f1f"]   { fill: #f2f6fa; }
+      #root svg line[stroke="#0d1e30"] { stroke: #d5e0ea; }
+      #root svg path[stroke="#f1f5f9"] { stroke: #1e293b; }
+      #root svg text[fill="#5a8fc0"]   { fill: #4a6a8a; }
+      #root svg text[fill="#22d3ee"]   { fill: #0a8ca8; }
+      #root svg circle[stroke="#020817"] { stroke: #f2f6fa; }
+      #root svg rect[fill="#020817"]   { fill: #1a2a3a; }
     `;
     document.head.appendChild(s);
   }, [lightMode]);
@@ -1124,9 +1135,8 @@ function BTCPowerLaw() {
                     </span>
                   )}
                   {inBuffer && (
-                    <span style={{fontSize:"11px",color:"#eab308",border:"1px solid #3d2e00",
-                      background:"#1c1700",borderRadius:"3px",padding:"2px 8px",letterSpacing:"0.04em"}}>
-                      ±{HYST.toFixed(0)}q rotation buffer — alerts fire beyond it
+                    <span style={{fontSize:"12px",color:"#eab308"}}>
+                      ±{HYST.toFixed(0)}q buffer
                     </span>
                   )}
                 </div>

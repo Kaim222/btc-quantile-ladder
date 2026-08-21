@@ -167,12 +167,12 @@ function bandOffset(mSlope, cIntercept, ts) {
 }
 
 const BAND_DEFS = [
-  { q: 99.9, m: -0.0000756204, c:  0.7434,  label: "99.9%", color: "#3b82f6", dash: "6,3", w: 1   },
-  { q: 95,   m: -0.0000583518, c:  0.5943,  label: "95%",   color: "#22c55e", dash: "5,3", w: 1   },
-  { q: 85,   m: -0.0000516698, c:  0.4318,  label: "85%",   color: "#22d3ee", dash: "",    w: 1.2 },
-  { q: 50,   m:  0,            c: -0.000400, label: "50%",   color: "#eab308", dash: "",    w: 1.8 },
-  { q: 15,   m:  0,            c: -0.209200, label: "15%",   color: "#f97316", dash: "",    w: 1.2 },
-  { q: 0.1,  m:  0,            c: -0.340300, label: "0.1%",  color: "#ef4444", dash: "5,3", w: 1   },
+  { q: 99.9, m: -0.0000756204, c:  0.7434,  label: "99.9%", color: "#3b82f6", dash: "2,4", w: 0.8, dim: true },
+  { q: 95,   m: -0.0000583518, c:  0.5943,  label: "95%",   color: "#8b5cf6", dash: "2,4", w: 0.8, dim: true },
+  { q: 85,   m: -0.0000516698, c:  0.4318,  label: "85%",   color: "#22c55e", dash: "",    w: 1.4 },
+  { q: 50,   m:  0,            c: -0.000400, label: "50%",   color: "#22d3ee", dash: "",    w: 1.4 },
+  { q: 15,   m:  0,            c: -0.209200, label: "15%",   color: "#f97316", dash: "",    w: 1.4 },
+  { q: 0.1,  m:  0,            c: -0.340300, label: "0.1%",  color: "#ef4444", dash: "",    w: 1.4 },
 ];
 
 // BANDS with offset computed at current time (for gauge/quantile calc)
@@ -525,11 +525,10 @@ function PowerLawChart({ btcPrice, todayTs, liveHistory, modelA=JV_A, modelB=JV_
   const bandFills = useMemo(() => {
     const fills = [];
     const bandPairs = [
-      { upper: BAND_DEFS[0], lower: BAND_DEFS[1], color: "#b91c1c", opacity: 0.08 },
-      { upper: BAND_DEFS[1], lower: BAND_DEFS[2], color: "#dc2626", opacity: 0.06 },
-      { upper: BAND_DEFS[2], lower: BAND_DEFS[3], color: "#f97316", opacity: 0.06 },
-      { upper: BAND_DEFS[3], lower: BAND_DEFS[4], color: "#22d3ee", opacity: 0.06 },
-      { upper: BAND_DEFS[4], lower: BAND_DEFS[5], color: "#22c55e", opacity: 0.06 },
+      { upper: BAND_DEFS[2], lower: BAND_DEFS[3], color: "#22d3ee", opacity: 0.07 },  // 50-85  IBIT
+      { upper: BAND_DEFS[3], lower: BAND_DEFS[4], color: "#f97316", opacity: 0.07 },  // 15-50  MSTR
+      { upper: BAND_DEFS[4], lower: BAND_DEFS[5], color: "#ef4444", opacity: 0.07 },  // 0.1-15 MSTX
+      { upper: BAND_DEFS[1], lower: BAND_DEFS[2], color: "#22c55e", opacity: 0.05 },  // 85-95  STRC
     ];
     for (const {upper, lower, color, opacity} of bandPairs) {
       let pathUp = "", pathDn = "";
@@ -668,7 +667,7 @@ function PowerLawChart({ btcPrice, todayTs, liveHistory, modelA=JV_A, modelB=JV_
 
           {/* Band lines */}
           {bandLines.map(b => (
-            <path key={b.q} d={b.d} fill="none" stroke={b.color} strokeWidth={b.w}
+            <path key={b.q} d={b.d} fill="none" stroke={b.color} strokeWidth={b.w} opacity={b.dim ? 0.35 : 0.9}
               strokeDasharray={b.dash} opacity={0.7}/>
           ))}
 
@@ -1211,42 +1210,9 @@ function BTCPowerLaw() {
               </div>
             );
           })()}
-
-          {/* Band proximity table */}
-          <div style={{background:"#070f1f",border:"1px solid #0a1628",borderRadius:"6px",padding:"14px"}}>
-            <div style={{fontSize:"12px",color:"#7ab8d8",textTransform:"uppercase",
-              letterSpacing:"0.1em",marginBottom:"10px",fontWeight:600}}>Band Proximity</div>
-            <div style={{overflowX:"auto"}}>
-            <div style={{display:"grid",gridTemplateColumns:"3fr 4fr 4fr 3fr",fontSize:"13px",gap:"1px",minWidth:"340px"}}>
-              {["Band","Level","Distance","% Away"].map(h=>(
-                <div key={h} style={{color:"#7ab8d8",padding:"3px 6px",
-                  borderBottom:"1px solid #0a1930",fontSize:"11px",
-                  textTransform:"uppercase",letterSpacing:"0.06em",fontWeight:600}}>{h}</div>
-              ))}
-              {bandRows.map(b=>{
-                const near = b.q === nearestAboveQ || b.q === nearestBelowQ;
-                const bg   = near?"#0a1a2e":"transparent";
-                const instrColor = b.color;
-                return [
-                  <div key={b.label+"q"} style={{padding:"4px 5px",borderBottom:"1px solid #050c18",
-                    color:instrColor,fontWeight:700,background:bg}}>{b.label}</div>,
-                  <div key={b.label+"p"} style={{padding:"4px 5px",borderBottom:"1px solid #050c18",
-                    color:"#94a3b8",background:bg}}>{fmtFull(b.bprice)}</div>,
-                  <div key={b.label+"d"} style={{padding:"4px 5px",borderBottom:"1px solid #050c18",
-                    color:b.above?"#ef4444":"#22c55e",background:bg}}>
-                    {b.above?"↑":"↓"} {price>0?fmtFull(Math.abs(b.bprice-price)):"—"}
-                  </div>,
-                  <div key={b.label+"a"} style={{padding:"4px 5px",borderBottom:"1px solid #050c18",
-                    color:b.above?"#ef4444":"#22c55e",background:bg}}>
-                    {b.pctAway==="—"?"—":`${parseFloat(b.pctAway)>0?"+":""}${b.pctAway}%`}
-                  </div>,
-                ];
-              })}
-            </div>
-            </div>
-          </div>
       </div>
-      {/* FORWARD PROJECTION TABLE */}
+
+          {/* FORWARD PROJECTION TABLE */}
       <ForwardTable todayTs={todayTs} modelA={modelA} modelB={modelB}/>
 
       {/* PRICE LOOKUP */}

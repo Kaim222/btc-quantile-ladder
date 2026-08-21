@@ -1163,13 +1163,8 @@ function BTCPowerLaw() {
               border:`1px solid ${tier.color}30`,
               borderLeft:`3px solid ${tier.color}`,
               borderRadius:"6px",padding:"14px 16px"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"10px",flexWrap:"wrap",gap:"4px 12px"}}>
-                <div style={{fontSize:"10px",color:"#8aaac8",textTransform:"uppercase",
-                  letterSpacing:"0.1em",fontWeight:600}}>Structure</div>
-                <div style={{fontSize:"10px",color:"#5a7fa0",letterSpacing:"0.04em"}}>
-                  BTC anchors
-                </div>
-              </div>
+              <div style={{fontSize:"10px",color:"#8aaac8",textTransform:"uppercase",
+                letterSpacing:"0.1em",fontWeight:600,marginBottom:"10px"}}>Structure</div>
               {[
                 { leg:"LONG",  s:strikes.long,  sub:`band floor · ~${strikes.long.mo} mo` },
                 { leg:"SHORT", s:strikes.short, sub:`band ceiling · ~${strikes.short.mo} mo · rotation trigger` },
@@ -1179,7 +1174,9 @@ function BTCPowerLaw() {
                   <span style={{fontSize:"11px",fontWeight:700,letterSpacing:"0.1em",color:tier.color,
                     width:"46px"}}>{leg}</span>
                   <span style={{fontSize:"15px",fontWeight:700,color:"#f1f5f9"}}>{s.q}q</span>
-                  <span style={{fontSize:"13px",color:"#a0b8cc"}}>{fmtMonth(s.ts)}</span>
+                  <span style={{fontSize:"13px",color:"#a0b8cc"}}>{fmtMonth(s.ts)}
+                    <span style={{fontSize:"11px",color:"#5a7fa0",marginLeft:"6px"}}>{Math.round((s.ts-todayTs)/86400000)}d</span>
+                  </span>
                   <span style={{fontSize:"15px",fontWeight:700,color:tier.color}}>≈ {fmtFull(s.price)}</span>
                   <span style={{fontSize:"10px",color:"#5a7fa0",letterSpacing:"0.05em",textTransform:"uppercase"}}>{sub}</span>
                 </div>

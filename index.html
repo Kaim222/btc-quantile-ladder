@@ -419,7 +419,6 @@ function PriceLookup({ btcPrice, modelA=JV_A, modelB=JV_B }) {
   }, [dateStr]);
   const selTs = dateStr ? Date.parse(dateStr + "T00:00:00Z") : NaN;
   const stepOpex = (dir) => { if (!isNaN(selTs)) setDateStr(tsToDateStr(nextOpex(selTs, dir))); };
-  const onOpex = !isNaN(selTs) && isThirdFriday(selTs);
   const results = useMemo(() => {
     if (!dateStr) return null;
     const d = new Date(dateStr + "T00:00:00Z");
@@ -455,9 +454,6 @@ function PriceLookup({ btcPrice, modelA=JV_A, modelB=JV_B }) {
             style={{...inputStyle, colorScheme:"dark"}}/>
           <button onClick={()=>stepOpex(1)} title="Next monthly expiration"
             style={{...inputStyle, color:"#7dd3fc", cursor:"pointer", padding:"6px 9px", fontSize:"12px"}}>▶</button>
-          {onOpex && (
-            <span style={{fontSize:"10px",color:"#7dd3fc",letterSpacing:"0.1em",fontWeight:700}}>OPEX</span>
-          )}
         </div>
         {results && (
           <div style={{fontSize:"11px",color:"#4a6a80",letterSpacing:"0.08em",

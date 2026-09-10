@@ -406,15 +406,28 @@ function nextOpex(ts, dir) { // dir +1 / -1: nearest monthly opex strictly beyon
 }
 const tsToDateStr = ts => new Date(ts).toISOString().slice(0, 10);
 
-function PriceLookup({ btcPrice, modelA=JV_A, modelB=JV_B }) {
-  // Default: saved date if still in the future, else next upcoming monthly opex
-  const [dateStr, setDateStr] = useState(() => {
-    try {
-      const saved = localStorage.getItem("lookupDate");
-      if (saved && Date.parse(saved + "T00:00:00Z") > Date.now()) return saved;
-    } catch(_) {}
-    return tsToDateStr(nextOpex(Date.now(), 1));
-  });
+function priceOn(history, ts) {
+  // nearest historical point within tolerance (10d daily era, 40d monthly seed era)
+  if (!history || !history.length) return null;
+  let best = null, bd = Infinity;
+  for (const [t, p] of history) {
+    const d = Math.abs(t - ts);
+    if (d < bd) { bd = d; best = [t, p]; }
+  }
+  if (!best) return null;
+  const tol = best[0] > Date.parse("2025-08-01") ? 10 : 40;
+  return bd <= tol * 86400000 ? { ts: best[0], price: best[1] } : null;
+}
+
+function lookupDefaultDate() {
+  try {
+    const saved = localStorage.getItem("lookupDate");
+    if (saved && Date.parse(saved + "T00:00:00Z") > Date.now()) return saved;
+  } catch(_) {}
+  return tsToDateStr(nextOpex(Date.now(), 1));
+}
+
+function PriceLookup({ btcPrice, liveHistory, dateStr, setDateStr, modelA=JV_A, modelB=JV_B }) {
   useEffect(() => {
     try { localStorage.setItem("lookupDate", dateStr); } catch(_) {}
   }, [dateStr]);
@@ -433,7 +446,7 @@ function PriceLookup({ btcPrice, modelA=JV_A, modelB=JV_B }) {
       const price = Math.pow(10, modelA * Math.log10(days) + modelB + offset);
       return { label: b.label, price, color: b.color, q: b.q };
     });
-    return { bands, daysFromNow, days: Math.round(days) };
+    return { bands, daysFromNow, days: Math.round(days), ts: d.getTime() };
   }, [dateStr, modelA, modelB]);
 
   const inputStyle = {
@@ -457,11 +470,26 @@ function PriceLookup({ btcPrice, modelA=JV_A, modelB=JV_B }) {
             style={{...inputStyle, color:"#7dd3fc", cursor:"pointer", padding:"6px 9px", fontSize:"12px"}}>▶</button>
         </div>
         {results && (
-          <div style={{fontSize:"11px",color:"#4a6a80",letterSpacing:"0.08em",
-            textTransform:"uppercase",fontWeight:600}}>
-            {results.daysFromNow > 0 ? `+${results.daysFromNow}D` :
-             results.daysFromNow === 0 ? "TODAY" :
-             `−${Math.abs(results.daysFromNow)}D`}
+          <div style={{display:"flex",alignItems:"center",gap:"14px"}}>
+            {results.daysFromNow < 0 && (() => {
+              const h = priceOn(liveHistory, results.ts);
+              if (!h) return null;
+              const hq = priceToQuantile(h.price, h.ts, modelA, modelB);
+              const {tier: ht} = getTier(hq);
+              return (
+                <div style={{fontSize:"11px",fontWeight:600,letterSpacing:"0.04em"}}>
+                  <span style={{color:"#8aaac8",textTransform:"uppercase",letterSpacing:"0.08em"}}>Actual </span>
+                  <span style={{color:"#f1f5f9"}}>{fmtFull(h.price)}</span>
+                  <span style={{color:ht.color,marginLeft:"8px"}}>{hq.toFixed(1)}q</span>
+                </div>
+              );
+            })()}
+            <div style={{fontSize:"11px",color:"#4a6a80",letterSpacing:"0.08em",
+              textTransform:"uppercase",fontWeight:600}}>
+              {results.daysFromNow > 0 ? `+${results.daysFromNow}D` :
+               results.daysFromNow === 0 ? "TODAY" :
+               `−${Math.abs(results.daysFromNow)}D`}
+            </div>
           </div>
         )}
       </div>
@@ -492,7 +520,7 @@ function PriceLookup({ btcPrice, modelA=JV_A, modelB=JV_B }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // POWER LAW CHART (SVG)
 // ─────────────────────────────────────────────────────────────────────────────
-function PowerLawChart({ btcPrice, todayTs, liveHistory, modelA=JV_A, modelB=JV_B }) {
+function PowerLawChart({ btcPrice, todayTs, liveHistory, lookupTs, modelA=JV_A, modelB=JV_B }) {
   const canvasRef = useRef(null);
 
   // Chart dimensions
@@ -679,6 +707,33 @@ function PowerLawChart({ btcPrice, todayTs, liveHistory, modelA=JV_A, modelB=JV_
             stroke="#22d3ee" strokeWidth="0.5" strokeDasharray="3,3" opacity="0.4"/>
           <text x={todayX} y={PAD.t-6} fill="#22d3ee" fontSize="11" textAnchor="middle" opacity="0.7">TODAY</text>
 
+          {/* Lookup-date marker */}
+          {lookupTs && Math.abs(lookupTs - todayTs) > 86400000 && (() => {
+            const lx = tx(lookupTs);
+            if (lx < PAD.l || lx > PAD.l + cw) return null;
+            const past = lookupTs < todayTs;
+            const h = past ? priceOn(liveHistory, lookupTs) : null;
+            const hy = h ? ty(Math.log10(h.price)) : null;
+            return (
+              <>
+                <line x1={lx} x2={lx} y1={PAD.t} y2={PAD.t+ch}
+                  stroke="#7dd3fc" strokeWidth="1" strokeDasharray="2,4" opacity="0.5"/>
+                {h && hy >= PAD.t && hy <= PAD.t+ch && (() => {
+                  const lw = String(fmtFull(h.price)).length*8+12;
+                  const flip = lx > todayX - 130; // avoid TODAY pill collision
+                  const rx = flip ? lx-8-lw : lx+8;
+                  return (
+                    <>
+                      <circle cx={lx} cy={hy} r="4" fill="#7dd3fc" stroke="#020817" strokeWidth="2"/>
+                      <rect x={rx} y={hy-9.5} width={lw} height="19" rx="3" fill="#020817" opacity="0.85"/>
+                      <text x={rx+5} y={hy+4.5} fill="#7dd3fc" fontSize="13" fontWeight="700">{fmtFull(h.price)}</text>
+                    </>
+                  );
+                })()}
+              </>
+            );
+          })()}
+
           {/* Current price dot */}
           {priceY !== null && priceY >= PAD.t && priceY <= PAD.t+ch && (
             <>
@@ -724,6 +779,7 @@ function BTCPowerLaw() {
   const [liveFetch, setLiveFetch] = useState("fetching…");
   const [liveUpdatedAt, setLiveUpdatedAt] = useState(null);
   const [liveHistory, setLiveHistory] = useState(null);
+  const [lookupDate, setLookupDate] = useState(lookupDefaultDate);
 
   // EMA model: halfLifeYears=0 means Kaim fixed model
   const [halfLifeYears, setHalfLifeYears] = useState(0);
@@ -1217,10 +1273,10 @@ function BTCPowerLaw() {
       <ForwardTable todayTs={todayTs} modelA={modelA} modelB={modelB}/>
 
       {/* PRICE LOOKUP */}
-      <PriceLookup btcPrice={price} modelA={modelA} modelB={modelB}/>
+      <PriceLookup btcPrice={price} liveHistory={liveHistory} dateStr={lookupDate} setDateStr={setLookupDate} modelA={modelA} modelB={modelB}/>
 
       {/* POWER LAW CHART */}
-      <PowerLawChart btcPrice={price} todayTs={todayTs} liveHistory={liveHistory} modelA={modelA} modelB={modelB}/>
+      <PowerLawChart btcPrice={price} todayTs={todayTs} liveHistory={liveHistory} lookupTs={lookupDate ? Date.parse(lookupDate + "T00:00:00Z") : null} modelA={modelA} modelB={modelB}/>
 
       <div style={{marginTop:"24px",paddingTop:"16px",borderTop:"1px solid #0a1628"}}>
         <div style={{fontSize:"10px",color:"#3a5a78",textAlign:"center",letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:500}}>

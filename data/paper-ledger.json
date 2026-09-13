@@ -6,14 +6,14 @@
         "dates": "through 2026-09-25",
         "structure": "14/15 diagonal with the long on Oct 2 and 16/17 diagonal with the long on Oct 9, both shorts Sep 25, equal dollars",
         "next_action": "Monday 9/14, 30 to 60 minutes after the open: convert the 17/17.50 diagonal into the two Phase 1 spreads, strikes shifted with the open, equal dollars, two spread orders at the mid",
-        "roll_rules": "each short rolls against its own long if unfilled at 9/25; the mark is taken on a rip past 17.50"
+        "roll_rules": "each short rolls against its own long if unfilled at 9/25. The mark is taken on a rip past 17.50"
       },
       {
         "id": 2,
         "dates": "2026-09-26 to 2026-12-18",
         "structure": "March 15 call long against Dec 18 22 call short, strikes shifted up with the stock at entry",
         "next_action": "9/26: all Phase 1 proceeds into the Phase 2 spread",
-        "roll_rules": "roll the short up to 25 on a close above 22 before December 1; January and February short rolls scheduled at entry"
+        "roll_rules": "roll the short up to 25 on a close above 22 before December 1. January and February short rolls scheduled at entry"
       },
       {
         "id": 3,

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-13T09:40:31Z",
+  "generated_at": "2026-09-13T10:12:37Z",
   "as_of_run_date": "2026-09-13",
   "inputs": {
     "btc_above_200d": {
@@ -8,9 +8,9 @@
       "source": "yahoo_daily",
       "as_of": "2026-09-13",
       "error": null,
-      "btc_close": 76704.992188,
-      "sma_200d": 70134.858477,
-      "gap_pct": 9.367858
+      "btc_close": 76754.671875,
+      "sma_200d": 70135.106875,
+      "gap_pct": 9.438305
     },
     "btc_above_200w": {
       "value": true,
@@ -18,9 +18,9 @@
       "source": "yahoo_weekly",
       "as_of": "2026-09-13 price vs week ending 2026-09-06",
       "error": null,
-      "btc_close": 76704.992188,
+      "btc_close": 76754.671875,
       "sma_200w": 64867.387324,
-      "gap_pct": 18.248931,
+      "gap_pct": 18.325518,
       "weeks": 558,
       "note": "SMA over completed calendar weeks only"
     },
@@ -69,19 +69,19 @@
       "note": "MACD(8,21,5) on the same completed Monday-to-Sunday UTC weekly closes as the histogram-rising row, EMA seeded on the first value. Passes when the last complete bar's histogram is above zero and at least one of the three bars before it was at or below zero, which is a bullish cross inside the last three weekly bars. cross_bar_date is the first bar after the most recent non-positive bar. Entry timing, not a hold condition."
     },
     "ladder_quantile": {
-      "value": 8.940889,
+      "value": 8.972848,
       "pass": true,
       "source": "site formula",
       "as_of": "2026-09-13",
       "error": null,
       "band": "below 15",
-      "btc_close": 76704.992188,
+      "btc_close": 76754.671875,
       "fair_value": 140389.837203,
       "days_since_genesis": 6462.0,
       "note": "the page's own priceToQuantile, ported into this script. Fair value is 10 ** (5.82 * log10(days since 2009-01-03) - 17.029), bands are offsets in log10(price / fair value), and the decaying bands cap their slope term at the run date. Passes when the quantile is not above the 85th band."
     },
     "btc_price": {
-      "value": 76704.992188,
+      "value": 76754.671875,
       "pass": null,
       "source": "yahoo_daily",
       "as_of": "2026-09-13",

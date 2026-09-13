@@ -1,0 +1,58 @@
+[
+  {
+    "date": "2026-09-16",
+    "type": "FOMC",
+    "label": "FOMC decision day (meeting Sep 15-16, with economic projections)",
+    "verified": true,
+    "source": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+    "note": null
+  },
+  {
+    "date": "2026-10-14",
+    "type": "CPI",
+    "label": "CPI release for September 2026 reference month, 08:30 AM ET",
+    "verified": true,
+    "source": "https://www.bls.gov/schedule/news_release/cpi.htm",
+    "note": null
+  },
+  {
+    "date": "2026-10-28",
+    "type": "FOMC",
+    "label": "FOMC decision day (meeting Oct 27-28)",
+    "verified": true,
+    "source": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+    "note": null
+  },
+  {
+    "date": "2026-11-04",
+    "type": "MSTR_EARNINGS",
+    "label": "Strategy Inc Q3 2026 results, after market close",
+    "verified": false,
+    "source": "https://www.tipranks.com/stocks/mstr/earnings",
+    "note": "third-party calendar; confirm on the IR page"
+  },
+  {
+    "date": "2026-11-10",
+    "type": "CPI",
+    "label": "CPI release for October 2026 reference month, 08:30 AM ET",
+    "verified": true,
+    "source": "https://www.bls.gov/schedule/news_release/cpi.htm",
+    "note": null
+  },
+  {
+    "date": "2026-12-09",
+    "type": "FOMC",
+    "label": "FOMC decision day (meeting Dec 8-9, with economic projections)",
+    "verified": true,
+    "source": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+    "note": null
+  },
+  {
+    "date": "2026-12-10",
+    "type": "CPI",
+    "label": "CPI release for November 2026 reference month, 08:30 AM ET",
+    "verified": true,
+    "source": "https://www.bls.gov/schedule/news_release/cpi.htm",
+    "note": null
+  }
+]

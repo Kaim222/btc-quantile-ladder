@@ -767,12 +767,1116 @@ function PowerLawChart({ btcPrice, todayTs, liveHistory, lookupTs, modelA=JV_A, 
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// PLAYBOOK. Static rule card first, live inputs second.
+//
+// PLAYBOOK_RULES.components mirrors tools/playbook_rules.json. The refresh
+// script reads that file and copies the adopted flags into data/playbook.json,
+// so the page shows live flags when the refresh has run and these defaults
+// otherwise. Rule text is fixed: it changes only between sessions, never
+// mid-trade.
+// ─────────────────────────────────────────────────────────────────────────────
+const PLAYBOOK_RULES = {
+  version: "v3",
+  asOf: "2026-09-12",
+  discipline: "playbook changes only inside a session, never mid-trade",
+  allocation: "Allocation: LEAPS leg 40 to 50% of the account. Cash floor 30%, never deployed. Vertical sleeve the rest, paper until the eight-week record beats implied odds.",
+  rows: [
+    { id:"R1", color:"#22d3ee",
+      title:"LEAPS leg, regime unchanged",
+      situation:"LEAPS leg on, regime unchanged.",
+      fields:[
+        ["Structure", "HOLD the diagonal."],
+        ["Roll", "Short rolls up when BTC crosses a quantile boundary upward (new short strike = new regime-exit price). Whole position rolls to the next ticker when BTC crosses a rotation boundary past the 1q buffer."],
+        ["Size", "The LEAPS leg is 40 to 50% of the account."],
+      ] },
+    { id:"R2", color:"#f97316",
+      title:"LEAPS leg, entry or re-entry after a rotation",
+      situation:"LEAPS leg, entry or re-entry after a rotation.",
+      fields:[
+        ["Structure", "ticker by regime (MSTX below 15q, MSTR 15 to 50q, IBIT 50 to 85q, no options above 85q; STRC per ladder)."],
+        ["Strikes", "Long: 0.60 delta, 24 months or more. Short: the next listed expiry 15 to 16 months out, strike at the ladder's regime-exit BTC price mapped to the ticker (about 0.20 delta on MSTR, about 0.50 delta on MSTX)."],
+        ["Checks", "net debit under the strike width; on MSTX the short must fund 40% or more of the long."],
+        ["Entry", "Enter when IV rank is 50 or below; above 50, wait unless a rotation forces the roll."],
+        ["IV rank scale", "IV rank: low is under 30 (with the 9/11 range that is a 30-day IV under about 71%), high is over 50 (over about 85%). Refresh the 52-week range monthly."],
+        ["Size", "40 to 50% of the account, sized so a 50% drop in the underlying does not touch the 30% cash floor."],
+      ] },
+    { id:"R3", color:"#22c55e",
+      title:"Vertical sleeve, FIRE",
+      situation:"Vertical sleeve, FIRE.",
+      fields:[
+        ["Requires", "all of: trigger stack live (every adopted component passes), fewer than 3 open, 10 or more trading days since the last entry, last expiry not red, sleeve cash covers the trade, IV rank known."],
+        ["Structure", "Dated thesis (a level and a day, six weeks or less) -> call debit vertical at any IV rank, width set by the target (short strike at the target price from the sheet mapped to the ticker). If IV rank is under 30 and the thesis has a tail past the date, a diagonal with net debit under the width is allowed and preferred: long at or near the target, weekly short one to two dollars above (MSTX) or one strike above (MSTR), roll the short up when it goes in the money. Undated multi-week thesis -> diagonal only when IV rank is under 50. Never a calendar. Never a single-leg long into CPI, FOMC or MSTR earnings."],
+        ["Size", "the smaller of 5% of the account and half-Kelly on the sleeve from own probability versus implied; if a known event falls inside the trade's life, half that size."],
+        ["Exit", "75% of max profit or expiry (the 9/12 simulation found sell-half-at-100% no better); invalidation level written at entry (default: BTC daily close below its 200-day average -> close for salvage)."],
+        ["Reinvest", "Reinvest 25% of each realized gain to the LEAPS leg (50% tested no better)."],
+        ["Journal", "Journal the trade against this row."],
+      ] },
+    { id:"R4", color:"#ef4444",
+      title:"NO TRADE",
+      situation:"Any one of these is true.",
+      list:[
+        "trigger stack not live",
+        "3 open",
+        "under 10 trading days since last entry",
+        "red last expiry and refill date not reached",
+        "IV rank unknown",
+        "undated thesis with IV rank 50 or above",
+        "regime 85q or above",
+        "ladder in the 1q buffer for a rotation (sleeve trades only the currently held ticker)",
+        "paper gate not passed (sleeve is paper only until the 8-week record beats implied odds)",
+      ] },
+    { id:"R5", color:"#facc15",
+      title:"Refill",
+      situation:"Sleeve needs cash.",
+      fields:[
+        ["Refill", "The sleeve refills only from its own realized profits, or from its own undeployed reserve on the first trading day of the month. Never from the cash floor, never from the LEAPS leg, never in the two weeks after a red expiry. A sleeve that has spent its reserve is dead until a session decides to re-fund it."],
+      ] },
+  ],
+  // mirrors tools/playbook_rules.json v2, the 2026-09-12 backtest verdict per
+  // component. Nothing is adopted, so the funded stack cannot go live.
+  components: [
+    { id:"btc_200d",         input:"btc_above_200d",       label:"BTC above 200-day",
+      status:"UNPROVEN",   adopted:false, note:"10-day hit 50.5% on signal vs 54.4% off, 2020 to 2026" },
+    { id:"btc_200w",         input:"btc_above_200w",       label:"BTC above 200-week",
+      status:"UNPROVEN",   adopted:false, note:"51.0% vs 58.8% off; on 86% of days" },
+    { id:"mstr_weekly_macd", input:"mstr_weekly_macd",     label:"MSTR weekly MACD above signal",
+      status:"UNPROVEN",   adopted:false, note:"50.8% vs 53.3% off" },
+    { id:"hidden_bull_div",  input:"mstr_hidden_bull_div", label:"MSTR hidden bullish divergence",
+      status:"UNTESTABLE", adopted:false, note:"11 events in 6.7 years" },
+    { id:"bollinger_tight",  input:"bollinger_tight",      label:"MSTR Bollinger width in bottom quintile",
+      status:"NEGATIVE",   adopted:false, note:"40.6% vs 52.6% off; adding it to the trend stack cut the hit rate to 31%" },
+    { id:"rv_rank_high",     input:"realized_vol_rank",    label:"MSTR realized-vol rank 70 or above",
+      status:"PROMISING",  adopted:false, note:"RV rank 70 or above: 54.8% vs 47.7% off, n_eff 45, interval straddles" },
+  ],
+  paperTrigger: {
+    components: ["btc_200d","btc_200w","mstr_weekly_macd","rv_rank_high"],
+    rule: "all pass",
+    status: "PROMISING",
+    note: "trend trio plus high realized-vol rank; the two PROMISING readings in the 9/12 backtest; nothing is ADOPTED, so the sleeve stays on paper until the 8-week record beats implied odds",
+  },
+};
+
+// Status chip colors: gold for PROMISING, red for NEGATIVE, muted for the rest.
+const PB_STATUS_COLOR = { PROMISING:"#facc15", NEGATIVE:"#ef4444", ADOPTED:"#22c55e" };
+const pbStatusColor = s => PB_STATUS_COLOR[String(s||"").toUpperCase()] || "#6b8fae";
+
+// Trigger rows in display order. bool rows carry a pass/fail; num rows carry a
+// pass only when passAt is set. Rows with from:"iv" read data/playbook.json's iv
+// block, are informational, and take no override.
+const PB_TRIGGERS = [
+  { id:"iv_rank",             label:"IV rank (MSTR)",              kind:"num",  fmt:v=>v.toFixed(0),
+    sub:"hand field: 52-week IV rank from your broker" },
+  { id:"btc_above_200d",      label:"BTC above 200-day",           kind:"bool" },
+  { id:"btc_above_200w",      label:"BTC above 200-week",          kind:"bool" },
+  { id:"mstr_weekly_macd",    label:"MSTR weekly MACD above signal",kind:"bool" },
+  { id:"mstr_hidden_bull_div",label:"MSTR hidden bullish divergence",kind:"bool" },
+  { id:"bollinger_tight",     label:"Bollinger width tight",       kind:"bool", extra:r=>r.width_pct!=null?r.width_pct.toFixed(0)+" pctile":null },
+  { id:"realized_vol_rank",   label:"Realized-vol rank 70 or above",kind:"num",  fmt:v=>v.toFixed(0), passAt:v=>v>=70 },
+  { id:"days_to_next_event",  label:"Days to next known event",    kind:"num",  fmt:v=>String(v) },
+  { id:"iv_mstr",  from:"iv", pick:iv=>iv.mstr, label:"MSTR 30-day IV (AlphaQuery)",
+    val:m=>m.iv_30d, fmt:v=>(v*100).toFixed(1)+"%" },
+  { id:"iv_mstx",  from:"iv", pick:iv=>iv.mstx, label:"MSTX 30-day IV (AlphaQuery)",
+    val:m=>m.iv_30d, fmt:v=>(v*100).toFixed(1)+"%" },
+  { id:"iv_ratio", from:"iv", pick:iv=>iv.mstx_mstr_iv_ratio, label:"MSTX / MSTR IV ratio",
+    val:m=>m.value, fmt:v=>v.toFixed(2)+"x" },
+];
+
+// the one dated outside reference for IV rank; single source, un-cross-checked
+const PB_IV_REFERENCE = "projectoption 2026-09-11: 30-day IV 67.3%, 52-week 49.2% to 120.6%, rank 25, percentile 29, single source";
+
+// mNAV by the sheet's rule: 0.9 at 75k BTC, +0.025 per 2,500, clamped
+const PB_SHEET = { asOf:"2026-09-12", holdings:"845050", shares:"450121000", chop:"1.85" };
+const pbMnavRule = px => px == null ? null
+  : Math.min(1.525, Math.max(0.65, 0.9 + (px - 75000) / 100000));
+
+// Initial shapes for the persisted state. Named so the shape guard below can
+// restore any key a stored object is missing.
+const PB_MAP_INIT = {holdings:PB_SHEET.holdings, shares:PB_SHEET.shares, mnav:"",
+                     chop:PB_SHEET.chop, mstx:"", mstr:"", btc:""};
+const PB_SLEEVE_INIT = {balancePct:"", lastEntry:"", lastExpiryResult:"none", lastExpiryDate:"",
+                        cashCovers:"unknown", thesis:"unknown", paperN:"", paperHits:"", paperImplied:""};
+// Mirrors the ladder tab's initial price string. It is a render seed, not a
+// market price, so the playbook tab treats a priceStr still sitting on it with
+// no live fetch as "no price yet" rather than as an 85,000 BTC.
+const PB_PRICE_DEFAULT = "85000";
+// the sleeve's open-vertical cap and the paper record the sleeve has to build
+const PB_MAX_OPEN = 3;
+const PB_PAPER_ROWS = 8;
+const PB_PAPER_SPAN_DAYS = 56;   // eight weeks of record, not eight rows
+
+// ── shared playbook styles (colors chosen from the palette the light-mode
+//    override already maps, so both themes stay correct) ──
+const PB_CARD  = { background:"#070f1f", border:"1px solid #0a1628", borderRadius:"6px", padding:"14px 16px", marginTop:"12px" };
+const PB_INNER = { background:"#040c1a", border:"1px solid #0a1628", borderRadius:"5px", padding:"10px 12px" };
+const PB_LABEL = { fontSize:"10px", color:"#5a8fc0", textTransform:"uppercase", letterSpacing:"0.12em", fontWeight:600 };
+const PB_INPUT = { background:"#070f1f", border:"1px solid #0f2a42", borderRadius:"4px", color:"#facc15",
+                   fontSize:"12px", fontFamily:"inherit", fontWeight:600, padding:"5px 8px", outline:"none",
+                   width:"100%", minWidth:0 };
+const PB_BODY  = { fontSize:"12px", color:"#b0c4d8", lineHeight:1.55 };
+const PB_DIM   = { fontSize:"10px", color:"#5a7fa0", letterSpacing:"0.04em" };
+const PB_BTN   = { background:"#070f1f", border:"1px solid #0d1e30", borderRadius:"4px", color:"#8aaac8",
+                   fontSize:"10px", fontFamily:"inherit", fontWeight:700, letterSpacing:"0.1em",
+                   textTransform:"uppercase", padding:"5px 10px", cursor:"pointer" };
+
+// Persisted-shape guards. localStorage is user-editable and survives every
+// version of this page, so a stored "null", a stored array where an object is
+// expected, or a null array member must never reach the render path. Every
+// persisted value goes through a coercer on load.
+const pbIsObj = o => o !== null && typeof o === "object" && !Array.isArray(o);
+// object shape: keep the stored keys, but guarantee every expected key exists
+const pbObjOf = initial => v => (pbIsObj(v) ? {...initial, ...v} : {...initial});
+// array shape: drop null and non-object members
+const pbRowsOf = v => (Array.isArray(v) ? v.filter(pbIsObj) : []);
+
+function useLocal(key, initial, coerce) {
+  const fix = coerce || (v => (v === null || v === undefined ? initial : v));
+  const [v, setV] = useState(() => {
+    try {
+      const s = localStorage.getItem(key);
+      return s === null ? initial : fix(JSON.parse(s));
+    } catch(_) { return initial; }
+  });
+  useEffect(() => { try { localStorage.setItem(key, JSON.stringify(v)); } catch(_) {} }, [key, v]);
+  return [v, setV];
+}
+
+const pbNum = s => {
+  if (s === null || s === undefined) return null;
+  const n = parseFloat(String(s).replace(/[^0-9.\-]/g, ""));
+  return isNaN(n) ? null : n;
+};
+const PB_HAND = "fill by hand";
+const PB_NO_PRICE = "no live price yet";
+// share-level prices keep cents; the ladder's fmtFull rounds to whole dollars
+const pbPx = v => "$" + v.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
+
+function PbChip({ text, color, bg, border }) {
+  return (
+    <span style={{fontSize:"10px",fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",
+      color:color,background:bg||"transparent",border:`1px solid ${border||color+"55"}`,
+      borderRadius:"3px",padding:"1px 5px",whiteSpace:"nowrap"}}>{text}</span>
+  );
+}
+function PbVerdictChip({ state, pass, fail, unknown }) {
+  if (state === true)  return <PbChip text={pass||"pass"} color="#22c55e" bg="#052e16" border="#14532d"/>;
+  if (state === false) return <PbChip text={fail||"fail"} color="#ef4444" bg="#150404" border="#2d0808"/>;
+  return <PbChip text={unknown||"unknown"} color="#eab308" bg="#1c1700" border="#3d2e00"/>;
+}
+function PbLine({ label, children, labelWidth }) {
+  return (
+    <div style={{display:"flex",gap:"10px",flexWrap:"wrap",alignItems:"baseline",padding:"5px 0"}}>
+      <span style={{...PB_LABEL,width:labelWidth||"92px",flexShrink:0}}>{label}</span>
+      <span style={{...PB_BODY,flex:1,minWidth:"180px"}}>{children}</span>
+    </div>
+  );
+}
+function PbField({ label, value, onChange, placeholder, hint, options }) {
+  return (
+    <div style={{minWidth:0}}>
+      <div style={{...PB_LABEL,marginBottom:"4px"}}>{label}</div>
+      {options ? (
+        <select value={value||""} onChange={e=>onChange(e.target.value)} style={{...PB_INPUT,cursor:"pointer"}}>
+          {options.map(([v,l])=><option key={v} value={v}>{l}</option>)}
+        </select>
+      ) : (
+        <input value={value||""} onChange={e=>onChange(e.target.value)} placeholder={placeholder||PB_HAND}
+          style={PB_INPUT}/>
+      )}
+      {hint && <div style={{...PB_DIM,marginTop:"3px"}}>{hint}</div>}
+    </div>
+  );
+}
+
+// US market holidays, 2026 and 2027, on the dates the exchange is actually shut
+// (observed dates, so July 4 2026 is the Friday before and July 4 2027 is the
+// Monday after). Good Friday is an exchange holiday, not a federal one.
+const PB_HOLIDAYS = new Set([
+  "2026-01-01","2026-01-19","2026-02-16","2026-04-03","2026-05-25",
+  "2026-06-19","2026-07-03","2026-09-07","2026-11-26","2026-12-25",
+  "2027-01-01","2027-01-18","2027-02-15","2027-03-26","2027-05-31",
+  "2027-06-18","2027-07-05","2027-09-06","2027-11-25","2027-12-24",
+]);
+// trading days strictly after a date through today: weekends and the holidays
+// above are skipped, so a 10-day wait is not satisfied by a shut market
+function pbBizDaysSince(dateStr) {
+  if (!dateStr) return null;
+  const t0 = Date.parse(dateStr + "T00:00:00Z");
+  if (isNaN(t0)) return null;
+  const t1 = Date.parse(new Date().toISOString().slice(0,10) + "T00:00:00Z");
+  if (t1 < t0) return null;
+  let n = 0;
+  for (let t = t0 + 86400000; t <= t1; t += 86400000) {
+    const dt = new Date(t);
+    const d = dt.getUTCDay();
+    if (d === 0 || d === 6) continue;
+    if (PB_HOLIDAYS.has(dt.toISOString().slice(0,10))) continue;
+    n++;
+  }
+  return n;
+}
+function pbDaysSince(dateStr) {
+  if (!dateStr) return null;
+  const t0 = Date.parse(dateStr + "T00:00:00Z");
+  if (isNaN(t0)) return null;
+  return Math.floor((Date.now() - t0) / 86400000);
+}
+// first trading day of next month: weekends and the holiday list above skipped
+function pbNextRefillDate() {
+  const n = new Date();
+  const d = new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth() + 1, 1));
+  for (let i = 0; i < 10; i++) {
+    const iso = d.toISOString().slice(0,10);
+    if (d.getUTCDay() !== 0 && d.getUTCDay() !== 6 && !PB_HOLIDAYS.has(iso)) return iso;
+    d.setUTCDate(d.getUTCDate() + 1);
+  }
+  return d.toISOString().slice(0,10);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, liveFetch,
+                       liveHistory, modelA, modelB }) {
+  // ── data/playbook.json ────────────────────────────────────────────────────
+  const [pb, setPb] = useState(null);
+  const [pbErr, setPbErr] = useState(null);
+  useEffect(() => {
+    let live = true;
+    fetch("data/playbook.json?t=" + Date.now(), {cache:"no-store"})
+      .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(j => { if (live) setPb(j); })
+      .catch(e => { if (live) setPbErr(String(e && e.message ? e.message : e)); });
+    return () => { live = false; };
+  }, []);
+  // Everything below comes out of a fetched file, so it gets the same shape
+  // guards the persisted state gets: a null, a wrong type or a null array member
+  // must not reach the render path.
+  const pbIn = (pb && pbIsObj(pb.inputs)) ? pb.inputs : {};
+  const pbIv = (pb && pbIsObj(pb.iv)) ? pb.iv : null;
+  const pbStale = !!(pbIv && pbIv.stale);
+  const jsonComponents = (pb && pb.rules && Array.isArray(pb.rules.components))
+    ? pb.rules.components.filter(pbIsObj) : [];
+  const components = jsonComponents.length ? jsonComponents : PLAYBOOK_RULES.components;
+  const jsonPaper = (pb && pb.rules && pbIsObj(pb.rules.paper_trigger)) ? pb.rules.paper_trigger : null;
+  const paperTrigger = jsonPaper || PLAYBOOK_RULES.paperTrigger;
+
+  // ── hand-fill state ───────────────────────────────────────────────────────
+  // _v2 key: the v1 defaults were invented numbers, so the sheet's figures have
+  // to land even for a browser that already stored the old shape.
+  const [map, setMap]         = useLocal("bql_pb_mapping_v2", PB_MAP_INIT, pbObjOf(PB_MAP_INIT));
+  const [ovr, setOvr]         = useLocal("bql_pb_overrides", {}, pbObjOf({}));
+  const [sleeve, setSleeve]   = useLocal("bql_pb_sleeve", PB_SLEEVE_INIT, pbObjOf(PB_SLEEVE_INIT));
+  const [opens, setOpens]     = useLocal("bql_pb_opens", [], pbRowsOf);
+  const [journal, setJournal] = useLocal("bql_pb_journal", [], pbRowsOf);
+  const [copied, setCopied]   = useState("");
+  const setM = (k,v) => setMap(o => ({...o, [k]:v}));
+  const setS = (k,v) => setSleeve(o => ({...o, [k]:v}));
+
+  // ── a0. the BTC price this tab is allowed to use ───────────────────────────
+  // The ladder's price input starts at a hard-coded 85,000 so the page renders
+  // before any fetch returns. That default is not a market price and this tab
+  // must never present it as one, so a price counts only when it came from the
+  // live feed, from data/playbook.json, or from a hand entry. With none of those
+  // the tab says so and every number derived from a BTC level stays blank.
+  const btcHand  = pbNum(map.btc);
+  const btcJson  = (pbIn.btc_price && typeof pbIn.btc_price.value === "number") ? pbIn.btc_price.value : null;
+  const liveOk   = typeof livePrice === "number" && livePrice > 0;
+  // a ladder-side hand edit moves priceStr off the default without a live fetch
+  const ladderHand = !liveOk && String(priceStr == null ? "" : priceStr).trim() !== PB_PRICE_DEFAULT
+                     && typeof btcPrice === "number" && btcPrice > 0;
+  const btcPx = btcHand != null ? btcHand
+              : liveOk        ? btcPrice
+              : ladderHand    ? btcPrice
+              : btcJson != null ? btcJson
+              : null;
+  const btcPxSrc = btcHand != null ? "by hand on this tab"
+                 : liveOk        ? "live feed · " + (liveFetch || "live")
+                 : ladderHand    ? "by hand on the ladder tab"
+                 : btcJson != null ? "data/playbook.json · Yahoo daily close " + ((pbIn.btc_price||{}).as_of||"")
+                 : null;
+  const pxOk = btcPx != null;
+
+  // ── a. ladder inputs, recomputed off the price above ──────────────────────
+  // Recomputed here rather than taken from the ladder tab's props, because the
+  // resolved price can differ from the ladder input (a failed live fetch falling
+  // back to the JSON close, or a hand entry on this tab) and a quantile from one
+  // price beside a level from another is not a reading of anything.
+  const q         = pxOk ? priceToQuantile(btcPx, todayTs, modelA, modelB) : null;
+  const tierInfo  = pxOk ? getTier(q) : null;
+  const tier      = tierInfo ? tierInfo.tier : null;
+  const tierIdx   = tierInfo ? tierInfo.idx : null;
+  const rotateUp   = (tierInfo && tierIdx > 0) ? { t: LADDER[tierIdx-1], q: tier.qMax + HYST } : null;
+  const rotateDown = (tierInfo && tierIdx < LADDER.length-1) ? { t: LADDER[tierIdx+1], q: tier.qMin - HYST } : null;
+  const inBuffer  = pxOk && ((q > tier.qMin && q < tier.qMin + HYST)
+                          || (q < tier.qMax && q > tier.qMax - HYST && tier.qMax <= 100));
+  const upPrice   = rotateUp   ? quantileToPrice(rotateUp.q,   todayTs, modelA, modelB) : null;
+  const downPrice = rotateDown ? quantileToPrice(rotateDown.q, todayTs, modelA, modelB) : null;
+  const ticker = tier ? tier.name.split(" ")[0] : null;
+
+  // ── b. LEAPS short strike: regime-exit price at the short's expiry ────────
+  const shortTs = addMonths(todayTs, 16);
+  const exitQ   = tier ? tier.qMax + HYST : null;
+  const exitPx  = (tier && tier.kind === "pmcc") ? quantileToPrice(exitQ, shortTs, modelA, modelB) : null;
+
+  // mapping: the sheet's own arithmetic. mNAV follows the sheet's rule at the
+  // exit BTC price unless a hand value is entered; MSTR and MSTX now default to
+  // the Yahoo closes in playbook.json. MSTX uses the sheet's POWER form, not a
+  // linear multiple of the MSTR move.
+  const holdings = pbNum(map.holdings), shares = pbNum(map.shares);
+  const chop = pbNum(map.chop);
+  const mnavHand = pbNum(map.mnav);
+  const mnavRule = pbMnavRule(exitPx);
+  const mnav = mnavHand != null ? mnavHand : mnavRule;
+  const mstrFeed = (pbIn.mstr_price && typeof pbIn.mstr_price.value === "number") ? pbIn.mstr_price.value : null;
+  const mstxFeed = (pbIn.mstx_price && typeof pbIn.mstx_price.value === "number") ? pbIn.mstx_price.value : null;
+  const mstrHand = pbNum(map.mstr), mstxHand = pbNum(map.mstx);
+  const mstrPx = mstrHand != null ? mstrHand : mstrFeed;
+  const mstxPx = mstxHand != null ? mstxHand : mstxFeed;
+  const navPerShare = (exitPx != null && holdings != null && shares) ? exitPx * holdings / shares : null;
+  const mstrTarget  = (navPerShare != null && mnav != null) ? navPerShare * mnav : null;
+  const mstrMovePct = (mstrTarget != null && mstrPx) ? (mstrTarget / mstrPx - 1) : null;
+  const mstxTarget  = (mstrTarget != null && mstrPx && mstxPx != null && chop != null && mstrTarget > 0)
+    ? mstxPx * Math.pow(mstrTarget / mstrPx, chop) : null;
+
+  // ── c. client-side BTC 200-day from the 365-day history the page fetched ──
+  const btc200 = useMemo(() => {
+    if (!liveHistory || liveHistory.length < 200) return null;
+    const pts = liveHistory.slice(-200);
+    const step = (pts[pts.length-1][0] - pts[0][0]) / 86400000 / (pts.length - 1);
+    if (!(step > 0.5 && step < 2.5)) return null;   // not daily data, do not claim an SMA
+    const sma = pts.reduce((a,p) => a + p[1], 0) / pts.length;
+    const last = pts[pts.length-1][1];
+    return { sma, last, above: last > sma, asOf: new Date(pts[pts.length-1][0]).toISOString().slice(0,10) };
+  }, [liveHistory]);
+
+  // effective trigger value: hand override first, then playbook.json
+  const effBool = id => {
+    const o = ovr[id];
+    if (o === "pass") return true;
+    if (o === "fail") return false;
+    const r = pbIn[id];
+    return (r && typeof r.pass === "boolean") ? r.pass : null;
+  };
+  const effNum = id => {
+    const o = pbNum(ovr[id]);
+    if (o != null) return o;
+    const r = pbIn[id];
+    return (r && typeof r.value === "number") ? r.value : null;
+  };
+  const isHand = id => ovr[id] !== undefined && ovr[id] !== "" && ovr[id] !== null;
+
+  // a component scores against its playbook.json input. Numeric components pass
+  // through the row's passAt threshold (realized-vol rank at 70), bools direct.
+  const compPass = c => {
+    const key = c.input || c.id;
+    const t = PB_TRIGGERS.find(x => x.id === key);
+    if (t && t.passAt) { const v = effNum(key); return v == null ? null : t.passAt(v); }
+    return effBool(key);
+  };
+  const stackOf = list => {
+    const unknown = list.filter(c => compPass(c) === null).map(c => c.label);
+    const failing = list.filter(c => compPass(c) === false).map(c => c.label);
+    return { list, unknown, failing,
+      live: list.length > 0 && unknown.length === 0 && failing.length === 0 };
+  };
+
+  // FUNDED STACK: adopted components only. PAPER STACK: the paper trigger.
+  const adopted = components.filter(c => c.adopted === true);
+  const funded = stackOf(adopted);
+  const stackLive = funded.live;
+  const unknownStack = funded.unknown, failingStack = funded.failing;
+  const stackReason = adopted.length === 0
+    ? "no adopted trigger; sleeve cannot be funded"
+    : funded.unknown.length ? "unknown inputs: " + funded.unknown.join(", ")
+    : funded.failing.length ? "failing: " + funded.failing.join(", ")
+    : "every adopted component passes";
+
+  const paperIds = (paperTrigger && paperTrigger.components) || [];
+  const paper = stackOf(paperIds.map(id => components.find(c => c.id === id)).filter(Boolean));
+  const paperReason = paper.list.length === 0
+    ? "paper trigger names no component the rules file defines"
+    : paper.failing.length ? "failing: " + paper.failing.join(", ")
+    : paper.unknown.length ? "unknown inputs: " + paper.unknown.join(", ")
+    : "all " + paper.list.length + " components pass";
+
+  const ivRank = effNum("iv_rank");
+  const ivRankLabel = (pbIn.iv_rank && pbIn.iv_rank.rank_label) || null;
+  const rvProxy = (pbIn.realized_vol_rank && typeof pbIn.realized_vol_rank.value === "number")
+    ? pbIn.realized_vol_rank.value : null;
+
+  // ── journal-derived paper counters (the gates below prefer them) ───────────
+  const journalRows = pbRowsOf(journal);
+  const paperRowsJ = journalRows.filter(r => /paper/i.test(String(r.mode || "")));
+  const jHit  = r => /^(hit|win|won|green|yes|y)\b/i.test(String(r.result || "").trim());
+  const jMiss = r => /^(miss|loss|lost|red|no|n)\b/i.test(String(r.result || "").trim());
+  const jDone = r => jHit(r) || jMiss(r);              // a scored outcome, not an open row
+  const jDate = r => {
+    const s = String((r && r.date) || "").trim();
+    return (/^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(Date.parse(s + "T00:00:00Z"))) ? s : null;
+  };
+  const paperDone = paperRowsJ.filter(jDone);
+  const jImpliedVals = paperDone.map(r => {
+    const d = pbNum(r.debit), w = pbNum(r.width);
+    return (d != null && w) ? d / w * 100 : null;
+  }).filter(v => v != null);
+  const fromJournal = paperRowsJ.length > 0;
+  // the record has to span eight weeks, so it is measured in dates, not rows
+  const paperDates = paperRowsJ.map(jDate).filter(Boolean).sort();
+  const paperSpanDays = paperDates.length >= 2
+    ? Math.round((Date.parse(paperDates[paperDates.length-1] + "T00:00:00Z")
+                  - Date.parse(paperDates[0] + "T00:00:00Z")) / 86400000)
+    : (paperDates.length === 1 ? 0 : null);
+
+  // ── d. sleeve gates (R3 requires, R4 any-of) ──────────────────────────────
+  const openRows = pbRowsOf(opens);
+  const lastEntry = sleeve.lastEntry || openRows.map(r => r.entry).filter(Boolean).sort().slice(-1)[0] || "";
+  const bizSince = pbBizDaysSince(lastEntry);
+  const redDays = sleeve.lastExpiryResult === "red" ? pbDaysSince(sleeve.lastExpiryDate) : null;
+  const paperN      = fromJournal ? paperRowsJ.length            : pbNum(sleeve.paperN);
+  const paperDoneN  = fromJournal ? paperDone.length             : null;
+  const paperHits   = fromJournal ? paperDone.filter(jHit).length : pbNum(sleeve.paperHits);
+  const paperImplied = fromJournal
+    ? (jImpliedVals.length ? jImpliedVals.reduce((a,b)=>a+b,0) / jImpliedVals.length : null)
+    : pbNum(sleeve.paperImplied);
+  // hit rate over the scored rows, which is what the implied average compares to
+  const paperRate = fromJournal
+    ? (paperDoneN ? paperHits / paperDoneN * 100 : null)
+    : ((paperN && paperHits != null) ? paperHits / paperN * 100 : null);
+  // Eight weeks of record beating implied odds, not eight rows. Eight rows
+  // logged the same afternoon are one afternoon, so the span is a hard
+  // requirement and it can only be read off dated journal rows: a hand-entered
+  // count carries no dates, so the hand path leaves the gate unknown.
+  const paperFunded = (() => {
+    if (!fromJournal) return null;
+    if (paperSpanDays == null) return null;                      // no dated paper rows
+    if (paperSpanDays < PB_PAPER_SPAN_DAYS) return false;
+    if (paperDoneN < PB_PAPER_ROWS) return false;
+    if (paperRate == null || paperImplied == null) return null;
+    return paperRate > paperImplied;
+  })();
+  const paperGateDetail = !fromJournal
+    ? (paperN == null ? PB_HAND
+       : "hand tally only, the eight-week span needs dated journal rows")
+    : [
+        paperRowsJ.length + " paper row(s)",
+        (paperDoneN || 0) + " scored of " + PB_PAPER_ROWS,
+        paperSpanDays == null ? "no dated rows"
+          : "span " + paperSpanDays + "d of " + PB_PAPER_SPAN_DAYS,
+        paperRate == null ? "no hit rate yet"
+          : paperRate.toFixed(0) + "% hit vs implied "
+            + (paperImplied == null ? PB_HAND : paperImplied.toFixed(0) + "%"),
+      ].join(", ");
+  const refillBlocked = sleeve.lastExpiryResult === "red" && (redDays == null || redDays < 14);
+
+  const gates = [
+    { label:"Funded trigger stack live (adopted components only)",
+      state: stackLive ? true : (unknownStack.length || adopted.length === 0 ? null : false),
+      detail: stackReason },
+    { label:"Fewer than " + PB_MAX_OPEN + " open", state: openRows.length < PB_MAX_OPEN,
+      detail: openRows.length + " open of " + PB_MAX_OPEN },
+    { label:"10 or more trading days since last entry",
+      state: bizSince == null ? null : bizSince >= 10,
+      detail: bizSince == null ? "last entry date " + PB_HAND : bizSince + " business days since " + lastEntry },
+    { label:"Last expiry not red, or refill date reached",
+      state: sleeve.lastExpiryResult === "none" ? null
+           : sleeve.lastExpiryResult === "red" ? (redDays != null && redDays >= 14) : true,
+      detail: sleeve.lastExpiryResult === "none" ? "last expiry result " + PB_HAND
+            : sleeve.lastExpiryResult === "red" ? "red " + (redDays == null ? "date " + PB_HAND : redDays + " days ago, 14 needed")
+            : "green" },
+    { label:"Sleeve cash covers the trade",
+      state: sleeve.cashCovers === "yes" ? true : sleeve.cashCovers === "no" ? false : null,
+      detail: sleeve.cashCovers === "unknown" ? PB_HAND : sleeve.cashCovers },
+    { label:"IV rank known", state: ivRank != null, detail: ivRank == null ? "no IV rank" : ivRank.toFixed(0) },
+    { label:"Thesis and IV rank agree (no undated thesis at IV rank 50 or above)",
+      state: sleeve.thesis === "unknown" || ivRank == null ? null
+           : !(sleeve.thesis === "undated" && ivRank >= 50),
+      detail: sleeve.thesis === "unknown" ? "thesis type " + PB_HAND
+            : sleeve.thesis + " thesis, IV rank " + (ivRank == null ? "unknown" : ivRank.toFixed(0)) },
+    { label:"Regime below 85q", state: pxOk ? q < 85 : null,
+      detail: pxOk ? q.toFixed(1) + "q" : PB_NO_PRICE },
+    { label:"Not in the 1q rotation buffer", state: pxOk ? !inBuffer : null,
+      detail: !pxOk ? PB_NO_PRICE : inBuffer ? "in buffer" : "clear" },
+    { label:"Paper gate passed", state: paperFunded, detail: paperGateDetail },
+  ];
+  const canFire = gates.every(g => g.state === true);
+  const blockers = gates.filter(g => g.state !== true);
+
+  // ── e. journal ────────────────────────────────────────────────────────────
+  const copyJournal = () => {
+    const text = JSON.stringify(journalRows, null, 2);
+    try {
+      navigator.clipboard.writeText(text).then(() => setCopied("copied"), () => setCopied("copy blocked"));
+    } catch(_) { setCopied("copy blocked"); }
+  };
+
+  const num = (v, f) => v == null ? <span style={{color:"#5a7fa0"}}>{PB_HAND}</span> : f(v);
+  const sheetTag = <span style={{...PB_DIM,marginLeft:"6px"}}>from your sheet inputs</span>;
+
+  return (
+    <div>
+      {/* ── 1. RULE CARD ─────────────────────────────────────────────────── */}
+      <div style={{...PB_CARD,marginTop:0}}>
+        <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:"12px",flexWrap:"wrap",marginBottom:"10px"}}>
+          <div style={PB_LABEL}>Rule Card · one page, decided before entry</div>
+          <div style={PB_DIM}>{PLAYBOOK_RULES.version} · {PLAYBOOK_RULES.asOf}</div>
+        </div>
+        <div style={{...PB_INNER,borderLeft:"3px solid #facc15",marginBottom:"8px"}}>
+          <div style={{...PB_BODY,color:"#d0dde8",fontWeight:600}}>{PLAYBOOK_RULES.allocation}</div>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+          {PLAYBOOK_RULES.rows.map(r => (
+            <div key={r.id} style={{...PB_INNER,borderLeft:`3px solid ${r.color}`}}>
+              <div style={{display:"flex",alignItems:"baseline",gap:"10px",flexWrap:"wrap",marginBottom:"6px"}}>
+                <span style={{fontSize:"12px",fontWeight:700,letterSpacing:"0.1em",color:r.color}}>{r.id}</span>
+                <span style={{fontSize:"13px",fontWeight:700,color:"#f1f5f9"}}>{r.title}</span>
+              </div>
+              <PbLine label="Situation">{r.situation}</PbLine>
+              {(r.fields||[]).map(([k,v]) => <PbLine key={k} label={k}>{v}</PbLine>)}
+              {r.list && (
+                <PbLine label="Conditions">
+                  <span style={{display:"flex",flexDirection:"column",gap:"3px"}}>
+                    {r.list.map((x,i) => <span key={i}>· {x}</span>)}
+                  </span>
+                </PbLine>
+              )}
+            </div>
+          ))}
+        </div>
+        <div style={{...PB_DIM,marginTop:"10px",paddingTop:"8px",borderTop:"1px solid #0a1628",textTransform:"uppercase",letterSpacing:"0.1em"}}>
+          {PLAYBOOK_RULES.discipline}
+        </div>
+      </div>
+
+      {/* ── 2a. LADDER INPUTS ────────────────────────────────────────────── */}
+      <div style={PB_CARD}>
+        <div style={{...PB_LABEL,marginBottom:"10px"}}>Today's Inputs · Ladder</div>
+        {!pxOk && (
+          <div style={{...PB_INNER,borderLeft:"3px solid #eab308",marginBottom:"10px"}}>
+            <div style={{fontSize:"13px",fontWeight:700,color:"#eab308",marginBottom:"4px"}}>{PB_NO_PRICE}</div>
+            <div style={PB_BODY}>
+              The live feed has not returned and data/playbook.json carries no BTC close, so this tab has no
+              market price. Every number that comes off a BTC level is blank until the feed returns, the
+              refresh runs, or you enter a price by hand in the mapping box below.
+            </div>
+          </div>
+        )}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:"10px"}}>
+          {[
+            {l:"quantile", v:pxOk ? q.toFixed(1) + "q" : null, c:pxOk ? tier.color : null},
+            {l:"regime ticker", v:ticker, c:pxOk ? tier.color : null},
+            {l:"rotation buffer", v:pxOk ? (inBuffer ? "IN BUFFER" : "clear") : null,
+              c:inBuffer ? "#eab308" : "#22c55e"},
+            {l:"btc price used", v:pxOk ? fmtFull(btcPx) : null, c:"#facc15", sub:btcPxSrc},
+          ].map(x => (
+            <div key={x.l} style={PB_INNER}>
+              <div style={{...PB_LABEL,marginBottom:"4px"}}>{x.l}</div>
+              <div style={{fontSize:"16px",fontWeight:700,color:x.v == null ? "#5a7fa0" : x.c}}>
+                {x.v == null ? PB_NO_PRICE : x.v}
+              </div>
+              {x.sub && x.v != null && <div style={{...PB_DIM,marginTop:"3px"}}>{x.sub}</div>}
+            </div>
+          ))}
+        </div>
+        <div style={{marginTop:"10px",display:"flex",flexDirection:"column",gap:"6px"}}>
+          {[
+            (pxOk && rotateUp)   ? {dir:"up",   t:rotateUp,   px:upPrice,   dq:rotateUp.q - q,   d$:upPrice - btcPx}   : null,
+            (pxOk && rotateDown) ? {dir:"down", t:rotateDown, px:downPrice, dq:q - rotateDown.q, d$:btcPx - downPrice} : null,
+          ].filter(Boolean).map(x => (
+            <div key={x.dir} style={{...PB_INNER,display:"flex",gap:"12px",flexWrap:"wrap",alignItems:"baseline"}}>
+              <span style={{fontSize:"12px",color:"#8aaac8",width:"92px",flexShrink:0}}>
+                {x.dir === "up" ? "↑ rotate up" : "↓ rotate down"}
+              </span>
+              <span style={{fontSize:"13px",fontWeight:700,color:x.t.t.color}}>{x.t.t.name}</span>
+              <span style={{fontSize:"12px",color:"#d0dde8"}}>at {x.t.q.toFixed(0)}q · {fmt(x.px)}</span>
+              <span style={{fontSize:"12px",color:"#a0b8cc"}}>
+                {Math.abs(x.dq).toFixed(1)}q away · {(x.d$ >= 0 ? "" : "−") + fmt(Math.abs(x.d$))}
+              </span>
+            </div>
+          ))}
+          <div style={PB_DIM}>Same rotateUp / rotateDown and ±{HYST.toFixed(0)}q hysteresis the tier card uses.</div>
+        </div>
+      </div>
+
+      {/* ── 2b. LEAPS LEG RULE FOR TODAY ─────────────────────────────────── */}
+      <div style={PB_CARD}>
+        <div style={{...PB_LABEL,marginBottom:"10px"}}>LEAPS Leg Rule For Today</div>
+        {!pxOk ? (
+          <div style={PB_INNER}>
+            <PbLine label="Ticker"><span style={{color:"#5a7fa0"}}>{PB_NO_PRICE}</span></PbLine>
+            <PbLine label="Note">
+              The regime, the ticker and the short strike all come off a BTC level, so none of them is shown
+              until there is a price.
+            </PbLine>
+          </div>
+        ) : tier.kind === "pmcc" ? (
+          <div style={PB_INNER}>
+            <PbLine label="Ticker"><span style={{color:tier.color,fontWeight:700}}>{ticker}</span> by regime ({q.toFixed(1)}q)</PbLine>
+            <PbLine label="Long">0.60 delta, 24 months or more</PbLine>
+            <PbLine label="Short">
+              next listed expiry 15 to 16 months out ({fmtMonth(shortTs)}) · strike at the regime-exit BTC price
+              {" "}<span style={{color:"#facc15",fontWeight:700}}>{fmtFull(exitPx)}</span>
+              {" "}<span style={PB_DIM}>({exitQ.toFixed(0)}q at that expiry)</span>
+            </PbLine>
+            <PbLine label="Size">40 to 50% of the account, sized so a 50% drop in the underlying does not touch the 30% cash floor</PbLine>
+          </div>
+        ) : (
+          <div style={PB_INNER}>
+            <PbLine label="Ticker">no options above 85q · STRC per ladder</PbLine>
+            <PbLine label="Note">The regime is {q.toFixed(1)}q. R2 has no options structure here.</PbLine>
+          </div>
+        )}
+
+        <div style={{marginTop:"10px"}}>
+          <div style={{display:"flex",alignItems:"baseline",gap:"10px",flexWrap:"wrap",marginBottom:"8px"}}>
+            <div style={PB_LABEL}>Mapping · BTC level to the ticker</div>
+            <div style={PB_DIM}>from your sheet, {PB_SHEET.asOf}</div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(132px,1fr))",gap:"10px"}}>
+            <PbField label="BTC price by hand"  value={map.btc}      onChange={v=>setM("btc",v)}
+              placeholder={PB_NO_PRICE}
+              hint={btcPxSrc ? "in use: " + btcPxSrc : "no live feed and no close on file, enter one to unblock the tab"}/>
+            <PbField label="BTC holdings"       value={map.holdings} onChange={v=>setM("holdings",v)}
+              hint={"sheet: 845,050"}/>
+            <PbField label="Diluted shares"     value={map.shares}   onChange={v=>setM("shares",v)}
+              hint={"sheet: 450,121,000"}/>
+            <PbField label="mNAV override"      value={map.mnav}     onChange={v=>setM("mnav",v)}
+              placeholder={mnavRule != null ? mnavRule.toFixed(3) + " by the rule" : PB_HAND}
+              hint={mnavRule != null
+                ? "rule at exit BTC: " + mnavRule.toFixed(3) + (mnavHand != null ? " · overridden" : " · in use")
+                : "rule needs an exit BTC price"}/>
+            <PbField label="MSTX chop multiple" value={map.chop}     onChange={v=>setM("chop",v)}
+              hint="sheet: 1.85"/>
+            <PbField label="MSTR now"           value={map.mstr}     onChange={v=>setM("mstr",v)}
+              placeholder={mstrFeed != null ? mstrFeed.toFixed(2) : PB_HAND}
+              hint={mstrFeed != null
+                ? "Yahoo delayed " + pbPx(mstrFeed) + " · " + ((pbIn.mstr_price||{}).as_of||"") + (mstrHand != null ? " · overridden" : "")
+                : "no close in playbook.json"}/>
+            <PbField label="MSTX now"           value={map.mstx}     onChange={v=>setM("mstx",v)}
+              placeholder={mstxFeed != null ? mstxFeed.toFixed(2) : PB_HAND}
+              hint={mstxFeed != null
+                ? "Yahoo delayed " + pbPx(mstxFeed) + " · " + ((pbIn.mstx_price||{}).as_of||"") + (mstxHand != null ? " · overridden" : "")
+                : "no close in playbook.json"}/>
+          </div>
+          <div style={{...PB_INNER,marginTop:"10px"}}>
+            <PbLine label="BTC at exit" labelWidth="120px">
+              {num(exitPx, v => <span style={{color:"#facc15",fontWeight:700}}>{fmtFull(v)}</span>)}
+              {exitPx != null && <span style={{...PB_DIM,marginLeft:"6px"}}>ladder regime-exit price at the short's expiry</span>}
+            </PbLine>
+            <PbLine label="mNAV used" labelWidth="120px">
+              {num(mnav, v => <span style={{color:"#22d3ee",fontWeight:700}}>{v.toFixed(3)}</span>)}
+              {mnav != null && <span style={{...PB_DIM,marginLeft:"6px"}}>
+                {mnavHand != null ? "hand override" : "sheet rule: 0.9 + (BTC − 75,000) ÷ 100,000, clamped 0.65 to 1.525"}
+              </span>}
+            </PbLine>
+            <PbLine label="NAV / share" labelWidth="120px">
+              {num(navPerShare, v => <span style={{color:"#d0dde8",fontWeight:700}}>{pbPx(v)}</span>)}
+              {navPerShare != null && sheetTag}
+            </PbLine>
+            <PbLine label="MSTR at exit" labelWidth="120px">
+              {num(mstrTarget, v => <span style={{color:"#f97316",fontWeight:700}}>{pbPx(v)}</span>)}
+              {mstrTarget != null && sheetTag}
+            </PbLine>
+            <PbLine label="MSTR move" labelWidth="120px">
+              {num(mstrMovePct, v => <span style={{color:"#d0dde8",fontWeight:700}}>{(v*100).toFixed(1)}%</span>)}
+              {mstrMovePct != null && sheetTag}
+            </PbLine>
+            <PbLine label="MSTX at exit" labelWidth="120px">
+              {num(mstxTarget, v => <span style={{color:"#ef4444",fontWeight:700}}>{pbPx(v)}</span>)}
+              {mstxTarget != null && sheetTag}
+            </PbLine>
+            <div style={{...PB_DIM,marginTop:"6px"}}>
+              MSTR at exit = BTC × holdings ÷ shares × mNAV. MSTX at exit = MSTX now × (MSTR at exit ÷ MSTR now)^chop.
+              Both are your sheet's assumptions, not a quote.
+            </div>
+            <div style={{...PB_DIM,marginTop:"4px",color:"#eab308"}}>
+              1.85 is a ceiling for a two-week rally in the 9/12 study (plan 1.8, stress 1.6; selloffs run about 2.1);
+              over 16 months daily-reset drag makes this mapping optimistic.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 2c. TRIGGER INPUTS ───────────────────────────────────────────── */}
+      <div style={PB_CARD}>
+        <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:"10px",flexWrap:"wrap",marginBottom:"10px"}}>
+          <div style={PB_LABEL}>Trigger Inputs</div>
+          <div style={PB_DIM}>
+            {pb ? "refresh " + (pb.generated_at || "").replace("T"," ").replace("Z"," UTC")
+                : pbErr ? "refresh not run (" + pbErr + ")" : "loading data/playbook.json…"}
+          </div>
+        </div>
+
+        <div style={{overflowX:"auto"}}>
+          <div style={{minWidth:"720px"}}>
+            <div style={{display:"grid",gridTemplateColumns:"minmax(180px,1.5fr) 110px 66px 120px 108px 74px 96px",
+              gap:"6px",...PB_LABEL,paddingBottom:"6px",borderBottom:"1px solid #0a1628"}}>
+              <div>input</div><div>value</div><div>pass</div><div>source</div><div>as of</div><div>status</div><div>override</div>
+            </div>
+            {PB_TRIGGERS.map(t => {
+              // informational IV rows read the iv block and take no override
+              if (t.from === "iv") {
+                const m = (pbIv && t.pick(pbIv)) || null;
+                const v = m ? t.val(m) : null;
+                return (
+                  <div key={t.id} style={{display:"grid",
+                    gridTemplateColumns:"minmax(180px,1.5fr) 110px 66px 120px 108px 74px 96px",gap:"6px",
+                    padding:"7px 0",borderBottom:"1px solid #050d1c",alignItems:"center",fontSize:"11px"}}>
+                    <div style={{color:"#b0c4d8"}}>{t.label}</div>
+                    <div style={{color:"#f1f5f9",fontWeight:700}}>
+                      {v == null ? <span style={{color:"#5a7fa0",fontWeight:400}}>
+                        {m && m.error ? "source failed" : pb ? "source failed" : PB_HAND}</span> : t.fmt(v)}
+                      {v != null && m && m.stale &&
+                        <div style={{...PB_DIM,color:"#eab308"}}>today's fetch failed, ledger reading</div>}
+                    </div>
+                    <div><span style={{color:"#5a7fa0"}}>·</span></div>
+                    <div style={{color:"#8aaac8",wordBreak:"break-word"}}>{v == null ? "·" : "alphaquery 30d"}</div>
+                    <div style={{color:"#5a7fa0"}}>{(m && m.as_of) || "·"}</div>
+                    <div>{m && m.stale
+                      ? <PbChip text="stale" color="#eab308" bg="#1c1700" border="#3d2e00"/>
+                      : <PbChip text="info" color="#6b8fae"/>}</div>
+                    <div><span style={{color:"#5a7fa0"}}>·</span></div>
+                  </div>
+                );
+              }
+              const r = pbIn[t.id] || null;
+              const comp = components.find(c => (c.input || c.id) === t.id);
+              const bool = t.kind === "bool";
+              const val = bool ? effBool(t.id) : effNum(t.id);
+              const passState = bool ? val : (t.passAt ? (val == null ? null : t.passAt(val)) : undefined);
+              const extra = r && t.extra ? t.extra(r) : null;
+              const ivLabel = t.id === "iv_rank" && !isHand(t.id) && val != null ? ivRankLabel : null;
+              return (
+                <div key={t.id} style={{display:"grid",
+                  gridTemplateColumns:"minmax(180px,1.5fr) 110px 66px 120px 108px 74px 96px",gap:"6px",
+                  padding:"7px 0",borderBottom:"1px solid #050d1c",alignItems:"center",fontSize:"11px"}}>
+                  <div style={{color:"#b0c4d8"}}>
+                    {t.label}
+                    {isHand(t.id) && <span style={{...PB_DIM,marginLeft:"6px",color:"#eab308"}}>by hand</span>}
+                    {t.sub && <div style={PB_DIM}>{t.sub}</div>}
+                  </div>
+                  <div style={{color:"#f1f5f9",fontWeight:700}}>
+                    {val == null ? <span style={{color:"#5a7fa0",fontWeight:400}}>{r && r.error ? "source failed" : PB_HAND}</span>
+                      : bool ? (val ? "yes" : "no") : t.fmt(val)}
+                    {extra && <span style={{...PB_DIM,marginLeft:"5px"}}>{" "}{extra}</span>}
+                    {ivLabel && <div style={PB_DIM}>{ivLabel}</div>}
+                    {t.id === "iv_rank" && val == null && rvProxy != null &&
+                      <div style={PB_DIM}>rv-rank proxy {rvProxy.toFixed(0)}</div>}
+                    {t.id === "iv_rank" && !isHand(t.id) && r && r.stale &&
+                      <div style={{...PB_DIM,color:"#eab308"}}>today's fetch failed, ledger reading</div>}
+                  </div>
+                  <div>{passState === undefined ? <span style={{color:"#5a7fa0"}}>·</span>
+                    : <PbVerdictChip state={passState}/>}</div>
+                  <div style={{color:"#8aaac8",wordBreak:"break-word"}}>
+                    {isHand(t.id) ? "hand" : (r && r.source) || "·"}
+                  </div>
+                  <div style={{color:"#5a7fa0"}}>{isHand(t.id) ? "·" : (r && r.as_of) || "·"}</div>
+                  <div>{t.id === "iv_rank" && !isHand(t.id) && r && r.stale
+                    ? <PbChip text="stale" color="#eab308" bg="#1c1700" border="#3d2e00"/>
+                    : comp
+                    ? <PbChip text={comp.adopted === true ? "ADOPTED" : (comp.status || "pending")}
+                        color={comp.adopted === true ? "#22c55e" : pbStatusColor(comp.status)}/>
+                    : <span style={{color:"#5a7fa0"}}>n/a</span>}</div>
+                  <div>
+                    {bool ? (
+                      <select value={ovr[t.id]||""} onChange={e=>setOvr(o=>({...o,[t.id]:e.target.value}))}
+                        style={{...PB_INPUT,fontSize:"10px",padding:"3px 4px",cursor:"pointer"}}>
+                        <option value="">auto</option><option value="pass">pass</option><option value="fail">fail</option>
+                      </select>
+                    ) : (
+                      <input value={ovr[t.id]||""} onChange={e=>setOvr(o=>({...o,[t.id]:e.target.value}))}
+                        placeholder="auto" style={{...PB_INPUT,fontSize:"10px",padding:"3px 5px"}}/>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* IV rank reference and the component notes behind the status chips */}
+        <div style={{...PB_INNER,marginTop:"10px"}}>
+          {pbStale && (
+            <PbLine label="IV feed" labelWidth="120px">
+              <span style={{display:"flex",gap:"8px",alignItems:"baseline",flexWrap:"wrap"}}>
+                <PbChip text="stale" color="#eab308" bg="#1c1700" border="#3d2e00"/>
+                <span style={{color:"#eab308"}}>
+                  At least one implied-vol fetch failed on the last refresh. The IV rows show the newest
+                  reading the ledger holds, dated by its own observation date, not by today.
+                </span>
+              </span>
+            </PbLine>
+          )}
+          <PbLine label="IV rank ref" labelWidth="120px">
+            <span style={PB_DIM}>{PB_IV_REFERENCE}</span>
+          </PbLine>
+          <PbLine label="Status notes" labelWidth="120px">
+            <span style={{display:"flex",flexDirection:"column",gap:"3px"}}>
+              {components.map(c => (
+                <span key={c.id} style={{display:"flex",gap:"8px",alignItems:"baseline",flexWrap:"wrap"}}>
+                  <PbChip text={c.adopted === true ? "ADOPTED" : (c.status || "pending")}
+                    color={c.adopted === true ? "#22c55e" : pbStatusColor(c.status)}/>
+                  <span style={{color:"#a0b8cc"}}>{c.label}</span>
+                  <span style={PB_DIM}>{c.note}</span>
+                </span>
+              ))}
+            </span>
+          </PbLine>
+        </div>
+
+        {/* BTC 200-day computed in the page from the 365-day history */}
+        <div style={{...PB_INNER,marginTop:"10px"}}>
+          <PbLine label="BTC 200-day" labelWidth="120px">
+            {btc200 ? (
+              <span>
+                page: <span style={{color:btc200.above?"#22c55e":"#ef4444",fontWeight:700}}>{btc200.above?"above":"below"}</span>
+                {" "}{fmt(btc200.last)} vs SMA {fmt(btc200.sma)} <span style={PB_DIM}>CoinGecko 365d daily · {btc200.asOf}</span>
+              </span>
+            ) : <span style={{color:"#5a7fa0"}}>not available from the page history</span>}
+          </PbLine>
+          <PbLine label="Refresh says" labelWidth="120px">
+            {pbIn.btc_above_200d && pbIn.btc_above_200d.value != null ? (
+              <span>
+                <span style={{color:pbIn.btc_above_200d.value?"#22c55e":"#ef4444",fontWeight:700}}>
+                  {pbIn.btc_above_200d.value?"above":"below"}
+                </span>
+                {pbIn.btc_above_200d.sma_200d != null && <span> SMA {fmt(pbIn.btc_above_200d.sma_200d)}</span>}
+                <span style={PB_DIM}> Yahoo daily · {pbIn.btc_above_200d.as_of}</span>
+              </span>
+            ) : <span style={{color:"#5a7fa0"}}>{pb ? "source failed" : "refresh not run"}</span>}
+          </PbLine>
+        </div>
+
+        {/* events */}
+        <div style={{...PB_INNER,marginTop:"10px"}}>
+          <div style={{...PB_LABEL,marginBottom:"6px"}}>Next known events</div>
+          {(() => { const evs = pbRowsOf((pb && (pb.events_upcoming || pb.events_next3)) || [])
+              .filter(e => e.date); return evs.length ? evs.map(e => (
+            <div key={e.date + e.type} style={{display:"flex",gap:"10px",flexWrap:"wrap",alignItems:"baseline",padding:"3px 0",fontSize:"11px"}}>
+              <span style={{color:"#d0dde8",fontWeight:700,width:"90px"}}>{e.date}</span>
+              <span style={{color:"#8aaac8",width:"120px"}}>{e.type}</span>
+              <span style={{color:"#a0b8cc",flex:1,minWidth:"120px"}}>
+                {e.label}
+                {e.source && <span style={{...PB_DIM,marginLeft:"6px"}}>
+                  {String(e.source).replace(/^https?:\/\/(www\.)?/,"").split("/")[0]}
+                </span>}
+                {e.note && <span style={{...PB_DIM,marginLeft:"6px",color:"#eab308"}}>{e.note}</span>}
+              </span>
+              <span style={{color:"#facc15",fontWeight:700}}>{e.days_to}d</span>
+              <PbChip text={e.verified ? "verified" : "unverified"} color={e.verified ? "#22c55e" : "#eab308"}/>
+            </div>
+          )) : <div style={{...PB_DIM}}>{pb ? "no upcoming events in tools/events.json" : "refresh not run"}</div>; })()}
+        </div>
+
+        {/* funded stack verdict, adopted components only */}
+        <div style={{...PB_INNER,marginTop:"10px",borderLeft:`3px solid ${stackLive?"#22c55e":"#eab308"}`}}>
+          <div style={{display:"flex",gap:"10px",alignItems:"baseline",flexWrap:"wrap"}}>
+            <span style={{fontSize:"14px",fontWeight:700,letterSpacing:"0.08em",color:stackLive?"#22c55e":"#eab308"}}>
+              {stackLive ? "FUNDED STACK LIVE" : "FUNDED STACK NOT LIVE"}
+            </span>
+            <span style={{...PB_BODY,flex:1,minWidth:"200px"}}>{stackReason}</span>
+          </div>
+          <div style={{...PB_DIM,marginTop:"6px"}}>
+            Adopted components counted: {adopted.length} of {components.length}.
+            {unknownStack.length ? " Unknown inputs: " + unknownStack.join(", ") + "." : " No unknown inputs."}
+          </div>
+        </div>
+
+        {/* paper stack verdict, the paper trigger from the rules file */}
+        <div style={{...PB_INNER,marginTop:"10px",borderLeft:`3px solid ${paper.live?"#facc15":"#6b8fae"}`}}>
+          <div style={{display:"flex",gap:"10px",alignItems:"baseline",flexWrap:"wrap"}}>
+            <span style={{fontSize:"14px",fontWeight:700,letterSpacing:"0.08em",color:paper.live?"#facc15":"#8aaac8"}}>
+              {paper.live ? "PAPER STACK LIVE" : "PAPER STACK NOT LIVE"}
+            </span>
+            <PbChip text={(paperTrigger && paperTrigger.status) || "PROMISING"}
+              color={pbStatusColor(paperTrigger && paperTrigger.status)}/>
+            <span style={{...PB_BODY,flex:1,minWidth:"200px"}}>{paperReason}</span>
+          </div>
+          <div style={{...PB_DIM,marginTop:"6px"}}>
+            Rule: {(paperTrigger && paperTrigger.rule) || "all pass"} · {paper.list.length} components ·
+            {" "}{paper.list.map(c => c.label).join(", ") || "none"}.
+          </div>
+          {(paperTrigger && paperTrigger.note) && <div style={{...PB_DIM,marginTop:"4px"}}>{paperTrigger.note}</div>}
+          <div style={{...PB_BODY,marginTop:"6px",color:"#a0b8cc"}}>
+            When the paper stack is live, log a paper call in the sleeve state below and score it at 10 trading days
+            against the implied probability.
+          </div>
+        </div>
+      </div>
+
+      {/* ── 2d. SLEEVE STATE ─────────────────────────────────────────────── */}
+      <div style={PB_CARD}>
+        <div style={{...PB_LABEL,marginBottom:"10px"}}>Sleeve State · hand kept</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(132px,1fr))",gap:"10px"}}>
+          <PbField label="Sleeve balance (% of start)" value={sleeve.balancePct} onChange={v=>setS("balancePct",v)}/>
+          <PbField label="Last entry date" value={sleeve.lastEntry} onChange={v=>setS("lastEntry",v)} placeholder="YYYY-MM-DD"
+            hint={lastEntry && !sleeve.lastEntry ? "using " + lastEntry + " from open rows" : null}/>
+          <PbField label="Last expiry result" value={sleeve.lastExpiryResult} onChange={v=>setS("lastExpiryResult",v)}
+            options={[["none","none"],["green","green"],["red","red"]]}/>
+          <PbField label="Last expiry date" value={sleeve.lastExpiryDate} onChange={v=>setS("lastExpiryDate",v)} placeholder="YYYY-MM-DD"/>
+          <PbField label="Cash covers the trade" value={sleeve.cashCovers} onChange={v=>setS("cashCovers",v)}
+            options={[["unknown","unknown"],["yes","yes"],["no","no"]]}/>
+          <PbField label="Thesis type" value={sleeve.thesis} onChange={v=>setS("thesis",v)}
+            options={[["unknown","unknown"],["dated","dated"],["undated","undated"]]}/>
+          <PbField label="Paper calls (n)" value={sleeve.paperN} onChange={v=>setS("paperN",v)}
+            hint={fromJournal ? "journal has " + paperRowsJ.length + " paper rows, this field is ignored"
+                              : "a tally, not the gate: the gate needs dated journal rows"}/>
+          <PbField label="Paper hits" value={sleeve.paperHits} onChange={v=>setS("paperHits",v)}
+            hint={fromJournal ? "counted from the journal's scored rows" : null}/>
+          <PbField label="Implied average (%)" value={sleeve.paperImplied} onChange={v=>setS("paperImplied",v)}
+            hint={fromJournal ? "averaged from the journal's scored rows" : null}/>
+        </div>
+
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:"10px",marginTop:"10px"}}>
+          <div style={PB_INNER}>
+            <div style={{...PB_LABEL,marginBottom:"4px"}}>paper gate</div>
+            <div style={{display:"flex",gap:"8px",alignItems:"baseline",flexWrap:"wrap"}}>
+              <PbVerdictChip state={paperFunded} pass="funded" fail="paper only" unknown="unknown"/>
+              <span style={{...PB_DIM}}>
+                {paperRate != null ? paperRate.toFixed(0) + "% hit" : PB_HAND}
+                {paperImplied != null ? " vs implied " + paperImplied.toFixed(0) + "%" : ""}
+                {paperDoneN != null ? " · " + paperDoneN + " scored of " + PB_PAPER_ROWS : ""}
+                {paperSpanDays != null ? " · span " + paperSpanDays + "d of " + PB_PAPER_SPAN_DAYS : ""}
+              </span>
+            </div>
+            <div style={{...PB_DIM,marginTop:"4px"}}>
+              {fromJournal
+                ? "counted from " + paperRowsJ.length + " journal row(s) marked paper. A result reading hit, win, green or yes counts as a hit, miss, loss, red or no counts as a scored miss, anything else is still open. The gate needs " + PB_PAPER_ROWS + " scored rows spanning " + PB_PAPER_SPAN_DAYS + " calendar days and a hit rate above the implied average"
+                : "the hand fields are a tally only. The gate reads dated journal rows, because " + PB_PAPER_ROWS + " rows logged the same afternoon are one afternoon, not eight weeks"}
+            </div>
+          </div>
+          <div style={PB_INNER}>
+            <div style={{...PB_LABEL,marginBottom:"4px"}}>refill</div>
+            <div style={{fontSize:"12px",color:refillBlocked?"#ef4444":"#d0dde8",fontWeight:700}}>
+              {refillBlocked ? "blocked" : "next " + pbNextRefillDate()}
+            </div>
+            <div style={PB_DIM}>{refillBlocked
+              ? "red expiry inside two weeks (R5)"
+              : "first trading day of next month, from the sleeve's own undeployed reserve, never the cash floor"}</div>
+          </div>
+        </div>
+
+        {/* open verticals */}
+        <div style={{marginTop:"12px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:"10px",flexWrap:"wrap",marginBottom:"6px"}}>
+            <div style={PB_LABEL}>Open verticals ({openRows.length} of {PB_MAX_OPEN})</div>
+            {openRows.length < PB_MAX_OPEN && (
+              <button style={PB_BTN} onClick={()=>setOpens(rows=>[...(Array.isArray(rows)?rows:[]),
+                {entry:"",expiry:"",ticker:"",longK:"",shortK:"",debit:"",width:""}])}>+ row</button>
+            )}
+          </div>
+          {openRows.length === 0 ? <div style={PB_DIM}>none open</div> : (
+            <div style={{overflowX:"auto"}}>
+              <div style={{minWidth:"700px"}}>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr) 74px 44px",gap:"5px",...PB_LABEL,marginBottom:"4px"}}>
+                  <div>entry</div><div>expiry</div><div>ticker</div><div>long K</div><div>short K</div>
+                  <div>debit</div><div>width</div><div>implied p</div><div/>
+                </div>
+                {openRows.map((row,i) => {
+                  const d = pbNum(row.debit), w = pbNum(row.width);
+                  const ip = (d != null && w) ? d / w * 100 : null;
+                  return (
+                    <div key={i} style={{display:"grid",gridTemplateColumns:"repeat(7,1fr) 74px 44px",gap:"5px",marginBottom:"4px",alignItems:"center"}}>
+                      {["entry","expiry","ticker","longK","shortK","debit","width"].map(k => (
+                        <input key={k} value={row[k]||""} placeholder={k==="entry"||k==="expiry"?"YYYY-MM-DD":""}
+                          onChange={e=>setOpens(rs=>rs.map((r,j)=>j===i?{...r,[k]:e.target.value}:r))}
+                          style={{...PB_INPUT,fontSize:"10px",padding:"4px 5px"}}/>
+                      ))}
+                      <div style={{fontSize:"11px",color:ip==null?"#5a7fa0":"#22d3ee",fontWeight:700}}>
+                        {ip == null ? "·" : ip.toFixed(0) + "%"}
+                      </div>
+                      <button style={{...PB_BTN,padding:"4px 6px"}} onClick={()=>setOpens(rs=>rs.filter((_,j)=>j!==i))}>×</button>
+                    </div>
+                  );
+                })}
+                <div style={PB_DIM}>implied p = debit ÷ width</div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* can fire */}
+        <div style={{...PB_INNER,marginTop:"12px",borderLeft:`3px solid ${canFire?"#22c55e":"#ef4444"}`}}>
+          <div style={{display:"flex",gap:"10px",alignItems:"baseline",flexWrap:"wrap",marginBottom:"6px"}}>
+            <span style={{fontSize:"14px",fontWeight:700,letterSpacing:"0.08em",color:canFire?"#22c55e":"#ef4444"}}>
+              {canFire ? "CAN FIRE" : "CANNOT FIRE"}
+            </span>
+            <span style={PB_DIM}>{canFire ? "every R3 gate passes" : blockers.length + " gate(s) not passed, R4 applies"}</span>
+          </div>
+          {gates.map(g => (
+            <div key={g.label} style={{display:"flex",gap:"8px",alignItems:"baseline",flexWrap:"wrap",padding:"3px 0",fontSize:"11px"}}>
+              <span style={{width:"64px",flexShrink:0}}><PbVerdictChip state={g.state}/></span>
+              <span style={{color:"#b0c4d8",flex:1,minWidth:"200px"}}>{g.label}</span>
+              <span style={PB_DIM}>{g.detail}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── 2e. JOURNAL ──────────────────────────────────────────────────── */}
+      <div style={PB_CARD}>
+        <div style={{display:"flex",alignItems:"center",gap:"10px",flexWrap:"wrap",marginBottom:"8px"}}>
+          <div style={PB_LABEL}>Journal · closed trades</div>
+          <button style={PB_BTN} onClick={()=>setJournal(rs=>[...(Array.isArray(rs)?rs:[]),
+            {date:"",mode:"paper",rule:"",ticker:"",structure:"",debit:"",width:"",ownP:"",result:"",followed:""}])}>+ row</button>
+          <button style={PB_BTN} onClick={copyJournal}>copy as json</button>
+          {copied && <span style={PB_DIM}>{copied}</span>}
+        </div>
+        {journalRows.length === 0 ? <div style={PB_DIM}>no closed trades logged</div> : (
+          <div style={{overflowX:"auto"}}>
+            <div style={{minWidth:"940px"}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(10,1fr) 70px 44px",gap:"5px",...PB_LABEL,marginBottom:"4px"}}>
+                <div>date</div><div>paper/funded</div><div>rule</div><div>ticker</div><div>structure</div><div>debit</div>
+                <div>width</div><div>own p</div><div>result</div><div>followed</div><div>implied p</div><div/>
+              </div>
+              {journalRows.map((row,i) => {
+                const d = pbNum(row.debit), w = pbNum(row.width);
+                const ip = (d != null && w) ? d / w * 100 : null;
+                return (
+                  <div key={i} style={{display:"grid",gridTemplateColumns:"repeat(10,1fr) 70px 44px",gap:"5px",marginBottom:"4px",alignItems:"center"}}>
+                    {["date","mode","rule","ticker","structure","debit","width","ownP","result","followed"].map(k => (
+                      <input key={k} value={row[k]||""}
+                        placeholder={k==="date"?"YYYY-MM-DD":k==="mode"?"paper/funded":k==="rule"?"R3":k==="result"?"hit/miss":k==="followed"?"yes/no":""}
+                        onChange={e=>setJournal(rs=>rs.map((r,j)=>j===i?{...r,[k]:e.target.value}:r))}
+                        style={{...PB_INPUT,fontSize:"10px",padding:"4px 5px"}}/>
+                    ))}
+                    <div style={{fontSize:"11px",color:ip==null?"#5a7fa0":"#22d3ee",fontWeight:700}}>
+                      {ip == null ? "·" : ip.toFixed(0) + "%"}
+                    </div>
+                    <button style={{...PB_BTN,padding:"4px 6px"}} onClick={()=>setJournal(rs=>rs.filter((_,j)=>j!==i))}>×</button>
+                  </div>
+                );
+              })}
+              <div style={PB_DIM}>
+                implied p = debit ÷ width. Rows marked paper feed the paper gate above;
+                result reading hit, win, green or yes counts as a hit.
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── 3. FOOTER ────────────────────────────────────────────────────── */}
+      <div style={{marginTop:"24px",paddingTop:"16px",borderTop:"1px solid #0a1628"}}>
+        <div style={{fontSize:"10px",color:"#5a7fa0",textAlign:"center",letterSpacing:"0.1em",fontWeight:500}}>
+          Live numbers come from your chain and P/L tool. This page never states a quote.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // MAIN
 // ─────────────────────────────────────────────────────────────────────────────
 function BTCPowerLaw() {
   const today   = useMemo(()=>new Date(),[]);
   const todayTs = today.getTime();
 
+
+  // LADDER | PLAYBOOK tab, persisted
+  const [tab, setTab] = useState(() => {
+    try { return localStorage.getItem("bql_tab") === "playbook" ? "playbook" : "ladder"; }
+    catch(_) { return "ladder"; }
+  });
+  useEffect(() => { try { localStorage.setItem("bql_tab", tab); } catch(_) {} }, [tab]);
 
   const [priceStr,  setPriceStr]  = useState("85000");
   const [livePrice, setLivePrice] = useState(null);
@@ -1062,6 +2166,19 @@ function BTCPowerLaw() {
         </div>
       </div>
 
+      {/* TAB NAV */}
+      <div style={{display:"flex",alignItems:"center",gap:"18px",marginBottom:"16px",
+        borderBottom:"1px solid #0a1628"}}>
+        {[["ladder","Ladder"],["playbook","Playbook"]].map(([k,lab])=>(
+          <button key={k} onClick={()=>setTab(k)} style={{
+            background:"transparent",border:"none",borderBottom:tab===k?"2px solid #facc15":"2px solid transparent",
+            cursor:"pointer",padding:"0 0 7px 0",marginBottom:"-1px",
+            fontSize:"11px",fontFamily:"inherit",fontWeight:700,letterSpacing:"0.14em",
+            textTransform:"uppercase",color:tab===k?"#facc15":"#5a7fa0"}}>{lab}</button>
+        ))}
+      </div>
+
+      {tab === "ladder" && (<>
       {/* PRICE INPUT */}
       <div style={{marginBottom:"16px"}}>
         <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"10px",flexWrap:"wrap"}}>
@@ -1283,6 +2400,13 @@ function BTCPowerLaw() {
           Kaim Power Law Model  ·  A=5.82  ·  B=−17.029  ·  v2 — quantile-anchored PMCC ladder
         </div>
       </div>
+      </>)}
+
+      {tab === "playbook" && (
+        <PlaybookTab todayTs={todayTs} btcPrice={price} priceStr={priceStr}
+          livePrice={livePrice} liveFetch={liveFetch}
+          liveHistory={liveHistory} modelA={modelA} modelB={modelB}/>
+      )}
     </div>
   );
 }

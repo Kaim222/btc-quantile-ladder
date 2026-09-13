@@ -1,0 +1,984 @@
+#!/usr/bin/env python3
+"""Refresh the PLAYBOOK tab inputs for the BTC Quantile Ladder site.
+
+Run from the repo root (the script resolves paths off its own location, so any
+cwd works):
+
+    python tools/playbook_refresh.py
+
+Writes:
+    data/playbook.json    the inputs the PLAYBOOK tab reads
+    data/iv-ledger.json   append-only implied-vol history, keyed ticker -> date
+
+Hard rule: a field is never a fabricated number. Every computation is wrapped,
+and a source that fails writes value null plus an error string. The page shows
+"fill by hand" or "source failed" for those, never a placeholder figure.
+
+Prices are Yahoo Finance via yfinance. Delayed, unofficial, and the option-chain
+implied vol is Yahoo's own calculation, not a mid-market vol we computed.
+The 30-day implied-vol series for MSTR, MSTX and IBIT is AlphaQuery's keyless
+option-statistic endpoint. Its free tier returns about 63 trading days, so the
+IV rank it supports is a 3-month rank and is labelled as one. The rank window is
+the trailing 252 ledger entries at most, and it is called a 52-week window only
+when a full 252 entries are in it.
+
+Python 3.11+, yfinance, numpy, pandas.
+"""
+
+from __future__ import annotations
+
+import json
+import math
+import urllib.request
+from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+REPO = Path(__file__).resolve().parent.parent
+TOOLS = REPO / "tools"
+DATA = REPO / "data"
+
+BTC = "BTC-USD"
+MSTR = "MSTR"
+MSTX = "MSTX"
+START = "2016-01-01"          # 200 weeks needs ~4 years, 2016 is comfortable
+TRAIL = 252                   # percentile / IV-rank lookback in observations
+IV_TICKERS = ("MSTR", "MSTX", "IBIT")
+IV_SERIES_SOURCE = "alphaquery_iv_mean_30d"
+IV_RANK_WINDOW = TRAIL        # the rank runs over the trailing 252 entries at most
+IV_RANK_MIN = 30              # below this many entries no rank is computed at all
+AQ_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+         "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+
+TODAY = date.today()
+TODAY_UTC = datetime.now(timezone.utc).date()
+NOW_ISO = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+ERRORS: list[str] = []
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# helpers
+# ─────────────────────────────────────────────────────────────────────────────
+def row(value=None, *, source=None, as_of=None, passes=None, error=None, **extra) -> dict:
+    """One input row in the shape the page reads."""
+    d = {
+        "value": value,
+        "pass": passes,
+        "source": source,
+        "as_of": as_of,
+        "error": error,
+    }
+    d.update(extra)
+    return d
+
+
+def failed(what: str, exc: BaseException) -> dict:
+    msg = f"{type(exc).__name__}: {exc}"
+    ERRORS.append(f"{what} -> {msg}")
+    return row(error=msg, source="failed")
+
+
+def load_json(path: Path, default):
+    try:
+        with path.open("r", encoding="utf-8") as fh:
+            return json.load(fh)
+    except FileNotFoundError:
+        return default
+    except Exception as exc:  # malformed file is an error, not a silent default
+        ERRORS.append(f"read {path.name} -> {type(exc).__name__}: {exc}")
+        return default
+
+
+def write_json(path: Path, obj) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    text = json.dumps(obj, indent=2, sort_keys=False) + "\n"
+    path.write_bytes(text.encode("utf-8"))
+
+
+def f(x):
+    """JSON-safe float."""
+    if x is None:
+        return None
+    try:
+        v = float(x)
+    except (TypeError, ValueError):
+        return None
+    return None if (math.isnan(v) or math.isinf(v)) else round(v, 6)
+
+
+def dstr(ts) -> str:
+    return pd.Timestamp(ts).date().isoformat()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# market data
+# ─────────────────────────────────────────────────────────────────────────────
+def download(ticker: str) -> pd.DataFrame:
+    import yfinance as yf
+
+    df = yf.download(ticker, start=START, auto_adjust=False, progress=False, threads=False)
+    if df is None or len(df) == 0:
+        raise RuntimeError(f"{ticker}: yfinance returned an empty frame")
+    if isinstance(df.columns, pd.MultiIndex):
+        df = df.droplevel(-1, axis=1)
+    df = df.dropna(subset=["Close"])
+    if len(df) < 300:
+        raise RuntimeError(f"{ticker}: only {len(df)} rows, too short to score")
+    return df
+
+
+def last_completed_week_end(today: date | None = None) -> date:
+    """The Sunday that ends the last complete calendar week as of `today` (UTC).
+
+    Calendar weeks end Sunday 23:59:59 UTC, so a week counts as complete only
+    when its Sunday falls strictly before the current UTC date's 00:00. A run on
+    a Sunday therefore excludes the week that Sunday is still inside, which the
+    old `> TODAY` test let through.
+    """
+    d = today or TODAY_UTC
+    sunday = d + timedelta(days=(6 - d.weekday()) % 7)   # Sunday of d's own week
+    while sunday >= d:                                   # strictly before d 00:00
+        sunday -= timedelta(days=7)
+    return sunday
+
+
+def weekly_closes(close: pd.Series, today: date | None = None) -> pd.Series:
+    """Calendar-week last close, completed weeks only.
+
+    `resample("W")` labels each bucket with the Sunday that closes it, so the
+    cutoff is a straight comparison against the last completed week's Sunday.
+    """
+    end = last_completed_week_end(today)
+    wk = close.resample("W").last().dropna()
+    if len(wk):
+        wk = wk[[d.date() <= end for d in wk.index]]
+    return wk
+
+
+def rsi(close: pd.Series, n: int = 14) -> pd.Series:
+    """Wilder's RSI(n).
+
+    Standard initialization: a simple average of the first n price changes, then
+    Wilder's recursive smoothing. The first n bars are NaN (warm-up, no reading),
+    and a zero average loss reads 100, not an invented neutral 50. The old
+    version replaced a zero average loss with NaN and then filled every NaN with
+    50, so a monotonically rising series read 50 instead of 100 and the warm-up
+    read 50 as well.
+    """
+    n = int(n)
+    out = pd.Series(np.nan, index=close.index, dtype=float)
+    if n < 1 or len(close) <= n:
+        return out
+    delta = close.astype(float).diff()
+    up = delta.clip(lower=0.0).to_numpy(dtype=float)
+    dn = (-delta).clip(lower=0.0).to_numpy(dtype=float)
+    au = np.full(len(close), np.nan)
+    ad = np.full(len(close), np.nan)
+    au[n] = float(np.mean(up[1 : n + 1]))                # changes 1..n, bar 0 has none
+    ad[n] = float(np.mean(dn[1 : n + 1]))
+    for i in range(n + 1, len(close)):
+        au[i] = (au[i - 1] * (n - 1) + up[i]) / n
+        ad[i] = (ad[i - 1] * (n - 1) + dn[i]) / n
+    vals = np.full(len(close), np.nan)
+    known = ~np.isnan(ad)
+    zero = known & (ad == 0.0)
+    calc = known & (ad > 0.0)
+    vals[calc] = 100.0 - 100.0 / (1.0 + au[calc] / ad[calc])
+    vals[zero] = 100.0                                   # no losses in the window
+    out.iloc[:] = vals
+    return out
+
+
+def pct_rank(series: pd.Series, trail: int = TRAIL):
+    """Percentile of the last value inside its own trailing window, 0-100."""
+    s = series.dropna()
+    if len(s) < 30:
+        return None, len(s)
+    w = s.iloc[-trail:]
+    last = float(w.iloc[-1])
+    rank = float((w <= last).sum()) / float(len(w)) * 100.0
+    return rank, len(w)
+
+
+def swing_lows(low: pd.Series, span: int = 5) -> list[int]:
+    """Index positions where low is the minimum of the +/- span window."""
+    vals = low.to_numpy(dtype=float)
+    out = []
+    for i in range(span, len(vals) - span):
+        win = vals[i - span : i + span + 1]
+        if vals[i] == win.min() and np.argmin(win) == span:
+            out.append(i)
+    return out
+
+
+def hidden_bull_div(df: pd.DataFrame, lookback: int = 20, recent: int = 10, span: int = 5) -> dict:
+    """Higher price swing low while RSI(14) at the two swing lows makes a lower low.
+
+    A swing low at position i is confirmed only once `span` bars print after it,
+    so the pair "completes" at position j + span for the later low j. The flag is
+    true when that completion lands inside the last `recent` trading days.
+
+    Bars inside the RSI warm-up carry no reading, so a pair with a NaN RSI at
+    either low is skipped rather than compared.
+    """
+    low = df["Low"] if "Low" in df else df["Close"]
+    r = rsi(df["Close"])
+    idx = swing_lows(low, span)
+    n = len(df)
+    lows = low.to_numpy(dtype=float)
+    rvals = r.to_numpy(dtype=float)
+    hits = []
+    for a in range(len(idx)):
+        for b in range(a + 1, len(idx)):
+            i, j = idx[a], idx[b]
+            if j - i > lookback:
+                continue
+            if math.isnan(rvals[i]) or math.isnan(rvals[j]):
+                continue
+            if lows[j] > lows[i] and rvals[j] < rvals[i]:
+                completed = j + span
+                if completed >= n - recent and completed <= n - 1:
+                    hits.append(
+                        {
+                            "earlier_low_date": dstr(df.index[i]),
+                            "earlier_low": f(lows[i]),
+                            "earlier_rsi": f(rvals[i]),
+                            "later_low_date": dstr(df.index[j]),
+                            "later_low": f(lows[j]),
+                            "later_rsi": f(rvals[j]),
+                            "confirmed_date": dstr(df.index[completed]),
+                            "bars_ago": int(n - 1 - completed),
+                        }
+                    )
+    hits.sort(key=lambda h: h["bars_ago"])
+    return {"flag": bool(hits), "matches": hits[:3], "n_matches": len(hits)}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# IV
+# ─────────────────────────────────────────────────────────────────────────────
+def atm_iv_30d(spot: float) -> dict:
+    import yfinance as yf
+
+    tk = yf.Ticker(MSTR)
+    exps = list(tk.options or [])
+    if not exps:
+        raise RuntimeError("MSTR: yfinance returned no option expiries")
+    parsed = []
+    for e in exps:
+        try:
+            parsed.append((e, (date.fromisoformat(e) - TODAY).days))
+        except ValueError:
+            continue
+    forward = [p for p in parsed if p[1] >= 0]
+    if not forward:
+        raise RuntimeError("MSTR: no option expiry on or after today")
+    exp, dte = min(forward, key=lambda p: abs(p[1] - 30))
+    chain = tk.option_chain(exp)
+
+    def leg_iv(frame, name):
+        if frame is None or len(frame) == 0:
+            raise RuntimeError(f"MSTR {exp}: empty {name} chain")
+        fr = frame.dropna(subset=["strike"]).copy()
+        fr["_d"] = (fr["strike"].astype(float) - float(spot)).abs()
+        r = fr.sort_values("_d").iloc[0]
+        iv = r.get("impliedVolatility", None)
+        iv = None if iv is None or pd.isna(iv) or float(iv) <= 0 else float(iv)
+        return iv, float(r["strike"])
+
+    civ, cstrike = leg_iv(chain.calls, "call")
+    piv, pstrike = leg_iv(chain.puts, "put")
+    legs = [v for v in (civ, piv) if v is not None]
+    if not legs:
+        raise RuntimeError(f"MSTR {exp}: no positive implied vol on the ATM strikes")
+    return {
+        "iv": float(np.mean(legs)),
+        "expiry": exp,
+        "dte": int(dte),
+        "call_strike": cstrike,
+        "put_strike": pstrike,
+        "call_iv": civ,
+        "put_iv": piv,
+        "spot": float(spot),
+        "legs_used": len(legs),
+    }
+
+
+def alphaquery_iv_series(ticker: str) -> list[tuple[str, float]]:
+    """30-day mean implied vol series from AlphaQuery's keyless chart endpoint.
+
+    Returns [(YYYY-MM-DD, iv_as_fraction)]. The free tier truncates at about 63
+    trading days, which is why the ledger accumulates: each run merges the
+    rolling 3-month window in and the history grows past what one call returns.
+    """
+    url = (
+        "https://www.alphaquery.com/data/option-statistic-chart"
+        f"?ticker={ticker}&perType=30-Day&identifier=iv-mean"
+    )
+    ref = f"https://www.alphaquery.com/stock/{ticker}/volatility-option-statistics/30-day/iv-mean"
+    req = urllib.request.Request(
+        url,
+        headers={"User-Agent": AQ_UA, "Referer": ref, "Accept": "application/json, text/plain, */*"},
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        raw = json.loads(resp.read().decode("utf-8"))
+    if not isinstance(raw, list) or not raw:
+        raise RuntimeError(f"{ticker}: AlphaQuery returned no series")
+    out = []
+    for p in raw:
+        if not isinstance(p, dict):
+            continue
+        x, v = p.get("x"), p.get("value")
+        if not x or v is None:
+            continue
+        try:
+            d = str(x)[:10]
+            date.fromisoformat(d)
+            fv = float(v)
+        except (ValueError, TypeError):
+            continue
+        if fv > 0:
+            out.append((d, fv))
+    if not out:
+        raise RuntimeError(f"{ticker}: AlphaQuery series held no usable points")
+    out.sort(key=lambda t: t[0])
+    return out
+
+
+def normalize_book(book: dict) -> dict:
+    """One ticker's book as date -> source -> entry.
+
+    Migrates the pre-per-source shape, date -> entry, where a single date held one
+    vendor's reading. Keying by source as well as by date is what lets a Yahoo
+    option-chain reading and an AlphaQuery observation share a date: the old
+    `if d not in book` test meant whichever landed first blocked the other, and it
+    was usually Yahoo blocking the series the rank is computed from.
+    """
+    out: dict = {}
+    for d, e in (book or {}).items():
+        if not isinstance(e, dict):
+            continue
+        if "iv" in e:                                  # flat: one entry on the date
+            out.setdefault(str(d), {})[str(e.get("source") or "unknown")] = e
+            continue
+        for src, sub in e.items():                     # already per-source
+            if isinstance(sub, dict) and sub.get("iv") is not None:
+                out.setdefault(str(d), {})[str(src)] = sub
+    return out
+
+
+def merge_ledger(series: dict[str, list[tuple[str, float]]], yahoo_iv: dict | None) -> dict:
+    """Merge today's pulls into data/iv-ledger.json, keyed ticker -> date -> source.
+
+    Append-only: an entry already on file for that ticker, date and source is
+    never overwritten, so the ledger is the long history the 52-week rank
+    eventually needs. Migrates the pre-v3 flat list, which was MSTR
+    Yahoo-option-chain readings, and the date -> entry shape that followed it.
+    """
+    path = DATA / "iv-ledger.json"
+    ledger = load_json(path, {})
+
+    if isinstance(ledger, list):           # pre-v3 shape: flat MSTR list
+        migrated: dict = {"MSTR": {}}
+        for e in ledger:
+            if isinstance(e, dict) and e.get("date") and e.get("iv") is not None:
+                migrated["MSTR"][str(e["date"])] = {
+                    k: v for k, v in e.items() if k != "date"
+                }
+        ledger = migrated
+    if not isinstance(ledger, dict):
+        ERRORS.append("iv-ledger.json was neither an object nor an array, starting fresh")
+        ledger = {}
+
+    books: dict[str, dict] = {}
+    for t, b in ledger.items():
+        if not isinstance(b, dict):
+            ERRORS.append(f"iv-ledger.json: {t} was not an object, replacing it")
+            b = {}
+        books[str(t)] = normalize_book(b)
+
+    def put(ticker: str, d: str, source: str, entry: dict) -> None:
+        day = books.setdefault(ticker, {}).setdefault(d, {})
+        if source not in day:              # no duplicates, never overwrite
+            day[source] = entry
+
+    for ticker, pts in series.items():
+        for d, v in pts:
+            put(ticker, d, IV_SERIES_SOURCE, {"iv": f(v), "source": IV_SERIES_SOURCE})
+
+    if yahoo_iv is not None:
+        put(MSTR, TODAY.isoformat(), "yahoo_option_chain", {
+            "iv": f(yahoo_iv["iv"]),
+            "source": "yahoo_option_chain",
+            "expiry": yahoo_iv["expiry"],
+            "dte": yahoo_iv["dte"],
+            "strike": f(yahoo_iv["call_strike"]),
+            "spot": f(yahoo_iv["spot"]),
+        })
+
+    ledger = {
+        t: {d: dict(sorted(day.items())) for d, day in sorted(b.items())}
+        for t, b in sorted(books.items())
+    }
+    write_json(path, ledger)
+    return ledger
+
+
+def iv_window(ledger: dict, ticker: str) -> dict | None:
+    """Min / max / n / first / last / rank over the ticker's AlphaQuery window.
+
+    The rank runs over one vendor's series only. Yahoo option-chain entries stay
+    in the ledger but are excluded here: Yahoo's ATM chain vol and AlphaQuery's
+    30-day mean are different constructions and a min/max that mixes them is not
+    a rank of anything.
+
+    The window is the trailing 252 AlphaQuery entries at most, so a multi-year
+    ledger ranks the last year of readings rather than every reading it holds.
+    It is called a 52-week window only when the window is a full 252 entries.
+    """
+    book = ledger.get(ticker) or {}
+    series = []
+    other = 0
+    for d, day in book.items():
+        if not isinstance(day, dict):
+            continue
+        for src, e in day.items():
+            if not isinstance(e, dict) or e.get("iv") is None:
+                continue
+            if src == IV_SERIES_SOURCE:
+                series.append((str(d), float(e["iv"])))
+            else:
+                other += 1
+    if not series:
+        return None
+    series.sort()
+    n_ledger = len(series)
+    pts = series[-IV_RANK_WINDOW:]
+    n = len(pts)
+    is_52w = n == IV_RANK_WINDOW
+    cur_date, cur = pts[-1]
+    lo = min(v for _, v in pts)
+    hi = max(v for _, v in pts)
+    rank = None
+    if n >= IV_RANK_MIN and hi > lo:
+        rank = (cur - lo) / (hi - lo) * 100.0
+    return {
+        "iv_30d": f(cur),
+        "as_of": cur_date,
+        "rank": f(rank),
+        "rank_label": (
+            f"rank over {n} days, 52-week window" if is_52w
+            else f"rank over {n} days, not 52 weeks"
+        ),
+        "is_52w_rank": is_52w,
+        "window": {
+            "n_days": n,
+            "first": pts[0][0],
+            "last": cur_date,
+            "min": f(lo),
+            "max": f(hi),
+            "source": IV_SERIES_SOURCE,
+            "max_days": IV_RANK_WINDOW,
+            "n_ledger_entries": n_ledger,
+            "other_source_entries_excluded": other,
+        },
+        "note": (
+            "rank = (current - window min) / (window max - window min). "
+            f"The window is the trailing {n} trading days of AlphaQuery 30-day mean IV "
+            f"out of {n_ledger} on file. "
+            + ("A full 252-day window, so a 52-week rank."
+               if is_52w else f"{IV_RANK_WINDOW} days would make it a 52-week rank.")
+        ) if rank is not None else (
+            f"ledger holds {n_ledger} entries, {IV_RANK_MIN} needed before a rank is computed"
+        ),
+    }
+
+
+def iv_block(ledger: dict, errors: dict[str, str]) -> dict:
+    """The iv block data/playbook.json carries.
+
+    A ticker whose fetch failed still gets its window computed from the ledger,
+    which is what the ledger is for, but it carries `error` plus
+    `as_of_fetch: null` and it sets the block's `stale` flag, so the page can show
+    the reading and label it stale instead of passing yesterday's number off as
+    today's.
+    """
+    out: dict = {
+        "as_of_run": TODAY.isoformat(),
+        "source": (
+            "AlphaQuery option-statistic chart endpoint, keyless, 30-day mean IV. "
+            "Free tier returns about 63 trading days per call; data/iv-ledger.json accumulates."
+        ),
+        "errors": errors or None,
+        "reference": {
+            "source": "https://projectoption.com/stocks/mstr/implied-volatility",
+            "as_of": "2026-09-11",
+            "iv_30d": 0.673,
+            "iv_52w_low": 0.492,
+            "iv_52w_high": 1.206,
+            "iv_rank": 25,
+            "iv_percentile": 29,
+            "note": "single source, un-cross-checked. Only the current level is corroborated (AlphaQuery 68.3% the same day).",
+        },
+    }
+    stale = False
+    for t in IV_TICKERS:
+        err = errors.get(t)
+        w = iv_window(ledger, t)
+        if w is None:
+            out[t.lower()] = {
+                "iv_30d": None,
+                "rank": None,
+                "error": err or "no ledger entries for this ticker",
+                "as_of_fetch": None,
+                "stale": True,
+            }
+            stale = True
+            continue
+        w["error"] = err
+        w["as_of_fetch"] = None if err else TODAY.isoformat()
+        w["stale"] = bool(err)
+        if err:
+            stale = True
+            w["note"] = (
+                "today's fetch failed, so this reading is the newest the ledger holds. " + str(w.get("note") or "")
+            ).strip()
+        out[t.lower()] = w
+    out["stale"] = stale
+
+    m, x = out.get("mstr") or {}, out.get("mstx") or {}
+    mv, xv = m.get("iv_30d"), x.get("iv_30d")
+    md, xd = m.get("as_of"), x.get("as_of")
+    both = bool(mv and xv)
+    same_day = bool(both and md and xd and md == xd)
+    out["mstx_mstr_iv_ratio"] = {
+        "value": f(xv / mv) if same_day else None,
+        "as_of": md if same_day else None,
+        "error": (
+            None if same_day
+            else "needs a 30-day IV for both MSTR and MSTX" if not both
+            else f"MSTR reads {md} and MSTX reads {xd}, not the same observation date"
+        ),
+        "note": (
+            "MSTX 30-day IV divided by MSTR 30-day IV, both AlphaQuery. "
+            "Computed only when the two readings carry the same observation date, null otherwise."
+        ),
+    }
+    return out
+
+
+def iv_rank_row(iv: dict) -> dict:
+    """The trigger-table IV rank row, a view onto iv.mstr."""
+    m = iv.get("mstr") or {}
+    if m.get("rank") is None:
+        return row(
+            error=m.get("error") or m.get("note") or "no IV rank available",
+            source=IV_SERIES_SOURCE,
+            as_of=m.get("as_of"),
+            stale=bool(m.get("stale")),
+            as_of_fetch=m.get("as_of_fetch"),
+            n_days=(m.get("window") or {}).get("n_days", 0),
+            iv=m.get("iv_30d"),
+            note="Hand-enter the 52-week IV rank from your broker on the page.",
+        )
+    w = m.get("window") or {}
+    return row(
+        m["rank"],
+        source=IV_SERIES_SOURCE,
+        as_of=m.get("as_of"),
+        error=m.get("error"),
+        stale=bool(m.get("stale")),
+        as_of_fetch=m.get("as_of_fetch"),
+        n_days=w.get("n_days"),
+        iv=m.get("iv_30d"),
+        iv_min=w.get("min"),
+        iv_max=w.get("max"),
+        window_first=w.get("first"),
+        window_last=w.get("last"),
+        rank_label=m.get("rank_label"),
+        is_52w_rank=m.get("is_52w_rank"),
+        note=m.get("note"),
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# self-test
+# ─────────────────────────────────────────────────────────────────────────────
+def self_test() -> list[str]:
+    """Assertions on the pure functions. Raises on the first failure.
+
+    The week cutoff is the one worth a fixture: a Sunday run date is the case the
+    old `> TODAY` test got wrong, and no live data reproduces it on demand.
+    """
+    checks: list[str] = []
+
+    # Sunday 2026-09-13. The week ending that day is still open, so the last
+    # completed week ends Sunday 2026-09-06.
+    sunday = date(2026, 9, 13)
+    assert sunday.weekday() == 6, "fixture date is not a Sunday"
+    end = last_completed_week_end(sunday)
+    assert end == date(2026, 9, 6), f"Sunday run: expected 2026-09-06, got {end}"
+    # Monday, the day after: the week that just closed is complete.
+    assert last_completed_week_end(date(2026, 9, 14)) == date(2026, 9, 13)
+    # Midweek: the previous Sunday.
+    assert last_completed_week_end(date(2026, 9, 16)) == date(2026, 9, 13)
+    checks.append("week cutoff: Sunday run excludes the open week")
+
+    # the same fixture through weekly_closes: daily bars Mon 9/7 to Sun 9/13 must
+    # not produce a 9/13 weekly bar when the run date is 9/13.
+    idx = pd.date_range("2026-08-24", "2026-09-13", freq="D")
+    px = pd.Series(range(1, len(idx) + 1), index=idx, dtype=float)
+    wk = weekly_closes(px, sunday)
+    assert len(wk), "weekly_closes returned nothing for the fixture"
+    assert wk.index[-1].date() == date(2026, 9, 6), \
+        f"weekly_closes kept an incomplete week, last bar {wk.index[-1].date()}"
+    assert date(2026, 9, 13) not in [d.date() for d in wk.index]
+    checks.append("weekly_closes: incomplete Sunday week excluded")
+
+    # Wilder's RSI: a monotonically rising series has no losses, so 100, not 50,
+    # and the first 14 bars carry no reading at all.
+    rising = pd.Series(np.arange(1.0, 41.0), index=pd.date_range("2026-01-01", periods=40, freq="D"))
+    r = rsi(rising)
+    assert r.iloc[:14].isna().all(), "RSI printed a reading inside the warm-up"
+    assert not math.isnan(r.iloc[14]), "RSI has no reading at bar 14"
+    assert abs(float(r.iloc[-1]) - 100.0) < 1e-9, f"rising series read RSI {r.iloc[-1]}, expected 100"
+    falling = pd.Series(np.arange(40.0, 0.0, -1.0), index=pd.date_range("2026-01-01", periods=40, freq="D"))
+    assert abs(float(rsi(falling).iloc[-1]) - 0.0) < 1e-9, "falling series did not read RSI 0"
+    checks.append("Wilder RSI: 14-bar warm-up NaN, rising reads 100, falling reads 0")
+
+    # ledger normalization: a Yahoo entry no longer blocks the AlphaQuery
+    # observation on the same date.
+    book = normalize_book({"2026-09-12": {"iv": 0.7, "source": "yahoo_option_chain"}})
+    book.setdefault("2026-09-12", {}).setdefault(IV_SERIES_SOURCE, {"iv": 0.68, "source": IV_SERIES_SOURCE})
+    assert len(book["2026-09-12"]) == 2, "per-source ledger dropped one of the two sources"
+    checks.append("ledger: two sources coexist on one date")
+
+    return checks
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# main
+# ─────────────────────────────────────────────────────────────────────────────
+def main() -> int:
+    for line in self_test():
+        print(f"  self-test ok · {line}")
+
+    inputs: dict[str, dict] = {}
+
+    # ---- BTC ----------------------------------------------------------------
+    btc = None
+    try:
+        btc = download(BTC)
+    except Exception as exc:
+        # btc_price is written as null plus the error rather than omitted: a
+        # missing key reads to the page as "never asked for", and the page then
+        # has nothing to say the BTC level it is showing did not come from here.
+        for k in ("btc_above_200d", "btc_above_200w", "btc_price"):
+            inputs[k] = failed(k, exc)
+
+    if btc is not None:
+        close = btc["Close"].astype(float)
+        last_px = float(close.iloc[-1])
+        last_dt = dstr(close.index[-1])
+        try:
+            sma200 = float(close.rolling(200).mean().iloc[-1])
+            inputs["btc_above_200d"] = row(
+                bool(last_px > sma200),
+                passes=bool(last_px > sma200),
+                source="yahoo_daily",
+                as_of=last_dt,
+                btc_close=f(last_px),
+                sma_200d=f(sma200),
+                gap_pct=f((last_px / sma200 - 1.0) * 100.0),
+            )
+        except Exception as exc:
+            inputs["btc_above_200d"] = failed("btc_above_200d", exc)
+
+        try:
+            wk = weekly_closes(close)
+            if len(wk) < 200:
+                raise RuntimeError(f"only {len(wk)} completed weekly closes, 200 needed")
+            sma200w = float(wk.rolling(200).mean().iloc[-1])
+            inputs["btc_above_200w"] = row(
+                bool(last_px > sma200w),
+                passes=bool(last_px > sma200w),
+                source="yahoo_weekly",
+                as_of=f"{last_dt} price vs week ending {dstr(wk.index[-1])}",
+                btc_close=f(last_px),
+                sma_200w=f(sma200w),
+                gap_pct=f((last_px / sma200w - 1.0) * 100.0),
+                weeks=int(len(wk)),
+                note="SMA over completed calendar weeks only",
+            )
+        except Exception as exc:
+            inputs["btc_above_200w"] = failed("btc_above_200w", exc)
+
+        inputs["btc_price"] = row(
+            f(last_px), source="yahoo_daily", as_of=last_dt,
+            note="Yahoo daily close, not a live quote. The page's own live feed is separate.",
+        )
+
+    # ---- MSTR ---------------------------------------------------------------
+    mstr = None
+    try:
+        mstr = download(MSTR)
+    except Exception as exc:
+        for k in ("mstr_weekly_macd", "mstr_hidden_bull_div", "bollinger_tight",
+                  "realized_vol_rank", "mstr_price"):
+            inputs[k] = failed(k, exc)
+
+    spot = None
+    if mstr is not None:
+        mc = mstr["Close"].astype(float)
+        spot = float(mc.iloc[-1])
+        mstr_dt = dstr(mc.index[-1])
+        inputs["mstr_price"] = row(
+            f(spot), source="yahoo_daily", as_of=mstr_dt,
+            note="Yahoo daily close, delayed. Not a live quote.",
+        )
+
+        try:
+            wk = weekly_closes(mc)
+            if len(wk) < 40:
+                raise RuntimeError(f"only {len(wk)} completed weekly closes")
+            ema12 = wk.ewm(span=12, adjust=False).mean()
+            ema26 = wk.ewm(span=26, adjust=False).mean()
+            macd = ema12 - ema26
+            sig = macd.ewm(span=9, adjust=False).mean()
+            m, s = float(macd.iloc[-1]), float(sig.iloc[-1])
+            inputs["mstr_weekly_macd"] = row(
+                bool(m > s),
+                passes=bool(m > s),
+                source="yahoo_weekly",
+                as_of=f"week ending {dstr(wk.index[-1])}",
+                macd=f(m),
+                signal=f(s),
+                histogram=f(m - s),
+                note="MACD(12,26,9) on completed weekly closes",
+            )
+        except Exception as exc:
+            inputs["mstr_weekly_macd"] = failed("mstr_weekly_macd", exc)
+
+        try:
+            div = hidden_bull_div(mstr)
+            inputs["mstr_hidden_bull_div"] = row(
+                bool(div["flag"]),
+                passes=bool(div["flag"]),
+                source="yahoo_daily",
+                as_of=mstr_dt,
+                matches=div["matches"],
+                n_matches=div["n_matches"],
+                note=(
+                    "higher swing low with lower RSI(14) at the two lows, swing = lowest low "
+                    "with 5 bars each side, 20-bar pair window, confirmed inside the last 10 bars"
+                ),
+            )
+        except Exception as exc:
+            inputs["mstr_hidden_bull_div"] = failed("mstr_hidden_bull_div", exc)
+
+        try:
+            mid = mc.rolling(20).mean()
+            sd = mc.rolling(20).std(ddof=0)
+            width = (4.0 * sd) / mid
+            pctile, nobs = pct_rank(width)
+            if pctile is None:
+                raise RuntimeError("not enough Bollinger observations")
+            tight = pctile < 20.0
+            inputs["bollinger_tight"] = row(
+                bool(tight),
+                passes=bool(tight),
+                source="yahoo_daily",
+                as_of=mstr_dt,
+                width_pct=f(pctile),
+                width=f(float(width.iloc[-1])),
+                upper=f(float(mid.iloc[-1] + 2 * sd.iloc[-1])),
+                lower=f(float(mid.iloc[-1] - 2 * sd.iloc[-1])),
+                n_obs=int(nobs),
+                note="20-day, 2 sigma, width = (upper - lower) / mid, percentile over trailing 252 days, tight = below 20",
+            )
+        except Exception as exc:
+            inputs["bollinger_tight"] = failed("bollinger_tight", exc)
+
+        try:
+            ret = np.log(mc).diff()
+            rv = ret.rolling(20).std(ddof=1) * math.sqrt(252.0)
+            pctile, nobs = pct_rank(rv)
+            if pctile is None:
+                raise RuntimeError("not enough realized-vol observations")
+            inputs["realized_vol_rank"] = row(
+                f(pctile),
+                source="yahoo_daily",
+                as_of=mstr_dt,
+                rv_20d_annualized=f(float(rv.iloc[-1])),
+                n_obs=int(nobs),
+                note="20-day realized vol, annualized at 252, percentile over trailing 252 days. A proxy for IV rank, not IV rank.",
+            )
+        except Exception as exc:
+            inputs["realized_vol_rank"] = failed("realized_vol_rank", exc)
+
+    # ---- MSTX close (the mapping box's "MSTX now" default) ------------------
+    try:
+        mx = download(MSTX)["Close"].astype(float)
+        inputs["mstx_price"] = row(
+            f(float(mx.iloc[-1])), source="yahoo_daily", as_of=dstr(mx.index[-1]),
+            note="Yahoo daily close, delayed. Not a live quote.",
+        )
+    except Exception as exc:
+        inputs["mstx_price"] = failed("mstx_price", exc)
+
+    # ---- implied vol + ledger ----------------------------------------------
+    iv_info, iv_error = None, None
+    if spot is not None:
+        try:
+            iv_info = atm_iv_30d(spot)
+        except Exception as exc:
+            iv_error = f"{type(exc).__name__}: {exc}"
+            ERRORS.append(f"mstr_atm_iv_30d -> {iv_error}")
+    else:
+        iv_error = "MSTR spot unavailable, option chain not queried"
+
+    inputs["mstr_atm_iv_30d"] = (
+        row(
+            f(iv_info["iv"]),
+            source="yahoo_option_chain",
+            as_of=TODAY.isoformat(),
+            expiry=iv_info["expiry"],
+            dte=iv_info["dte"],
+            strike=f(iv_info["call_strike"]),
+            call_iv=f(iv_info["call_iv"]),
+            put_iv=f(iv_info["put_iv"]),
+            spot=f(iv_info["spot"]),
+            note="mid of the ATM call and put impliedVolatility Yahoo reports, nearest expiry to 30 days",
+        )
+        if iv_info
+        else row(error=iv_error, source="yahoo_option_chain")
+    )
+
+    # AlphaQuery 30-day IV series for MSTR / MSTX / IBIT, merged into the ledger
+    series: dict[str, list[tuple[str, float]]] = {}
+    iv_errors: dict[str, str] = {}
+    for t in IV_TICKERS:
+        try:
+            series[t] = alphaquery_iv_series(t)
+        except Exception as exc:
+            iv_errors[t] = f"{type(exc).__name__}: {exc}"
+            ERRORS.append(f"alphaquery_iv[{t}] -> {iv_errors[t]}")
+
+    ledger = merge_ledger(series, iv_info)
+    iv = iv_block(ledger, iv_errors)
+    inputs["iv_rank"] = iv_rank_row(iv)
+
+    # ---- events -------------------------------------------------------------
+    events_next3: list[dict] = []
+    events_upcoming: list[dict] = []
+    try:
+        raw = load_json(TOOLS / "events.json", [])
+        if isinstance(raw, dict):
+            raw = raw.get("events", [])
+        rows = []
+        for e in raw or []:
+            if not isinstance(e, dict) or not e.get("date"):
+                continue
+            try:
+                d = date.fromisoformat(str(e["date"]))
+            except ValueError:
+                ERRORS.append(f"events.json: unparseable date {e.get('date')!r}")
+                continue
+            dt = (d - TODAY).days
+            if dt < 0:
+                continue
+            rows.append(
+                {
+                    "date": d.isoformat(),
+                    "type": e.get("type", "UNKNOWN"),
+                    "label": e.get("label", e.get("type", "event")),
+                    "verified": bool(e.get("verified", False)),
+                    "source": e.get("source"),
+                    "note": e.get("note"),
+                    "days_to": dt,
+                }
+            )
+        rows.sort(key=lambda r: r["date"])
+        events_next3 = rows[:3]
+        events_upcoming = rows[:6]   # the page lists these so unverified rows stay visible
+        if events_next3:
+            nxt = events_next3[0]
+            inputs["days_to_next_event"] = row(
+                nxt["days_to"],
+                source="tools/events.json",
+                as_of=TODAY.isoformat(),
+                event=nxt,
+                all_verified=all(r["verified"] for r in events_next3),
+                note="hand-maintained calendar. verified=false rows are placeholders, confirm before sizing on them.",
+            )
+        else:
+            inputs["days_to_next_event"] = row(
+                error="no upcoming events in tools/events.json",
+                source="tools/events.json",
+            )
+    except Exception as exc:
+        inputs["days_to_next_event"] = failed("days_to_next_event", exc)
+
+    # ---- rules --------------------------------------------------------------
+    rules = load_json(TOOLS / "playbook_rules.json", {})
+    if not isinstance(rules, dict):
+        rules = {}
+        ERRORS.append("playbook_rules.json was not a JSON object")
+
+    out = {
+        "generated_at": NOW_ISO,
+        "as_of_run_date": TODAY.isoformat(),
+        "inputs": inputs,
+        "iv": iv,
+        "events_next3": events_next3,
+        "events_upcoming": events_upcoming,
+        "rules": {
+            "version": rules.get("version"),
+            "as_of": rules.get("as_of"),
+            "components": rules.get("components", []),
+            "paper_trigger": rules.get("paper_trigger"),
+        },
+        "sources": {
+            "prices": "Yahoo Finance daily bars via yfinance. Delayed and unofficial.",
+            "implied_vol": "AlphaQuery 30-day mean IV (keyless chart endpoint) for the MSTR / MSTX / IBIT series and the IV rank; Yahoo's option-chain impliedVolatility field for the single mstr_atm_iv_30d row. Both delayed, neither a computed mid-market vol.",
+            "iv_rank": "Computed over data/iv-ledger.json, the AlphaQuery entries only, trailing 252 entries at most. Labelled with its window length and called a 52-week window only at a full 252 entries. A ticker whose fetch failed keeps its ledger reading, carries an error string with as_of_fetch null, and sets iv.stale.",
+            "events": "tools/events.json, hand maintained. Every row carries a verified flag and a source URL.",
+            "rule_flags": "tools/playbook_rules.json, hand maintained: backtest status plus the adopted flag plus the paper trigger.",
+            "rule": "No field is ever a fabricated number. A source that fails is written as null with an error string.",
+        },
+        "errors": ERRORS,
+    }
+    write_json(DATA / "playbook.json", out)
+
+    def show(key, fmt="{}"):
+        r = inputs.get(key) or {}
+        v = r.get("value")
+        return "null" if v is None else fmt.format(v)
+
+    nxt = events_next3[0] if events_next3 else None
+    bb_pct = (inputs.get("bollinger_tight") or {}).get("width_pct")
+    ivm = iv.get("mstr") or {}
+    ivx = iv.get("mstx") or {}
+    ratio = (iv.get("mstx_mstr_iv_ratio") or {}).get("value")
+    print(
+        "playbook_refresh "
+        f"btc={show('btc_price', '${:,.0f}')} >200d={show('btc_above_200d')} >200w={show('btc_above_200w')} | "
+        f"mstr={show('mstr_price', '${:,.2f}')} mstx={show('mstx_price', '${:,.2f}')} "
+        f"macd>sig={show('mstr_weekly_macd')} "
+        f"hiddendiv={show('mstr_hidden_bull_div')} bbtight={show('bollinger_tight')}(pct={bb_pct}) "
+        f"rvrank={show('realized_vol_rank', '{:.0f}')} | "
+        f"aqIV mstr={ivm.get('iv_30d')} mstx={ivx.get('iv_30d')} ratio={ratio} "
+        f"ivrank={ivm.get('rank')} ({ivm.get('rank_label')}) stale={iv.get('stale')} | "
+        f"next={(nxt or {}).get('type', 'none')} in {(nxt or {}).get('days_to', '-')}d | "
+        f"errors={len(ERRORS)}"
+    )
+    for e in ERRORS:
+        print(f"  ! {e}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,1134 @@
+{
+  "IBIT": {
+    "2026-06-15": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.37555,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-16": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.364522,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-17": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.4009,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-18": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.422027,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-22": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.386119,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-23": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.401845,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-24": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.447647,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-25": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.454846,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-26": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.446834,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-29": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.408536,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-30": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.426575,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-01": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.414753,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-02": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.402243,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-06": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.380275,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-07": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.372243,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-08": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.386369,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-09": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.369657,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-10": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.358165,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-13": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.381221,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-14": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.372992,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-15": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.356035,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-16": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.362854,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-17": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.357333,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-20": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.365792,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-21": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.369992,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-22": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.379284,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-23": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.375452,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-24": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.362278,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-27": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.358703,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-28": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.364676,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-29": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.370961,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-30": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.344706,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-31": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.348193,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-03": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.342438,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-04": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.342008,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-05": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.344214,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-06": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.337848,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-07": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.327177,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-10": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.349246,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-11": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.338025,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-12": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.333473,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-13": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.330399,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-14": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.323429,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-17": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.345512,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-18": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.335267,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-19": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.366939,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-20": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.392064,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-21": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.413879,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-24": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.438454,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-25": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.424001,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-26": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.393792,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-27": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.399995,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-28": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.375094,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-31": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.367663,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-01": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.378838,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-02": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.362844,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-03": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.4131,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-04": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.386486,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-08": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.401487,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-09": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.394311,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-10": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.381017,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-11": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.36627,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    }
+  },
+  "MSTR": {
+    "2026-06-15": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.713334,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-16": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.701768,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-17": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.723952,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-18": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.775784,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-22": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.778052,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-23": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.793603,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-24": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.944642,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-25": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.042275,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-26": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.041162,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-29": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.923477,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-30": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.95782,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-01": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.946543,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-02": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.931524,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-06": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.974792,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-07": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.970369,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-08": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.955738,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-09": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.905751,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-10": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.863542,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-13": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.907655,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-14": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.886235,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-15": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.879985,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-16": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.876152,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-17": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.861466,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-20": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.855005,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-21": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.847473,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-22": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.818305,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-23": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.828152,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-24": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.812919,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-27": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.812974,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-28": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.797373,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-29": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.825327,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-30": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.789808,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-31": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.763122,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-03": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.74278,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-04": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.737843,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-05": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.723815,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-06": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.695628,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-07": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.704298,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-10": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.706061,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-11": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.682539,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-12": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.65287,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-13": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.663859,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-14": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.64101,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-17": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.681636,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-18": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.68244,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-19": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.730849,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-20": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.781274,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-21": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.774664,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-24": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.769751,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-25": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.738739,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-26": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.697554,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-27": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.741152,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-28": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.675001,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-31": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.696299,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-01": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.68833,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-02": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.675953,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-03": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.765323,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-04": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.732277,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-08": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.74489,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-09": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.727013,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-10": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.708452,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-11": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.683058,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-12": {
+      "yahoo_option_chain": {
+        "iv": 0.678104,
+        "expiry": "2026-10-09",
+        "dte": 27,
+        "strike": 131.0,
+        "spot": 130.970001,
+        "source": "yahoo_option_chain"
+      }
+    }
+  },
+  "MSTX": {
+    "2026-06-15": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.397971,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-16": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.382998,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-17": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.483151,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-18": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.489274,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-22": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.519798,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-23": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.507455,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-24": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.70382,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-25": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 2.017901,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-26": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 2.009807,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-29": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.780273,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-06-30": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.905819,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-01": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.895338,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-02": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.858685,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-06": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.87983,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-07": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.894565,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-08": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.904854,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-09": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.816947,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-10": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.704108,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-13": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.725144,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-14": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.755538,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-15": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.699378,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-16": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.696097,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-17": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.670127,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-20": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.637776,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-21": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.616291,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-22": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.581598,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-23": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.623431,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-24": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.545055,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-27": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.579267,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-28": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.543417,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-29": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.612991,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-30": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.552169,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-07-31": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.512591,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-03": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.503315,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-04": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.488477,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-05": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.42677,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-06": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.388387,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-07": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.364165,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-10": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.394053,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-11": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.312557,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-12": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.272694,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-13": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.326129,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-14": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.290674,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-17": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.318615,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-18": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.306886,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-19": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.421732,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-20": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.546962,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-21": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.522063,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-24": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.503993,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-25": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.443888,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-26": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.370644,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-27": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.463193,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-28": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.32021,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-08-31": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.373656,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-01": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.345504,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-02": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.331467,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-03": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.517497,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-04": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.460522,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-08": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.487121,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-09": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.453632,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-10": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.429753,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-11": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.369022,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    }
+  }
+}

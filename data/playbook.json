@@ -1,0 +1,393 @@
+{
+  "generated_at": "2026-09-13T02:14:30Z",
+  "as_of_run_date": "2026-09-12",
+  "inputs": {
+    "btc_above_200d": {
+      "value": true,
+      "pass": true,
+      "source": "yahoo_daily",
+      "as_of": "2026-09-13",
+      "error": null,
+      "btc_close": 77261.796875,
+      "sma_200d": 70091.090781,
+      "gap_pct": 10.230553
+    },
+    "btc_above_200w": {
+      "value": true,
+      "pass": true,
+      "source": "yahoo_weekly",
+      "as_of": "2026-09-13 price vs week ending 2026-09-06",
+      "error": null,
+      "btc_close": 77261.796875,
+      "sma_200w": 64867.387324,
+      "gap_pct": 19.107305,
+      "weeks": 558,
+      "note": "SMA over completed calendar weeks only"
+    },
+    "btc_price": {
+      "value": 77261.796875,
+      "pass": null,
+      "source": "yahoo_daily",
+      "as_of": "2026-09-13",
+      "error": null,
+      "note": "Yahoo daily close, not a live quote. The page's own live feed is separate."
+    },
+    "mstr_price": {
+      "value": 130.970001,
+      "pass": null,
+      "source": "yahoo_daily",
+      "as_of": "2026-09-11",
+      "error": null,
+      "note": "Yahoo daily close, delayed. Not a live quote."
+    },
+    "mstr_weekly_macd": {
+      "value": true,
+      "pass": true,
+      "source": "yahoo_weekly",
+      "as_of": "week ending 2026-09-06",
+      "error": null,
+      "macd": -14.360997,
+      "signal": -20.661299,
+      "histogram": 6.300302,
+      "note": "MACD(12,26,9) on completed weekly closes"
+    },
+    "mstr_hidden_bull_div": {
+      "value": false,
+      "pass": false,
+      "source": "yahoo_daily",
+      "as_of": "2026-09-11",
+      "error": null,
+      "matches": [],
+      "n_matches": 0,
+      "note": "higher swing low with lower RSI(14) at the two lows, swing = lowest low with 5 bars each side, 20-bar pair window, confirmed inside the last 10 bars"
+    },
+    "bollinger_tight": {
+      "value": false,
+      "pass": false,
+      "source": "yahoo_daily",
+      "as_of": "2026-09-11",
+      "error": null,
+      "width_pct": 77.777778,
+      "width": 0.490471,
+      "upper": 152.782277,
+      "lower": 92.604723,
+      "n_obs": 252,
+      "note": "20-day, 2 sigma, width = (upper - lower) / mid, percentile over trailing 252 days, tight = below 20"
+    },
+    "realized_vol_rank": {
+      "value": 91.666667,
+      "pass": null,
+      "source": "yahoo_daily",
+      "as_of": "2026-09-11",
+      "error": null,
+      "rv_20d_annualized": 1.049737,
+      "n_obs": 252,
+      "note": "20-day realized vol, annualized at 252, percentile over trailing 252 days. A proxy for IV rank, not IV rank."
+    },
+    "mstx_price": {
+      "value": 14.01,
+      "pass": null,
+      "source": "yahoo_daily",
+      "as_of": "2026-09-11",
+      "error": null,
+      "note": "Yahoo daily close, delayed. Not a live quote."
+    },
+    "mstr_atm_iv_30d": {
+      "value": 0.690555,
+      "pass": null,
+      "source": "yahoo_option_chain",
+      "as_of": "2026-09-12",
+      "error": null,
+      "expiry": "2026-10-09",
+      "dte": 27,
+      "strike": 131.0,
+      "call_iv": 0.707522,
+      "put_iv": 0.673587,
+      "spot": 130.970001,
+      "note": "mid of the ATM call and put impliedVolatility Yahoo reports, nearest expiry to 30 days"
+    },
+    "iv_rank": {
+      "value": 10.478861,
+      "pass": null,
+      "source": "alphaquery_iv_mean_30d",
+      "as_of": "2026-09-11",
+      "error": null,
+      "stale": false,
+      "as_of_fetch": "2026-09-12",
+      "n_days": 62,
+      "iv": 0.683058,
+      "iv_min": 0.64101,
+      "iv_max": 1.042275,
+      "window_first": "2026-06-15",
+      "window_last": "2026-09-11",
+      "rank_label": "rank over 62 days, not 52 weeks",
+      "is_52w_rank": false,
+      "note": "rank = (current - window min) / (window max - window min). The window is the trailing 62 trading days of AlphaQuery 30-day mean IV out of 62 on file. 252 days would make it a 52-week rank."
+    },
+    "days_to_next_event": {
+      "value": 4,
+      "pass": null,
+      "source": "tools/events.json",
+      "as_of": "2026-09-12",
+      "error": null,
+      "event": {
+        "date": "2026-09-16",
+        "type": "FOMC",
+        "label": "FOMC decision day (meeting Sep 15-16, with economic projections)",
+        "verified": true,
+        "source": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+        "note": null,
+        "days_to": 4
+      },
+      "all_verified": true,
+      "note": "hand-maintained calendar. verified=false rows are placeholders, confirm before sizing on them."
+    }
+  },
+  "iv": {
+    "as_of_run": "2026-09-12",
+    "source": "AlphaQuery option-statistic chart endpoint, keyless, 30-day mean IV. Free tier returns about 63 trading days per call; data/iv-ledger.json accumulates.",
+    "errors": null,
+    "reference": {
+      "source": "https://projectoption.com/stocks/mstr/implied-volatility",
+      "as_of": "2026-09-11",
+      "iv_30d": 0.673,
+      "iv_52w_low": 0.492,
+      "iv_52w_high": 1.206,
+      "iv_rank": 25,
+      "iv_percentile": 29,
+      "note": "single source, un-cross-checked. Only the current level is corroborated (AlphaQuery 68.3% the same day)."
+    },
+    "mstr": {
+      "iv_30d": 0.683058,
+      "as_of": "2026-09-11",
+      "rank": 10.478861,
+      "rank_label": "rank over 62 days, not 52 weeks",
+      "is_52w_rank": false,
+      "window": {
+        "n_days": 62,
+        "first": "2026-06-15",
+        "last": "2026-09-11",
+        "min": 0.64101,
+        "max": 1.042275,
+        "source": "alphaquery_iv_mean_30d",
+        "max_days": 252,
+        "n_ledger_entries": 62,
+        "other_source_entries_excluded": 1
+      },
+      "note": "rank = (current - window min) / (window max - window min). The window is the trailing 62 trading days of AlphaQuery 30-day mean IV out of 62 on file. 252 days would make it a 52-week rank.",
+      "error": null,
+      "as_of_fetch": "2026-09-12",
+      "stale": false
+    },
+    "mstx": {
+      "iv_30d": 1.369022,
+      "as_of": "2026-09-11",
+      "rank": 12.926341,
+      "rank_label": "rank over 62 days, not 52 weeks",
+      "is_52w_rank": false,
+      "window": {
+        "n_days": 62,
+        "first": "2026-06-15",
+        "last": "2026-09-11",
+        "min": 1.272694,
+        "max": 2.017901,
+        "source": "alphaquery_iv_mean_30d",
+        "max_days": 252,
+        "n_ledger_entries": 62,
+        "other_source_entries_excluded": 0
+      },
+      "note": "rank = (current - window min) / (window max - window min). The window is the trailing 62 trading days of AlphaQuery 30-day mean IV out of 62 on file. 252 days would make it a 52-week rank.",
+      "error": null,
+      "as_of_fetch": "2026-09-12",
+      "stale": false
+    },
+    "ibit": {
+      "iv_30d": 0.36627,
+      "as_of": "2026-09-11",
+      "rank": 32.599283,
+      "rank_label": "rank over 62 days, not 52 weeks",
+      "is_52w_rank": false,
+      "window": {
+        "n_days": 62,
+        "first": "2026-06-15",
+        "last": "2026-09-11",
+        "min": 0.323429,
+        "max": 0.454846,
+        "source": "alphaquery_iv_mean_30d",
+        "max_days": 252,
+        "n_ledger_entries": 62,
+        "other_source_entries_excluded": 0
+      },
+      "note": "rank = (current - window min) / (window max - window min). The window is the trailing 62 trading days of AlphaQuery 30-day mean IV out of 62 on file. 252 days would make it a 52-week rank.",
+      "error": null,
+      "as_of_fetch": "2026-09-12",
+      "stale": false
+    },
+    "stale": false,
+    "mstx_mstr_iv_ratio": {
+      "value": 2.004254,
+      "as_of": "2026-09-11",
+      "error": null,
+      "note": "MSTX 30-day IV divided by MSTR 30-day IV, both AlphaQuery. Computed only when the two readings carry the same observation date, null otherwise."
+    }
+  },
+  "events_next3": [
+    {
+      "date": "2026-09-16",
+      "type": "FOMC",
+      "label": "FOMC decision day (meeting Sep 15-16, with economic projections)",
+      "verified": true,
+      "source": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "note": null,
+      "days_to": 4
+    },
+    {
+      "date": "2026-10-14",
+      "type": "CPI",
+      "label": "CPI release for September 2026 reference month, 08:30 AM ET",
+      "verified": true,
+      "source": "https://www.bls.gov/schedule/news_release/cpi.htm",
+      "note": null,
+      "days_to": 32
+    },
+    {
+      "date": "2026-10-28",
+      "type": "FOMC",
+      "label": "FOMC decision day (meeting Oct 27-28)",
+      "verified": true,
+      "source": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "note": null,
+      "days_to": 46
+    }
+  ],
+  "events_upcoming": [
+    {
+      "date": "2026-09-16",
+      "type": "FOMC",
+      "label": "FOMC decision day (meeting Sep 15-16, with economic projections)",
+      "verified": true,
+      "source": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "note": null,
+      "days_to": 4
+    },
+    {
+      "date": "2026-10-14",
+      "type": "CPI",
+      "label": "CPI release for September 2026 reference month, 08:30 AM ET",
+      "verified": true,
+      "source": "https://www.bls.gov/schedule/news_release/cpi.htm",
+      "note": null,
+      "days_to": 32
+    },
+    {
+      "date": "2026-10-28",
+      "type": "FOMC",
+      "label": "FOMC decision day (meeting Oct 27-28)",
+      "verified": true,
+      "source": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "note": null,
+      "days_to": 46
+    },
+    {
+      "date": "2026-11-04",
+      "type": "MSTR_EARNINGS",
+      "label": "Strategy Inc Q3 2026 results, after market close",
+      "verified": false,
+      "source": "https://www.tipranks.com/stocks/mstr/earnings",
+      "note": "third-party calendar; confirm on the IR page",
+      "days_to": 53
+    },
+    {
+      "date": "2026-11-10",
+      "type": "CPI",
+      "label": "CPI release for October 2026 reference month, 08:30 AM ET",
+      "verified": true,
+      "source": "https://www.bls.gov/schedule/news_release/cpi.htm",
+      "note": null,
+      "days_to": 59
+    },
+    {
+      "date": "2026-12-09",
+      "type": "FOMC",
+      "label": "FOMC decision day (meeting Dec 8-9, with economic projections)",
+      "verified": true,
+      "source": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "note": null,
+      "days_to": 88
+    }
+  ],
+  "rules": {
+    "version": "v2",
+    "as_of": "2026-09-12",
+    "components": [
+      {
+        "id": "btc_200d",
+        "input": "btc_above_200d",
+        "label": "BTC above 200-day",
+        "status": "UNPROVEN",
+        "adopted": false,
+        "note": "10-day hit 50.5% on signal vs 54.4% off, 2020 to 2026"
+      },
+      {
+        "id": "btc_200w",
+        "input": "btc_above_200w",
+        "label": "BTC above 200-week",
+        "status": "UNPROVEN",
+        "adopted": false,
+        "note": "51.0% vs 58.8% off; on 86% of days"
+      },
+      {
+        "id": "mstr_weekly_macd",
+        "input": "mstr_weekly_macd",
+        "label": "MSTR weekly MACD above signal",
+        "status": "UNPROVEN",
+        "adopted": false,
+        "note": "50.8% vs 53.3% off"
+      },
+      {
+        "id": "hidden_bull_div",
+        "input": "mstr_hidden_bull_div",
+        "label": "MSTR hidden bullish divergence",
+        "status": "UNTESTABLE",
+        "adopted": false,
+        "note": "11 events in 6.7 years"
+      },
+      {
+        "id": "bollinger_tight",
+        "input": "bollinger_tight",
+        "label": "MSTR Bollinger width in bottom quintile",
+        "status": "NEGATIVE",
+        "adopted": false,
+        "note": "40.6% vs 52.6% off; adding it to the trend stack cut the hit rate to 31%"
+      },
+      {
+        "id": "rv_rank_high",
+        "input": "realized_vol_rank",
+        "label": "MSTR realized-vol rank 70 or above",
+        "status": "PROMISING",
+        "adopted": false,
+        "note": "RV rank 70 or above: 54.8% vs 47.7% off, n_eff 45, interval straddles"
+      }
+    ],
+    "paper_trigger": {
+      "components": [
+        "btc_200d",
+        "btc_200w",
+        "mstr_weekly_macd",
+        "rv_rank_high"
+      ],
+      "rule": "all pass",
+      "status": "PROMISING",
+      "note": "trend trio plus high realized-vol rank; the two PROMISING readings in the 9/12 backtest; nothing is ADOPTED, so the sleeve stays on paper until the 8-week record beats implied odds"
+    }
+  },
+  "sources": {
+    "prices": "Yahoo Finance daily bars via yfinance. Delayed and unofficial.",
+    "implied_vol": "AlphaQuery 30-day mean IV (keyless chart endpoint) for the MSTR / MSTX / IBIT series and the IV rank; Yahoo's option-chain impliedVolatility field for the single mstr_atm_iv_30d row. Both delayed, neither a computed mid-market vol.",
+    "iv_rank": "Computed over data/iv-ledger.json, the AlphaQuery entries only, trailing 252 entries at most. Labelled with its window length and called a 52-week window only at a full 252 entries. A ticker whose fetch failed keeps its ledger reading, carries an error string with as_of_fetch null, and sets iv.stale.",
+    "events": "tools/events.json, hand maintained. Every row carries a verified flag and a source URL.",
+    "rule_flags": "tools/playbook_rules.json, hand maintained: backtest status plus the adopted flag plus the paper trigger.",
+    "rule": "No field is ever a fabricated number. A source that fails is written as null with an error string."
+  },
+  "errors": []
+}

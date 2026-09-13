@@ -1,0 +1,63 @@
+{
+  "version": "v2",
+  "as_of": "2026-09-12",
+  "note": "Trigger-stack components with the 2026-09-12 backtest verdict on each. status is the backtest reading, adopted is whether the component may fund real size. Nothing is adopted, so the FUNDED STACK cannot go live and the sleeve stays on paper. input is the data/playbook.json inputs key the component scores against. The refresh script only reads this file, it never rewrites status or adopted.",
+  "status_enum": ["UNPROVEN", "NEGATIVE", "UNTESTABLE", "PROMISING", "ADOPTED"],
+  "backtest": "MSTR trading days 2020-01-02 to 2026-08-26, n=1671, forward 10 trading-day return. Hit rates quoted signal-on versus signal-off (the complement), not versus the diluted base rate.",
+  "components": [
+    {
+      "id": "btc_200d",
+      "input": "btc_above_200d",
+      "label": "BTC above 200-day",
+      "status": "UNPROVEN",
+      "adopted": false,
+      "note": "10-day hit 50.5% on signal vs 54.4% off, 2020 to 2026"
+    },
+    {
+      "id": "btc_200w",
+      "input": "btc_above_200w",
+      "label": "BTC above 200-week",
+      "status": "UNPROVEN",
+      "adopted": false,
+      "note": "51.0% vs 58.8% off; on 86% of days"
+    },
+    {
+      "id": "mstr_weekly_macd",
+      "input": "mstr_weekly_macd",
+      "label": "MSTR weekly MACD above signal",
+      "status": "UNPROVEN",
+      "adopted": false,
+      "note": "50.8% vs 53.3% off"
+    },
+    {
+      "id": "hidden_bull_div",
+      "input": "mstr_hidden_bull_div",
+      "label": "MSTR hidden bullish divergence",
+      "status": "UNTESTABLE",
+      "adopted": false,
+      "note": "11 events in 6.7 years"
+    },
+    {
+      "id": "bollinger_tight",
+      "input": "bollinger_tight",
+      "label": "MSTR Bollinger width in bottom quintile",
+      "status": "NEGATIVE",
+      "adopted": false,
+      "note": "40.6% vs 52.6% off; adding it to the trend stack cut the hit rate to 31%"
+    },
+    {
+      "id": "rv_rank_high",
+      "input": "realized_vol_rank",
+      "label": "MSTR realized-vol rank 70 or above",
+      "status": "PROMISING",
+      "adopted": false,
+      "note": "RV rank 70 or above: 54.8% vs 47.7% off, n_eff 45, interval straddles"
+    }
+  ],
+  "paper_trigger": {
+    "components": ["btc_200d", "btc_200w", "mstr_weekly_macd", "rv_rank_high"],
+    "rule": "all pass",
+    "status": "PROMISING",
+    "note": "trend trio plus high realized-vol rank; the two PROMISING readings in the 9/12 backtest; nothing is ADOPTED, so the sleeve stays on paper until the 8-week record beats implied odds"
+  }
+}

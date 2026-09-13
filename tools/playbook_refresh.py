@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -48,7 +49,9 @@ TRAIL = 252                   # percentile / IV-rank lookback in observations
 IV_TICKERS = ("MSTR", "MSTX", "IBIT")
 IV_SERIES_SOURCE = "alphaquery_iv_mean_30d"
 IV_RANK_WINDOW = TRAIL        # the rank runs over the trailing 252 entries at most
+IV_RANK_WINDOW_3M = 63        # a quarter of trading days, the short-term rank's cap
 IV_RANK_MIN = 30              # below this many entries no rank is computed at all
+PO_URL = "https://projectoption.com/stocks/mstr/implied-volatility"
 AQ_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
          "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
 
@@ -260,6 +263,7 @@ def macd_hist_rising(closes: pd.Series, fast: int = 8, slow: int = 21, signal: i
     if len(hist) < warmup:
         raise RuntimeError(f"only {len(hist)} histogram bars, {warmup} needed for warm-up")
     last, prev = float(hist.iloc[-1]), float(hist.iloc[-2])
+    tail = min(16, len(hist))
     return {
         "flag": bool(last > 0.0 and last > prev),
         "hist": last,
@@ -267,6 +271,9 @@ def macd_hist_rising(closes: pd.Series, fast: int = 8, slow: int = 21, signal: i
         "bar": dstr(hist.index[-1]),
         "prev_bar": dstr(hist.index[-2]),
         "bars": int(len(hist)),
+        # the page draws these as a bar chart, oldest bar first
+        "last16": [{"bar": dstr(hist.index[i]), "hist": f(hist.iloc[i])}
+                   for i in range(len(hist) - tail, len(hist))],
     }
 
 
@@ -492,6 +499,75 @@ def alphaquery_iv_series(ticker: str) -> list[tuple[str, float]]:
     return out
 
 
+PO_LABELS = {
+    "Current IV (30-Day)": "iv_30d",
+    "IV Rank": "printed",
+    "IV Percentile": "percentile",
+    "52-Week Low IV": "low_52w",
+    "52-Week High IV": "high_52w",
+}
+PO_CARD = re.compile(
+    r'iv-metric-label"[^>]*>\s*([^<]+?)\s*</div>\s*'
+    r'<div class="iv-metric-value[^"]*"[^>]*>\s*([^<]+?)\s*</div>',
+    re.S,
+)
+PO_DATE = re.compile(r'stock-iv-data-date"[^>]*>\s*Data as of\s*([^<]+?)\s*</p>', re.S)
+PO_MONTHS = ("january", "february", "march", "april", "may", "june",
+             "july", "august", "september", "october", "november", "december")
+
+
+def po_pct(s: str) -> float | None:
+    """A projectoption stat value, "67.3%" or "25%", as a bare number."""
+    m = re.search(r"-?\d+(?:\.\d+)?", str(s))
+    return float(m.group(0)) if m else None
+
+
+def po_date(s: str) -> str | None:
+    """"September 11th, 2026" -> "2026-09-11"."""
+    m = re.match(r"\s*([A-Za-z]+)\s+(\d{1,2})[a-z]{0,2},?\s+(\d{4})", str(s))
+    if not m or m.group(1).lower() not in PO_MONTHS:
+        return None
+    return date(int(m.group(3)), PO_MONTHS.index(m.group(1).lower()) + 1,
+                int(m.group(2))).isoformat()
+
+
+def po_iv_stats(html: str) -> dict:
+    """projectoption's IV stat cards, read by label rather than by first number.
+
+    The page carries plenty of unrelated figures, so each value is anchored to
+    the label of the card that holds it. A missing card is an error, not a
+    silently wrong reading. Percentages come back as fractions for the two vol
+    levels and as 0-to-100 numbers for the rank and the percentile, which is how
+    the rest of this file carries them.
+    """
+    found: dict = {}
+    for label, val in PO_CARD.findall(html):
+        key = PO_LABELS.get(" ".join(str(label).split()))
+        if key and key not in found:
+            found[key] = po_pct(val)
+    missing = [k for k in PO_LABELS.values() if found.get(k) is None]
+    if missing:
+        raise RuntimeError("projectoption stat cards missing " + ", ".join(sorted(missing)))
+    for k in ("iv_30d", "low_52w", "high_52w"):
+        found[k] = found[k] / 100.0
+    m = PO_DATE.search(html)
+    found["as_of"] = po_date(m.group(1)) if m else None
+    return found
+
+
+def projectoption_iv(url: str = PO_URL) -> dict:
+    """Fetch and parse the projectoption IV page. Static HTML, no key."""
+    import requests
+
+    r = requests.get(
+        url,
+        headers={"User-Agent": AQ_UA, "Accept": "text/html,application/xhtml+xml"},
+        timeout=20,
+    )
+    r.raise_for_status()
+    return po_iv_stats(r.text)
+
+
 def normalize_book(book: dict) -> dict:
     """One ticker's book as date -> source -> entry.
 
@@ -609,10 +685,31 @@ def iv_window(ledger: dict, ticker: str) -> dict | None:
     rank = None
     if n >= IV_RANK_MIN and hi > lo:
         rank = (cur - lo) / (hi - lo) * 100.0
+    # the short-term rank: the same reading against a quarter of trading days
+    p3 = series[-IV_RANK_WINDOW_3M:]
+    n3 = len(p3)
+    lo3 = min(v for _, v in p3)
+    hi3 = max(v for _, v in p3)
+    rank3 = ((cur - lo3) / (hi3 - lo3) * 100.0) if (n3 >= IV_RANK_MIN and hi3 > lo3) else None
     return {
         "iv_30d": f(cur),
         "as_of": cur_date,
         "rank": f(rank),
+        "rank_3m": {
+            "value": f(rank3),
+            "n_days": n3,
+            "first": p3[0][0],
+            "last": cur_date,
+            "min": f(lo3),
+            "max": f(hi3),
+            "label": f"3-month rank over {n3} days",
+            "source": IV_SERIES_SOURCE,
+            "max_days": IV_RANK_WINDOW_3M,
+            "error": None if rank3 is not None else (
+                f"{n3} entries in the window, {IV_RANK_MIN} needed"
+                if n3 < IV_RANK_MIN else "the window's high and low did not bracket a range"
+            ),
+        },
         "rank_label": (
             f"rank over {n} days, 52-week window" if is_52w
             else f"rank over {n} days, not 52 weeks"
@@ -641,7 +738,42 @@ def iv_window(ledger: dict, ticker: str) -> dict | None:
     }
 
 
-def iv_block(ledger: dict, errors: dict[str, str]) -> dict:
+def rank_52w_row(win: dict | None, po: dict | None, po_err: str | None) -> dict:
+    """The 52-week IV rank for MSTR.
+
+    The ledger wins once it holds a full 252-entry AlphaQuery window, because
+    that is a rank of the same series every other number here is computed on.
+    Until then the reading comes from projectoption, one source, un-cross-checked:
+    the rank is computed from their published 52-week high and low and their
+    printed rank is kept beside it so the two can disagree in the open.
+    """
+    blank = {"value": None, "printed": None, "iv_30d": None, "low_52w": None,
+             "high_52w": None, "percentile": None, "as_of": None}
+    if win and win.get("is_52w_rank") and win.get("rank") is not None:
+        w = win.get("window") or {}
+        return {**blank, "value": win["rank"], "iv_30d": win.get("iv_30d"),
+                "low_52w": w.get("min"), "high_52w": w.get("max"),
+                "as_of": win.get("as_of"), "source": "iv ledger, 252 days", "error": None}
+    if not po:
+        return {**blank, "source": "projectoption.com, single source",
+                "error": po_err or "no projectoption reading"}
+    lo, hi, iv30 = po.get("low_52w"), po.get("high_52w"), po.get("iv_30d")
+    ok = None not in (lo, hi, iv30) and hi > lo
+    return {
+        "value": f((iv30 - lo) / (hi - lo) * 100.0) if ok else None,
+        "printed": f(po.get("printed")),
+        "iv_30d": f(iv30),
+        "low_52w": f(lo),
+        "high_52w": f(hi),
+        "percentile": f(po.get("percentile")),
+        "as_of": po.get("as_of"),
+        "source": "projectoption.com, single source",
+        "error": None if ok else "the 52-week high and low did not bracket a range",
+    }
+
+
+def iv_block(ledger: dict, errors: dict[str, str],
+             po: dict | None = None, po_err: str | None = None) -> dict:
     """The iv block data/playbook.json carries.
 
     A ticker whose fetch failed still gets its window computed from the ledger,
@@ -691,6 +823,12 @@ def iv_block(ledger: dict, errors: dict[str, str]) -> dict:
                 "today's fetch failed, so this reading is the newest the ledger holds. " + str(w.get("note") or "")
             ).strip()
         out[t.lower()] = w
+    # the two ranks the page shows side by side: a 3-month one off the ledger,
+    # a 52-week one off projectoption until the ledger can carry it itself
+    if isinstance(out.get("mstr"), dict):
+        out["mstr"]["rank_52w"] = rank_52w_row(out["mstr"], po, po_err)
+        out["mstr"].setdefault("rank_3m", {"value": None, "n_days": 0,
+                                           "error": "no ledger window"})
     out["stale"] = stale
 
     m, x = out.get("mstr") or {}, out.get("mstx") or {}
@@ -837,6 +975,29 @@ def self_test() -> list[str]:
     assert len(book["2026-09-12"]) == 2, "per-source ledger dropped one of the two sources"
     checks.append("ledger: two sources coexist on one date")
 
+    # projectoption stat block: read by label, so the unrelated 38 on the page
+    # is not mistaken for a rank, and the computed 52-week rank is 25, not 38.
+    ps = po_iv_stats(
+        '<p>an unrelated 38 percent sits above the cards</p>'
+        '<div class="iv-metric-card"><div class="iv-metric-label">Current IV (30-Day)</div>'
+        ' <div class="iv-metric-value">67.3%</div></div>'
+        '<div class="iv-metric-card"><div class="iv-metric-label">IV Rank</div>'
+        ' <div class="iv-metric-value iv-rank">25%</div></div>'
+        '<div class="iv-metric-card"><div class="iv-metric-label">IV Percentile</div>'
+        ' <div class="iv-metric-value">28%</div></div>'
+        '<div class="iv-metric-card"><div class="iv-metric-label">52-Week Low IV</div>'
+        ' <div class="iv-metric-value iv-low">49.2%</div></div>'
+        '<div class="iv-metric-card"><div class="iv-metric-label">52-Week High IV</div>'
+        ' <div class="iv-metric-value iv-high">120.6%</div></div>'
+        '<p class="stock-iv-data-date">Data as of September 11th, 2026</p>'
+    )
+    assert ps["as_of"] == "2026-09-11", f"projectoption date read {ps['as_of']}"
+    assert abs(ps["iv_30d"] - 0.673) < 1e-9 and abs(ps["low_52w"] - 0.492) < 1e-9
+    assert abs(ps["high_52w"] - 1.206) < 1e-9 and ps["printed"] == 25 and ps["percentile"] == 28
+    r52 = rank_52w_row(None, ps, None)
+    assert round(r52["value"]) == 25, f"52-week rank computed {r52['value']}"
+    checks.append("projectoption stat block: IV 67.3 in 49.2 to 120.6 reads rank 25, not 38")
+
     return checks
 
 
@@ -912,6 +1073,7 @@ def main() -> int:
                 histogram_prev=f(info["hist_prev"]),
                 bar_date=info["bar"],
                 prev_bar_date=info["prev_bar"],
+                histogram_last16=info["last16"],
                 weeks=info["bars"],
                 note=(
                     "MACD(8,21,5) on completed Monday-to-Sunday UTC weekly closes, EMA seeded on "
@@ -1127,7 +1289,16 @@ def main() -> int:
             ERRORS.append(f"alphaquery_iv[{t}] -> {iv_errors[t]}")
 
     ledger = merge_ledger(series, iv_info)
-    iv = iv_block(ledger, iv_errors)
+
+    # the 52-week leg of the IV read, until the ledger holds a full year itself
+    po, po_err = None, None
+    try:
+        po = projectoption_iv()
+    except Exception as exc:
+        po_err = f"{type(exc).__name__}: {exc}"
+        ERRORS.append(f"projectoption_iv -> {po_err}")
+
+    iv = iv_block(ledger, iv_errors, po, po_err)
     inputs["iv_rank"] = iv_rank_row(iv)
 
     # ---- events -------------------------------------------------------------

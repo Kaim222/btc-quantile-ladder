@@ -825,7 +825,7 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
   }, []);
   const inp = (pb && isObj(pb.inputs)) ? pb.inputs : {};
   const lu = (pb && pb.rules && isObj(pb.rules.leaps_unit)) ? pb.rules.leaps_unit : null;
-  const [why, setWhy] = useState(false), [jOpen, setJOpen] = useState(false);
+  const [why, setWhy] = useState(false);
   const [ed, setEd] = useState(null), [jEd, setJEd] = useState(null);
   const [tEd, setTEd] = useState(false), [ivEd, setIvEd] = useState(false);
   const [ovr, setOvr] = useLocal("bql_pb_overrides", {}, v => isObj(v) ? v : {});
@@ -851,7 +851,15 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
     : Math.round((Date.parse(cr.bar_date) - Date.parse(cr.cross_bar_date))/6048e5);
 
   const ivR = inp.iv_rank || {}, ivH = nm(ovr.iv_rank), ivW = nm(ivR.n_days);
-  const ivJ = typeof ivR.value === "number" ? ivR.value : null, iv = ivH != null ? ivH : ivJ;
+  const ivJ = typeof ivR.value === "number" ? ivR.value : null;
+  // two ranks side by side: a 3-month one off the ledger, a 52-week one off the
+  // scrape. The hand field overrides the 52-week value only.
+  const ivB = (pb && isObj(pb.iv) && isObj(pb.iv.mstr)) ? pb.iv.mstr : {};
+  const r3 = isObj(ivB.rank_3m) ? ivB.rank_3m : {}, r52 = isObj(ivB.rank_52w) ? ivB.rank_52w : {};
+  const iv3 = nm(r3.value) != null ? nm(r3.value) : ivJ;
+  const iv3n = nm(r3.n_days) != null ? nm(r3.n_days) : ivW;
+  const iv52 = ivH != null ? ivH : nm(r52.value);
+  const iv52d = r52.as_of ? (md(r52.as_of) || String(r52.as_of)) : null;
   const nxt = rowsOf(pb && pb.events_upcoming)[0];
   const nd = !nxt ? NaN : typeof nxt.days_to === "number" ? nxt.days_to
     : Math.round((Date.parse(nxt.date+"T00:00:00Z") - Date.parse(d0+"T00:00:00Z"))/864e5);
@@ -863,8 +871,9 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
   const chips = [tkr ? tkr + " REGIME" : "REGIME UNKNOWN",
     q == null ? "LADDER UNKNOWN" : q.toFixed(1) + "q · "
       + (q < 15 ? "below 15" : q < 50 ? "15 to 50" : q <= 85 ? "50 to 85" : "above 85"),
-    iv == null ? "IV RANK BY HAND"
-      : "IV RANK " + iv.toFixed(0) + (ivH == null && ivW != null ? " · " + ivW + "d" : ""),
+    (iv3 == null && iv52 == null) ? "IV RANK BY HAND"
+      : "IV 3M " + (iv3 == null ? UNK : iv3.toFixed(0))
+        + " · 52W " + (iv52 == null ? UNK : iv52.toFixed(0)),
     isNaN(nd) ? "NO EVENT ON FILE" : nd + "d TO " + String(nxt.type||"").replace(/_/g," "),
     trig === "HOLD" ? "CROSS " + (isNaN(wkN) ? UNK : wkN) + " WEEKS OLD"
       : trig === "ENTRY" ? "CROSS THIS WEEK" : null].filter(Boolean);
@@ -878,6 +887,69 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
     : (luD == null || luW == null) ? "fill by hand" : luD >= luW ? "debit over width"
     : !tkr ? "regime not known"
     : String(lu.ticker||"").toUpperCase() !== tkr.toUpperCase() ? "ticker off regime" : null;
+  // PHASE RAIL: the three plan phases on one calendar bar, 9/13 to a short tail past 12/19
+  const dn = s => { const t = Date.parse(String(s||"")+"T00:00:00Z"); return isNaN(t) ? null : t; };
+  const r0 = dn("2026-09-13"), r1 = dn("2027-01-09");
+  const pct = t => t == null ? 0 : Math.min(100, Math.max(0, 100*(t-r0)/(r1-r0)));
+  const rng = b => !b[0] ? "to " + md(b[1]) : !b[1] ? "from " + md(b[0])
+    : md(b[0]) + " to " + md(b[1]);
+  const segs = phs.map(x => { const b = phBnd(x.dates), a = pct(b[0] ? dn(b[0]) : r0);
+    return {x, lab:rng(b), l:a, w:Math.max(3, pct(b[1] ? dn(b[1]) : r1) - a),
+      on:!!(ph && x.id === ph.id)}; });
+  const nowPct = pct(dn(d0));
+
+  // PHASE 1: the 9/13 journal row is the only source of the pair numbers
+  const j13 = rowsOf(plg && plg.journal).find(r => isObj(r.debit_mid)) || {};
+  const dm = isObj(j13.debit_mid) ? j13.debit_mid : {};
+  const pairs = Object.keys(dm);
+  const gv = (o, k) => isObj(o) ? nm(o[k]) : null;
+  const lk = k => nm(String(k).split("/")[0]), sk = k => String(k).split("/")[1] || null;
+  const p1 = pairs.map(k => ({k, legs:(isObj(j13.legs) && j13.legs[k]) || null,
+    mid:gv(dm,k), nat:gv(j13.debit_natural,k), hur:gv(j13.hurdle,k),
+    odds:gv(j13.odds_short_mid,k)}));
+  const x2 = (v, s) => v == null ? UNK : v.toFixed(2) + (s||"");
+
+  // UNITS AT THE 25TH: each spread settles at the short's expiry, both legs at intrinsic
+  const uAnc = nm(plg && plg.plan && plg.plan.unit_price_anchor_mstx);
+  const uAt = nm(L.net_debit), uPer = nm(L.cost_per_dollar_of_mstx);
+  const uPx = S => (uAnc == null || uAt == null || uPer == null) ? null : uAt + uPer*(S - uAnc);
+  const wid = k => { const w = gv(j13.width, k); return w == null ? 1 : w; };
+  const pairVal = S => { if (!pairs.length) return null; let v = 0;
+    for (const k of pairs) { const d = gv(dm,k), a = lk(k);
+      if (!d || a == null) return null;
+      v += Math.max(Math.min(S - a, wid(k)), 0)/d/pairs.length; }
+    return v; };
+  const uRows = [13,14,15,16,16.4,17,17.5,18,19].map(S => { const pv = pairVal(S), up = uPx(S);
+    return {S, pv, up, n:(pv == null || !up) ? null : 100*pv/up}; });
+
+  // TRIGGER: the last sixteen completed weekly histogram bars, drawn by hand
+  const hR = inp[HIST] || {};
+  const bars = rowsOf(hR.histogram_last16).map(b => ({bar:String(b.bar||""), v:nm(b.hist)}))
+    .filter(b => b.v != null);
+  const xd0 = cr.cross_bar_date || null;
+  const xIdx = bars.findIndex(b => b.bar === xd0);
+  // the first bar of the run that is still rising into the last one
+  const rise = (() => { let i = bars.length - 1;
+    while (i > 0 && bars[i].v > bars[i-1].v) i--;
+    return bars.length ? bars[i].bar : null; })();
+  const CW = 344, CH = 118, CP = {t:13, r:8, b:23, l:10};
+  const cwd = CW - CP.l - CP.r, cht = CH - CP.t - CP.b;
+  const vmax = Math.max(0, ...bars.map(b => b.v)), vmin = Math.min(0, ...bars.map(b => b.v));
+  const vsp = (vmax - vmin) || 1;
+  const cy = v => CP.t + cht*(vmax - v)/vsp, zy = cy(0);
+  const bw = cwd/Math.max(1, bars.length), bwi = Math.max(2, bw*0.66);
+  const bx = i => CP.l + i*bw + (bw - bwi)/2;
+
+  // ROUTES: the operator's own calculation, stored in the ledger
+  const routes = rowsOf(plg && plg.plan && plg.plan.routes);
+  const rFoot = "unit at " + x2(uAt) + " for MSTX " + (uAnc == null ? UNK : uAnc)
+    + " plus " + x2(uPer) + " per 1.00. December distribution assumed.";
+  const PNL = {background:tier?tier.darkBg:"#070f1f",border:"1px solid "+AC+"30",
+    borderLeft:"3px solid "+AC,borderRadius:"6px",padding:"14px 16px",marginTop:11};
+  const FT = {fontSize:10,color:GRY,letterSpacing:"0.04em",marginTop:9};
+  const SC = {background:"#070f1f",border:"1px solid #0f2035",borderRadius:"6px",padding:"14px 16px"};
+  const SV = {fontSize:22,fontWeight:700,letterSpacing:"-0.01em"};
+  const SH = {fontSize:10,color:"#7a9ab8",marginTop:3};
   const wOf = r => { const a = nm(r.longK), b = nm(r.shortK);
     return (a != null && b != null) ? Math.abs(b - a) : null; };
   const sBad = (r, i) => {
@@ -923,11 +995,15 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
         <select value={ovr[k]||""} onChange={e=>setOvr(o=>({...o,[k]:e.target.value}))}
           style={{...INP,width:70,flex:"0 0 70px",cursor:"pointer"}}>
           {["","pass","fail"].map(o=><option key={o} value={o}>{o||"auto"}</option>)}</select></span>)}</span>],
-    [ivH != null ? "IV rank " + ivH.toFixed(0) + " by hand"
-      : ivJ == null ? "IV rank unknown, fill it by hand"
-      : "IV rank " + ivJ.toFixed(0) + (ivW != null ? " over " + ivW + " days" : "")
-        + (ivR.is_52w_rank === true ? "" : ", 52-week rank by hand"), ()=>setIvEd(v=>!v)],
-    ivEd && [<input value={ovr.iv_rank||""} placeholder="iv rank" style={INP}
+    [iv3 == null ? "IV rank 3M unknown"
+      : "IV rank 3M " + iv3.toFixed(0) + (iv3n != null ? " over " + iv3n + " days" : "")
+        + " of AlphaQuery 30-day mean vol"],
+    [ivH != null ? "IV rank 52W " + ivH.toFixed(0) + " by hand, the hand field overrides this one"
+      : iv52 == null ? "IV rank 52W unknown, the hand field fills it"
+      : "IV rank 52W " + iv52.toFixed(0) + (iv52d ? ", projectoption as of " + iv52d : "")
+        + (nm(r52.printed) != null ? ", their printed rank " + nm(r52.printed).toFixed(0) : "")
+        + ", one source. The hand field overrides it", ()=>setIvEd(v=>!v)],
+    ivEd && [<input value={ovr.iv_rank||""} placeholder="52w rank" style={INP}
       onChange={e=>setOvr(o=>({...o,iv_rank:e.target.value}))}/>],
     nm(L.cost_per_dollar_of_mstx) != null && ["unit cost rises about "
       + nm(L.cost_per_dollar_of_mstx).toFixed(2) + " per 1.00 of " + String(L.ticker||"").toUpperCase()],
@@ -950,6 +1026,144 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
             borderRadius:3,padding:"2px 6px"}}>{c}</span>)}</div>
       </div>
 
+      {/* PHASE RAIL: the ladder's quantile rail, run in calendar time */}
+      <div style={PNL}>
+        <div style={{...ROW,justifyContent:"space-between",marginBottom:4}}>
+          <span style={HD}>PHASE RAIL</span>
+          <span style={{fontSize:10,color:GRY,letterSpacing:"0.06em"}}>
+            {"9/13 TO 12/19 PLUS A TAIL · NEEDLE ON " + (md(d0)||UNK)}</span></div>
+        <div style={{position:"relative",height:"40px"}}>
+          {segs.map(s => (
+            <div key={s.x.id} style={{position:"absolute",top:"6px",bottom:"6px",
+              left:s.l+"%",width:"calc("+s.w+"% - 2px)",
+              background:s.on?AC+"30":AC+"0d",border:"1px solid "+(s.on?AC:AC+"40"),
+              borderRadius:"4px",overflow:"hidden",boxShadow:s.on?"0 0 12px "+AC+"44":"none",
+              display:"flex",alignItems:"center",justifyContent:"center",gap:"5px"}}>
+              <span style={{fontSize:10,fontWeight:700,letterSpacing:"0.08em",
+                color:s.on?AC:AC+"99",whiteSpace:"nowrap"}}>{"P"+s.x.id}</span>
+              {s.w >= 22 && <span style={{fontSize:9,color:s.on?AC+"cc":AC+"66",
+                whiteSpace:"nowrap"}}>{s.lab}</span>}
+            </div>))}
+          <div style={{position:"absolute",top:0,bottom:0,left:nowPct+"%",width:"2px",
+            marginLeft:"-1px",background:AC,boxShadow:"0 0 6px "+AC,borderRadius:"1px"}}/>
+          <div style={{position:"absolute",top:"-3px",left:nowPct+"%",transform:"translateX(-50%)",
+            width:0,height:0,borderLeft:"4px solid transparent",borderRight:"4px solid transparent",
+            borderTop:"5px solid "+AC}}/>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(168px,1fr))",
+          gap:"10px",marginTop:"12px"}}>
+          {segs.map(s => (
+            <div key={s.x.id} style={{borderTop:SEP,paddingTop:"8px"}}>
+              <div style={{...LAB,color:s.on?AC:"#5a8fc0",marginBottom:4}}>
+                {"PHASE " + s.x.id + " · " + s.lab}</div>
+              <div style={{fontSize:12,color:"#b0c4d8",lineHeight:1.45}}>{s.x.structure||UNK}</div>
+              <div style={{fontSize:12,color:"#b0c4d8",lineHeight:1.45,marginTop:4}}>
+                {"ROLL · " + (s.x.roll_rules||UNK)}</div>
+            </div>))}
+        </div>
+      </div>
+
+      {/* PHASE 1 STRUCTURE: every number off the 9/13 journal row */}
+      <div style={PNL}>
+        <div style={{...HD,marginBottom:10}}>PHASE 1 · TWO SPREADS · SHORTS SEP 25</div>
+        {p1.map((r,i) => (
+          <div key={r.k} style={{display:"flex",alignItems:"baseline",gap:"12px",flexWrap:"wrap",
+            padding:"7px 0",borderTop:i?SEP:"none"}}>
+            <span style={{fontSize:11,fontWeight:700,letterSpacing:"0.1em",color:AC,
+              width:"46px",flexShrink:0}}>{r.k}</span>
+            <span style={{fontSize:13,color:"#a0b8cc"}}>{r.legs||UNK}</span>
+            <span style={{fontSize:15,fontWeight:700,color:"#f1f5f9"}}>
+              {"debit " + x2(r.mid," mid")}</span>
+            <span style={{fontSize:11,color:GRY}}>{"/ " + x2(r.nat," natural")}</span>
+            <span style={{fontSize:13,color:"#a0b8cc"}}>{"hurdle " + x2(r.hur)}</span>
+            <span style={{fontSize:10,color:GRY,letterSpacing:"0.05em",textTransform:"uppercase"}}>
+              {"odds of the " + (sk(r.k)||UNK) + " strike at "
+                + (md(j13.short_expiry)||UNK)}</span>
+            <span style={{fontSize:15,fontWeight:700,color:AC}}>
+              {r.odds == null ? UNK : (r.odds*100).toFixed(0) + "%"}</span>
+            <span style={{fontSize:10,color:GRY,letterSpacing:"0.08em"}}>MODEL</span>
+          </div>))}
+        {!p1.length && <div style={{...BODY,padding:"7px 0"}}>No 9/13 row in the ledger.</div>}
+        <div style={{...LINE,borderTop:SEP}}><span style={BODY}>
+          {"strikes shift with Monday's open: down a dollar at 13, up a dollar at 15 to 16. "
+            + "Structure and split unchanged."}</span></div>
+        <div style={FT}>{(md(j13.chain_reference)||UNK)
+          + " chain reference, Yahoo delayed. The morning quote wins."}</div>
+      </div>
+
+      {/* UNITS AT THE 25TH: the Forward Projections table frame */}
+      <div style={TBL}>
+        <div style={{...HD,marginBottom:10}}>
+          LEAPS UNITS BOUGHT PER 100 OF CAPITAL, BY MSTX ON THE 25TH</div>
+        <div style={{overflowX:"auto"}}><div style={{display:"grid",
+          gridTemplateColumns:"1fr 1fr 1fr 1fr",minWidth:"272px"}}>
+          {["MSTX AT CLOSE","PAIR VALUE PER 1.00 IN","UNIT PRICE","UNITS PER 100"].map((h,i) =>
+            <div key={h} style={{...LAB,padding:"4px 6px",textAlign:i?"right":"left"}}>{h}</div>)}
+          {uRows.map(r => { const hl = r.S === 16.4;
+            return [r.S.toFixed(1), r.pv == null ? UNK : r.pv.toFixed(3), x2(r.up),
+              r.n == null ? UNK : r.n.toFixed(1)].map((v,i) =>
+              <div key={r.S+"-"+i} style={{padding:"5px 6px",fontSize:12,
+                borderBottom:"1px solid #070f1f",textAlign:i?"right":"left",
+                background:hl?AC+"14":"transparent",
+                color:hl?AC:i===3?"#d0dde8":"#8aaac8",fontWeight:(hl||i===3)?600:400}}>{v}</div>);
+          })}
+        </div></div>
+        <div style={FT}>long time value excluded, conservative</div>
+        <div style={{...FT,marginTop:3}}>the objective in section 19: units, not dollars</div>
+      </div>
+
+      {/* TRIGGER: the weekly histogram, the ladder quantile and the IV rank */}
+      <div style={{...TBL,display:"flex",gap:"12px",flexWrap:"wrap",alignItems:"flex-start"}}>
+        <div style={{flex:"1 1 250px",minWidth:0}}>
+          <div style={{...HD,marginBottom:8}}>WEEKLY MACD (8,21,5) · HISTOGRAM</div>
+          {bars.length ? (
+            <svg viewBox={"0 0 " + CW + " " + CH}
+              style={{width:"100%",maxWidth:"520px",height:"auto",display:"block"}}>
+              <rect x={CP.l} y={CP.t} width={cwd} height={cht} fill="#070f1f" rx="2"/>
+              {bars.map((b,i) => <rect key={b.bar} x={bx(i)} y={Math.min(cy(b.v), zy)} width={bwi}
+                height={Math.max(1, Math.abs(cy(b.v) - zy))} rx="1"
+                fill={b.v >= 0 ? GRN : RD} opacity="0.85"/>)}
+              <line x1={CP.l} x2={CP.l+cwd} y1={zy} y2={zy} stroke="#5a7fa0" strokeWidth="0.7"/>
+              <text x={CP.l+2} y={zy+8} fill="#7aa5c8" fontSize="8">0</text>
+              {xIdx >= 0 && <line x1={bx(xIdx)+bwi/2} x2={bx(xIdx)+bwi/2} y1={CP.t} y2={CP.t+cht}
+                stroke="#facc15" strokeWidth="1" opacity="0.5"/>}
+              {xIdx >= 0 && <path fill="#facc15"
+                d={"M" + (bx(xIdx)+bwi/2-4) + " " + (CP.t-7) + "h8l-4 6z"}/>}
+              {xIdx >= 0 && <text x={bx(xIdx)+bwi/2} y={CP.t+cht+10} fill="#facc15" fontSize="8"
+                textAnchor="middle">{md(xd0)}</text>}
+              <text x={CP.l} y={CP.t+cht+10} fill="#7aa5c8" fontSize="8">{md(bars[0].bar)}</text>
+              <text x={CP.l+cwd} y={CP.t+cht+10} fill="#7aa5c8" fontSize="8"
+                textAnchor="end">{md(bars[bars.length-1].bar)}</text>
+              <text x={CP.l} y={CP.t+cht+20} fill="#5a7fa0" fontSize="8">
+                {bars.length + " COMPLETED WEEKLY BARS"}</text>
+            </svg>) : <div style={BODY}>Weekly histogram bars unknown.</div>}
+          <div style={{fontSize:11,color:"#b0c4d8",marginTop:7}}>
+            {"rising since " + (md(rise)||UNK) + ", cross " + (md(xd0)||UNK) + ", "
+              + (isNaN(wkN) ? UNK : wkN) + " weeks old"}</div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(104px,1fr))",
+          gap:"10px",flex:"1 1 230px",alignContent:"flex-start"}}>
+          <div style={{...SC,background:tier?tier.darkBg:"#070f1f",
+            border:"1px solid "+AC+"30",boxShadow:"0 0 20px "+AC+"11"}}>
+            <div style={{...LAB,marginBottom:6}}>LADDER QUANTILE</div>
+            <div style={{...SV,color:AC}}>{q == null ? UNK : q.toFixed(1)}</div>
+            <div style={SH}>{q == null ? UNK
+              : q < 15 ? "below 15" : q < 50 ? "15 to 50" : q <= 85 ? "50 to 85" : "above 85"}</div>
+          </div>
+          <div style={SC}>
+            <div style={{...LAB,marginBottom:6}}>IV RANK 3M</div>
+            <div style={{...SV,color:"#facc15"}}>{iv3 == null ? UNK : iv3.toFixed(0)}</div>
+            <div style={SH}>{iv3n == null ? UNK : iv3n + "-day window, AlphaQuery"}</div>
+          </div>
+          <div style={SC}>
+            <div style={{...LAB,marginBottom:6}}>IV RANK 52W</div>
+            <div style={{...SV,color:"#facc15"}}>{iv52 == null ? UNK : iv52.toFixed(0)}</div>
+            <div style={SH}>{ivH != null ? "by hand"
+              : iv52d == null ? UNK : "projectoption, as of " + iv52d}</div>
+          </div>
+        </div>
+      </div>
+
       {/* POSITIONS: the Structure panel's frame */}
       <div style={{background:tier?tier.darkBg:"#070f1f",border:"1px solid "+AC+"30",
         borderLeft:"3px solid "+AC,borderRadius:"6px",padding:"14px 16px",marginTop:11}}>
@@ -963,15 +1177,29 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
           <div style={{...BODY,paddingLeft:18}}>{"ROLL RULES · " + ph.roll_rules}</div></div>}
       </div>
 
-      <div style={{...ROW,justifyContent:"space-between",marginTop:12}}>
-        <Lnk on={()=>setJOpen(v=>!v)}>{"JOURNAL · " + all.length}</Lnk>
-        <Lnk on={()=>setWhy(v=>!v)}>WHY</Lnk>
+      {/* ROUTES: the operator's own unit count, route by route */}
+      <div style={TBL}>
+        <div style={{...HD,marginBottom:10}}>
+          EXPECTED LEAPS UNITS AT THE END, BY ROUTE (OPERATOR'S CALCULATION, 9/13)</div>
+        <div style={{overflowX:"auto"}}><div style={{display:"grid",
+          gridTemplateColumns:"1fr 56px 62px",minWidth:"276px"}}>
+          {["ROUTE","UNITS ON THE THESIS","UNITS ON MARKET ODDS"].map((h,i) =>
+            <div key={h} style={{...LAB,padding:"4px 6px",textAlign:i?"right":"left"}}>{h}</div>)}
+          {routes.map((r,n) => [String(r.route||UNK), nm(r.units_thesis), nm(r.units_market)]
+            .map((v,i) => <div key={n+"-"+i} style={{padding:"5px 6px",fontSize:12,
+              borderBottom:"1px solid #070f1f",textAlign:i?"right":"left",
+              background:n%2?"transparent":"#050d1c",color:i===1?AC:"#8aaac8",
+              fontWeight:i?600:400,overflowWrap:"anywhere"}}>
+              {i === 0 ? v : v == null ? UNK : v.toFixed(0)}</div>))}
+        </div></div>
+        {!routes.length && <div style={{...BODY,paddingTop:7}}>No routes in the ledger.</div>}
+        <div style={FT}>{rFoot}</div>
       </div>
 
-      {jOpen && (
+      {(
         <div style={TBL}>
           <div style={{...ROW,justifyContent:"space-between",marginBottom:8}}>
-            <span style={HD}>JOURNAL</span>
+            <span style={HD}>{"JOURNAL · " + all.length}</span>
             <button style={GST} onClick={()=>{ setJEd(jnl.length);
               setJnl(rs => [...rs, {date:d0,trade:"",odds:"",result:""}]); }}>+ row</button></div>
           <div style={{overflowX:"auto"}}><div style={{minWidth:"420px"}}>
@@ -994,6 +1222,10 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
               </div>); })}
           </div></div>
         </div>)}
+
+      <div style={{...ROW,justifyContent:"flex-end",marginTop:10}}>
+        <Lnk on={()=>setWhy(v=>!v)}>WHY</Lnk>
+      </div>
 
       {why && (
         <div style={TBL}>

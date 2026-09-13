@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-13T10:12:37Z",
+  "generated_at": "2026-09-13T19:20:37Z",
   "as_of_run_date": "2026-09-13",
   "inputs": {
     "btc_above_200d": {
@@ -8,9 +8,9 @@
       "source": "yahoo_daily",
       "as_of": "2026-09-13",
       "error": null,
-      "btc_close": 76754.671875,
-      "sma_200d": 70135.106875,
-      "gap_pct": 9.438305
+      "btc_close": 77222.507812,
+      "sma_200d": 70137.446055,
+      "gap_pct": 10.101682
     },
     "btc_above_200w": {
       "value": true,
@@ -18,9 +18,9 @@
       "source": "yahoo_weekly",
       "as_of": "2026-09-13 price vs week ending 2026-09-06",
       "error": null,
-      "btc_close": 76754.671875,
+      "btc_close": 77222.507812,
       "sma_200w": 64867.387324,
-      "gap_pct": 18.325518,
+      "gap_pct": 19.046737,
       "weeks": 558,
       "note": "SMA over completed calendar weeks only"
     },
@@ -34,6 +34,72 @@
       "histogram_prev": 2125.723557,
       "bar_date": "2026-09-06",
       "prev_bar_date": "2026-08-30",
+      "histogram_last16": [
+        {
+          "bar": "2026-05-24",
+          "hist": 1524.832369
+        },
+        {
+          "bar": "2026-05-31",
+          "hist": 899.887208
+        },
+        {
+          "bar": "2026-06-07",
+          "hist": -356.8677
+        },
+        {
+          "bar": "2026-06-14",
+          "hist": -647.897014
+        },
+        {
+          "bar": "2026-06-21",
+          "hist": -879.787779
+        },
+        {
+          "bar": "2026-06-28",
+          "hist": -1159.993252
+        },
+        {
+          "bar": "2026-07-05",
+          "hist": -748.138101
+        },
+        {
+          "bar": "2026-07-12",
+          "hist": -383.898572
+        },
+        {
+          "bar": "2026-07-19",
+          "hist": -16.762727
+        },
+        {
+          "bar": "2026-07-26",
+          "hist": 286.276117
+        },
+        {
+          "bar": "2026-08-02",
+          "hist": 303.964345
+        },
+        {
+          "bar": "2026-08-09",
+          "hist": 465.121087
+        },
+        {
+          "bar": "2026-08-16",
+          "hist": 376.176916
+        },
+        {
+          "bar": "2026-08-23",
+          "hist": 1661.652661
+        },
+        {
+          "bar": "2026-08-30",
+          "hist": 2125.723557
+        },
+        {
+          "bar": "2026-09-06",
+          "hist": 2379.228808
+        }
+      ],
       "weeks": 558,
       "note": "MACD(8,21,5) on completed Monday-to-Sunday UTC weekly closes, EMA seeded on the first value. Passes when the last complete bar's histogram is above zero and above the prior complete bar's."
     },
@@ -69,19 +135,19 @@
       "note": "MACD(8,21,5) on the same completed Monday-to-Sunday UTC weekly closes as the histogram-rising row, EMA seeded on the first value. Passes when the last complete bar's histogram is above zero and at least one of the three bars before it was at or below zero, which is a bullish cross inside the last three weekly bars. cross_bar_date is the first bar after the most recent non-positive bar. Entry timing, not a hold condition."
     },
     "ladder_quantile": {
-      "value": 8.972848,
+      "value": 9.272789,
       "pass": true,
       "source": "site formula",
       "as_of": "2026-09-13",
       "error": null,
       "band": "below 15",
-      "btc_close": 76754.671875,
+      "btc_close": 77222.507812,
       "fair_value": 140389.837203,
       "days_since_genesis": 6462.0,
       "note": "the page's own priceToQuantile, ported into this script. Fair value is 10 ** (5.82 * log10(days since 2009-01-03) - 17.029), bands are offsets in log10(price / fair value), and the decaying bands cap their slope term at the run date. Passes when the quantile is not above the 85th band."
     },
     "btc_price": {
-      "value": 76754.671875,
+      "value": 77222.507812,
       "pass": null,
       "source": "yahoo_daily",
       "as_of": "2026-09-13",
@@ -217,6 +283,18 @@
       "iv_30d": 0.683058,
       "as_of": "2026-09-11",
       "rank": 10.478861,
+      "rank_3m": {
+        "value": 10.478861,
+        "n_days": 62,
+        "first": "2026-06-15",
+        "last": "2026-09-11",
+        "min": 0.64101,
+        "max": 1.042275,
+        "label": "3-month rank over 62 days",
+        "source": "alphaquery_iv_mean_30d",
+        "max_days": 63,
+        "error": null
+      },
       "rank_label": "rank over 62 days, not 52 weeks",
       "is_52w_rank": false,
       "window": {
@@ -233,12 +311,35 @@
       "note": "rank = (current - window min) / (window max - window min). The window is the trailing 62 trading days of AlphaQuery 30-day mean IV out of 62 on file. 252 days would make it a 52-week rank.",
       "error": null,
       "as_of_fetch": "2026-09-13",
-      "stale": false
+      "stale": false,
+      "rank_52w": {
+        "value": 25.35014,
+        "printed": 25.0,
+        "iv_30d": 0.673,
+        "low_52w": 0.492,
+        "high_52w": 1.206,
+        "percentile": 28.0,
+        "as_of": "2026-09-11",
+        "source": "projectoption.com, single source",
+        "error": null
+      }
     },
     "mstx": {
       "iv_30d": 1.369022,
       "as_of": "2026-09-11",
       "rank": 12.926341,
+      "rank_3m": {
+        "value": 12.926341,
+        "n_days": 62,
+        "first": "2026-06-15",
+        "last": "2026-09-11",
+        "min": 1.272694,
+        "max": 2.017901,
+        "label": "3-month rank over 62 days",
+        "source": "alphaquery_iv_mean_30d",
+        "max_days": 63,
+        "error": null
+      },
       "rank_label": "rank over 62 days, not 52 weeks",
       "is_52w_rank": false,
       "window": {
@@ -261,6 +362,18 @@
       "iv_30d": 0.36627,
       "as_of": "2026-09-11",
       "rank": 32.599283,
+      "rank_3m": {
+        "value": 32.599283,
+        "n_days": 62,
+        "first": "2026-06-15",
+        "last": "2026-09-11",
+        "min": 0.323429,
+        "max": 0.454846,
+        "label": "3-month rank over 62 days",
+        "source": "alphaquery_iv_mean_30d",
+        "max_days": 63,
+        "error": null
+      },
       "rank_label": "rank over 62 days, not 52 weeks",
       "is_52w_rank": false,
       "window": {

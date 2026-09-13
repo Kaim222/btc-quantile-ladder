@@ -23,7 +23,51 @@
         "roll_rules": "per doctrine section 15"
       }
     ],
-    "objective": "LEAPS units, not dollars: the count of MSTX Dec 2028 33 / Jan 2028 60 units the account can buy after the trade settles, at that day's unit price, about 2.25 at MSTX 14 plus 0.25 per 1.00 of MSTX"
+    "objective": "LEAPS units, not dollars: the count of MSTX Dec 2028 33 / Jan 2028 60 units the account can buy after the trade settles, at that day's unit price, about 2.25 at MSTX 14 plus 0.25 per 1.00 of MSTX",
+    "unit_price_anchor_mstx": 14,
+    "routes": [
+      {
+        "route": "Full plan: Phase 1, then March long / Dec 22 short, then LEAPS",
+        "units_thesis": 227,
+        "units_market": 160
+      },
+      {
+        "route": "Phase 1, then Jan 15 long / Dec 20 short, then LEAPS",
+        "units_thesis": 212,
+        "units_market": 141
+      },
+      {
+        "route": "Phase 1, then March long / Dec 25 short, then LEAPS",
+        "units_thesis": 206,
+        "units_market": 139
+      },
+      {
+        "route": "Phase 1, then Jan long / Dec 22 short, then LEAPS",
+        "units_thesis": 211,
+        "units_market": 131
+      },
+      {
+        "route": "Phase 1, then March / Dec 22 with half, half to LEAPS on 9/26",
+        "units_thesis": 182,
+        "units_market": 136
+      },
+      {
+        "route": "Skip Phase 1, March / Dec 22, then LEAPS",
+        "units_thesis": 145,
+        "units_market": 126
+      },
+      {
+        "route": "Phase 1, then LEAPS on 9/26",
+        "units_thesis": 130,
+        "units_market": 112
+      },
+      {
+        "route": "Straight to LEAPS now",
+        "units_thesis": 102,
+        "units_market": 102
+      }
+    ],
+    "routes_note": "operator's calculation of 2026-09-13. Units are LEAPS units per 100 of capital at the end of the route. Thesis column runs the operator's distribution, market column the chain's."
   },
   "journal": [
     {
@@ -50,7 +94,18 @@
       },
       "execution": "equal dollars, contracts = half the capital / (mid debit x 100); two spread orders at the mid in pieces, no four-leg combo; read strikes and expiries off the ticket before submit",
       "exit": "hold to 9/25; mark on a rip past 17.50; roll shorts against own longs if unfilled; LEAPS leg on 9/26",
-      "result": "pending"
+      "result": "pending",
+      "odds_short_mid": {
+        "14/15": 0.351,
+        "16/17": 0.209
+      },
+      "odds_short_mid_note": "model odds of the short strike being in the money at the 9/25 close, Black-Scholes N(d2) at 4% on the 9/11 chain's IV for that strike",
+      "legs": {
+        "14/15": "long Oct 2 14 call \u00b7 short Sep 25 15 call",
+        "16/17": "long Oct 9 16 call \u00b7 short Sep 25 17 call"
+      },
+      "short_expiry": "2026-09-25",
+      "chain_reference": "2026-09-11"
     },
     {
       "date": "2026-09-14",

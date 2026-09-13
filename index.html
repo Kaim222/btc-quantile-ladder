@@ -768,12 +768,14 @@ function PowerLawChart({ btcPrice, todayTs, liveHistory, lookupTs, modelA=JV_A, 
 
 // ── PLAYBOOK. Today's word, the open positions, and two panels behind the footer, each
 // in a frame the ladder tab already uses. Rules and numbers live in doctrine.md. ──
-const UNK = "unknown", MAXS = 3;  // at most three spreads, expiries ten trading days apart
+const UNK = "unknown", NS = "not set", MAXS = 3;
 const HIST = "btc_weekly_macd_8_21_5_hist_rising", CROSS = "btc_weekly_macd_8_21_5_fresh_cross";
 const TCOL = {ENTRY:"#22c55e", HOLD:"#facc15", OFF:"#ef4444", UNKNOWN:"#8aaac8"};
 const GRY = "#5a7fa0", GRN = "#22c55e", RD = "#ef4444", SEP = "1px solid #ffffff10";
 const LAB = {fontSize:10,color:"#5a8fc0",textTransform:"uppercase",letterSpacing:"0.12em",fontWeight:600};
-const HD = {...LAB,fontSize:12,color:"#7ab8d8",letterSpacing:"0.1em"};  // light mode maps every colour
+const HD = {...LAB,fontSize:12,color:"#7ab8d8",letterSpacing:"0.1em"};
+const CHIP = {fontSize:11,fontWeight:600,letterSpacing:"0.07em",textTransform:"uppercase",
+  borderRadius:3,padding:"2px 6px",whiteSpace:"nowrap"};
 const ROW = {display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"};
 const LINE = {display:"flex",gap:10,alignItems:"center",padding:"7px 0"};
 const BODY = {fontSize:13,color:"#b0c4d8",flex:1,minWidth:0,overflowWrap:"anywhere"};
@@ -783,10 +785,10 @@ const JG = {display:"grid",gridTemplateColumns:"74px 1fr 76px 74px 24px",gap:8,a
 const INP = {background:"#070f1f",border:"1px solid #0f2a42",borderRadius:4,color:"#facc15",fontSize:11,
   fontFamily:"inherit",fontWeight:600,padding:"4px 6px",outline:"none",width:82,flex:"0 1 82px",minWidth:0};
 const GST = {background:"transparent",border:"1px solid #162840",borderRadius:3,color:"#4a7a9b",
-  fontSize:12,fontFamily:"inherit",padding:"4px 8px",cursor:"pointer"};
+  fontSize:11,fontFamily:"inherit",fontWeight:600,letterSpacing:"0.1em",textTransform:"uppercase",
+  padding:"4px 8px",cursor:"pointer"};
 const PEN = {background:"transparent",border:"none",color:"#5a8fc0",fontSize:12,fontFamily:"inherit",
   padding:"2px 4px",cursor:"pointer",lineHeight:1,flexShrink:0};
-// localStorage is user-editable, so persisted values are coerced
 const isObj = o => o !== null && typeof o === "object" && !Array.isArray(o);
 const rowsOf = v => (Array.isArray(v) ? v.filter(isObj) : []);
 function useLocal(key, initial, fix) {
@@ -798,8 +800,9 @@ const nm = s => { if (s == null) return null;
   const n = parseFloat(String(s).replace(/[^0-9.\-]/g, "")); return isNaN(n) ? null : n; };
 const join = a => a.filter(Boolean).join(" · ");
 const md = s => String(s||"").slice(5,10).replace(/^0?(\d+)-0?(\d+)$/, "$1/$2") || null;
-// phase bounds read "through X", "A to B" or "from A". biz counts weekdays either way,
-// so a holiday counts as a trading day.
+const band = v => v < 15 ? "below 15" : v < 50 ? "15 to 50" : v <= 85 ? "50 to 85" : "above 85";
+const sgn = v => (v >= 0 ? "+" : "") + Math.round(v);
+// phase bounds read "through X", "A to B" or "from A"
 const phBnd = s => { const x = String(s||""), m = x.match(/\d{4}-\d{2}-\d{2}/g) || [];
   return /^through/i.test(x) ? [null,m[0]] : /^from/i.test(x) ? [m[0],null] : [m[0],m[1]]; };
 const biz = (a, b) => { const t = Date.parse(a+"T00:00:00Z"), u = Date.parse(b+"T00:00:00Z");
@@ -807,6 +810,8 @@ const biz = (a, b) => { const t = Date.parse(a+"T00:00:00Z"), u = Date.parse(b+"
   let n = 0;  for (let x = Math.min(t,u)+864e5, h = Math.max(t,u); x <= h; x += 864e5) {
     const w = new Date(x).getUTCDay(); if (w && w !== 6) n++; }
   return n; };
+const days = (a, b) => { const t = Date.parse(a+"T00:00:00Z"), u = Date.parse(b+"T00:00:00Z");
+  return (isNaN(t) || isNaN(u)) ? null : Math.round((u - t)/864e5); };
 const Lnk = ({children,on}) => { const [h,setH] = useState(false);
   return <button onClick={on} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)}
     style={{background:"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:11,
@@ -828,10 +833,24 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
   const [why, setWhy] = useState(false);
   const [ed, setEd] = useState(null), [jEd, setJEd] = useState(null);
   const [tEd, setTEd] = useState(false), [ivEd, setIvEd] = useState(false);
+  const [tip, setTip] = useState(null), [hb, setHb] = useState(null), [jOp, setJOp] = useState(null);
   const [ovr, setOvr] = useLocal("bql_pb_overrides", {}, v => isObj(v) ? v : {});
   const [rows, setRows] = useLocal("bql_pb_opens", [], rowsOf);
   const [jnl, setJnl] = useLocal("bql_pb_journal", [], rowsOf);
+  const [uSl, setUSl] = useLocal("bql_pb_mstx", 16.4, v => nm(v) == null ? 16.4 : nm(v));
+  const railRef = useRef(null), trigRef = useRef(null);
   const d0 = new Date().toISOString().slice(0,10);
+  // one tooltip for the tab: hover, or tap on touch
+  const tipAt = (t, e) => { const r = e.currentTarget.getBoundingClientRect();
+    const h = Math.min(264, window.innerWidth - 16)/2;
+    setTip({t, x:Math.min(Math.max(r.left + r.width/2, h + 8), window.innerWidth - h - 8),
+      y:Math.max(r.top, 54)}); };
+  const hit = (t, i) => !t ? {} : {onMouseEnter:e => { setHb(i); tipAt(t, e); },
+    onMouseLeave:() => { setHb(null); setTip(null); },
+    onTouchStart:e => { const on = tip && tip.t === t;
+      setHb(on ? null : i); if (on) setTip(null); else tipAt(t, e); }};
+  const go = k => () => { const r = k === "rail" ? railRef : trigRef;
+    if (r.current) r.current.scrollIntoView({block:"start"}); };
 
   // the ladder's render seed, 85000, is never a price
   const own = String(priceStr||"").trim() !== "85000" && typeof btcPrice === "number" && btcPrice > 0;
@@ -852,32 +871,45 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
 
   const ivR = inp.iv_rank || {}, ivH = nm(ovr.iv_rank), ivW = nm(ivR.n_days);
   const ivJ = typeof ivR.value === "number" ? ivR.value : null;
-  // two ranks side by side: a 3-month one off the ledger, a 52-week one off the
-  // scrape. The hand field overrides the 52-week value only.
+  // two ranks: 3-month off the ledger, 52-week off the scrape
   const ivB = (pb && isObj(pb.iv) && isObj(pb.iv.mstr)) ? pb.iv.mstr : {};
   const r3 = isObj(ivB.rank_3m) ? ivB.rank_3m : {}, r52 = isObj(ivB.rank_52w) ? ivB.rank_52w : {};
   const iv3 = nm(r3.value) != null ? nm(r3.value) : ivJ;
   const iv3n = nm(r3.n_days) != null ? nm(r3.n_days) : ivW;
   const iv52 = ivH != null ? ivH : nm(r52.value);
   const iv52d = r52.as_of ? (md(r52.as_of) || String(r52.as_of)) : null;
-  const nxt = rowsOf(pb && pb.events_upcoming)[0];
-  const nd = !nxt ? NaN : typeof nxt.days_to === "number" ? nxt.days_to
-    : Math.round((Date.parse(nxt.date+"T00:00:00Z") - Date.parse(d0+"T00:00:00Z"))/864e5);
+  const r52p = nm(r52.printed);
+  const evs = rowsOf(pb && pb.events_upcoming), nxt = evs[0];
+  const nd = !nxt ? NaN : typeof nxt.days_to === "number" ? nxt.days_to : days(d0, nxt.date);
+  const ev3 = evs.slice(0,3).map(e => (md(e.date)||e.date) + " " + String(e.type||"").replace(/_/g," ")
+    + " in " + (e.days_to == null ? (days(d0, e.date) || 0) : e.days_to) + " days").join(" · ");
+  const gen = String((pb && pb.generated_at) || "");
+  const genTxt = /^\d{4}-\d{2}-\d{2}T\d\d:\d\d/.test(gen)
+    ? "REFRESHED " + md(gen.slice(0,10)) + " " + gen.slice(11,16) + " UTC" : null;
   // the phase holding today, else the first not yet past
   const phs = rowsOf(plg && plg.plan && plg.plan.phases);
   const ph = phs.find(x => { const b = phBnd(x.dates); return (!b[0]||b[0]<=d0) && (!b[1]||d0<=b[1]); })
     || phs.find(x => { const e = phBnd(x.dates)[1]; return !e || d0 <= e; }) || null;
 
-  const chips = [tkr ? tkr + " REGIME" : "REGIME UNKNOWN",
-    q == null ? "LADDER UNKNOWN" : q.toFixed(1) + "q · "
-      + (q < 15 ? "below 15" : q < 50 ? "15 to 50" : q <= 85 ? "50 to 85" : "above 85"),
-    (iv3 == null && iv52 == null) ? "IV RANK BY HAND"
+  // the hero action reads in two beats
+  const act = String((ph && ph.next_action) || ""), acD = (ph && ph.next_action_detail) || null;
+  const cut = (!acD && act.length > 110) ? act.indexOf(". ") : -1;
+  const act1 = (cut > 0 ? act.slice(0, cut+1) : act) || "No plan phase on file.";
+  const act2 = acD || (cut > 0 ? act.slice(cut+2) : null);
+  const chips = [[tkr ? tkr + " REGIME" : "REGIME UNKNOWN"],
+    [q == null ? "LADDER UNKNOWN" : q.toFixed(1) + "q · " + band(q), "trig",
+      "The power law model on this page, run on the price above."],
+    [(iv3 == null && iv52 == null) ? "IV RANK BY HAND"
       : "IV 3M " + (iv3 == null ? UNK : iv3.toFixed(0))
-        + " · 52W " + (iv52 == null ? UNK : iv52.toFixed(0)),
-    isNaN(nd) ? "NO EVENT ON FILE" : nd + "d TO " + String(nxt.type||"").replace(/_/g," "),
-    trig === "HOLD" ? "CROSS " + (isNaN(wkN) ? UNK : wkN) + " WEEKS OLD"
-      : trig === "ENTRY" ? "CROSS THIS WEEK" : null].filter(Boolean);
-  // POSITIONS: the LEAPS unit off the rules file, then the spreads by hand
+        + " · 52W " + (iv52 == null ? UNK : iv52.toFixed(0)), "trig",
+      "Two ranks. AlphaQuery 30-day mean vol over " + (iv3n == null ? UNK : iv3n)
+        + " days, and projectoption over 52 weeks."],
+    [isNaN(nd) ? "NO EVENT ON FILE" : nd + "d TO " + String(nxt.type||"").replace(/_/g," "),
+      "rail", ev3 || null],
+    [trig === "HOLD" ? "CROSS " + (isNaN(wkN) ? UNK : wkN) + " WEEKS OLD"
+      : trig === "ENTRY" ? "CROSS THIS WEEK" : null, "trig",
+      "The last weekly cross. The chart marks the bar."]].filter(c => c[0]);
+  // POSITIONS: the LEAPS unit, then the spreads by hand
   const L = lu || {}, luD = nm(L.net_debit), luW = nm(L.width), luP = nm(L.short_funds_pct);
   const leg = s => String(s||"").replace(/ call$/i, "");
   const luTxt = !lu ? "LEAPS · not in the rules file"
@@ -887,18 +919,18 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
     : (luD == null || luW == null) ? "fill by hand" : luD >= luW ? "debit over width"
     : !tkr ? "regime not known"
     : String(lu.ticker||"").toUpperCase() !== tkr.toUpperCase() ? "ticker off regime" : null;
-  // PHASE RAIL: the three plan phases on one calendar bar, 9/13 to a short tail past 12/19
+  // PHASE RAIL: the three phases on one calendar bar
   const dn = s => { const t = Date.parse(String(s||"")+"T00:00:00Z"); return isNaN(t) ? null : t; };
   const r0 = dn("2026-09-13"), r1 = dn("2027-01-09");
   const pct = t => t == null ? 0 : Math.min(100, Math.max(0, 100*(t-r0)/(r1-r0)));
-  const rng = b => !b[0] ? "to " + md(b[1]) : !b[1] ? "from " + md(b[0])
-    : md(b[0]) + " to " + md(b[1]);
+  const rng = b => !b[0] ? "TO " + md(b[1]) : !b[1] ? "FROM " + md(b[0])
+    : md(b[0]) + " TO " + md(b[1]);
   const segs = phs.map(x => { const b = phBnd(x.dates), a = pct(b[0] ? dn(b[0]) : r0);
     return {x, lab:rng(b), l:a, w:Math.max(3, pct(b[1] ? dn(b[1]) : r1) - a),
       on:!!(ph && x.id === ph.id)}; });
   const nowPct = pct(dn(d0));
 
-  // PHASE 1: the 9/13 journal row is the only source of the pair numbers
+  // PHASE 1: the 9/13 journal row is the only source
   const j13 = rowsOf(plg && plg.journal).find(r => isObj(r.debit_mid)) || {};
   const dm = isObj(j13.debit_mid) ? j13.debit_mid : {};
   const pairs = Object.keys(dm);
@@ -908,8 +940,11 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
     mid:gv(dm,k), nat:gv(j13.debit_natural,k), hur:gv(j13.hurdle,k),
     odds:gv(j13.odds_short_mid,k)}));
   const x2 = (v, s) => v == null ? UNK : v.toFixed(2) + (s||"");
+  const dte = days(d0, j13.short_expiry);
+  const oddsTip = "Model odds from the " + (md(j13.chain_reference)||UNK) + " chain IV. Expiry "
+    + (md(j13.short_expiry)||UNK) + (dte == null ? "" : ", " + dte + " days out") + ".";
 
-  // UNITS AT THE 25TH: each spread settles at the short's expiry, both legs at intrinsic
+  // UNITS: each spread settles at the short's expiry, legs at intrinsic
   const uAnc = nm(plg && plg.plan && plg.plan.unit_price_anchor_mstx);
   const uAt = nm(L.net_debit), uPer = nm(L.cost_per_dollar_of_mstx);
   const uPx = S => (uAnc == null || uAt == null || uPer == null) ? null : uAt + uPer*(S - uAnc);
@@ -921,14 +956,23 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
     return v; };
   const uRows = [13,14,15,16,16.4,17,17.5,18,19].map(S => { const pv = pairVal(S), up = uPx(S);
     return {S, pv, up, n:(pv == null || !up) ? null : 100*pv/up}; });
+  const uV = Math.min(19, Math.max(13, nm(uSl) == null ? 16.4 : nm(uSl)));
+  const uSel = uRows.reduce((a,r) => Math.abs(r.S-uV) < Math.abs(a-uV) ? r.S : a, 13);
+  const uNow = pairVal(uV), uNowP = uPx(uV);
+  const uRead = "At " + uV.toFixed(1) + ": payout " + (uNow == null ? UNK : uNow.toFixed(2))
+    + " per 1.00, unit " + x2(uNowP) + ", "
+    + ((uNow == null || !uNowP) ? UNK : (100*uNow/uNowP).toFixed(1)) + " units per 100";
+  const mx = inp.mstx_price || {}, mxV = nm(mx.value);
+  const uTod = (uAt == null || uPer == null || uAnc == null || mxV == null) ? null
+    : "Unit about " + (uAt + uPer*(mxV - uAnc)).toFixed(2) + " at MSTX " + mxV.toFixed(2)
+      + ", the " + (md(mx.as_of)||UNK) + " close.";
 
-  // TRIGGER: the last sixteen completed weekly histogram bars, drawn by hand
+  // TRIGGER: the weekly bars
   const hR = inp[HIST] || {};
   const bars = rowsOf(hR.histogram_last16).map(b => ({bar:String(b.bar||""), v:nm(b.hist)}))
     .filter(b => b.v != null);
   const xd0 = cr.cross_bar_date || null;
   const xIdx = bars.findIndex(b => b.bar === xd0);
-  // the first bar of the run that is still rising into the last one
   const rise = (() => { let i = bars.length - 1;
     while (i > 0 && bars[i].v > bars[i-1].v) i--;
     return bars.length ? bars[i].bar : null; })();
@@ -939,17 +983,35 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
   const cy = v => CP.t + cht*(vmax - v)/vsp, zy = cy(0);
   const bw = cwd/Math.max(1, bars.length), bwi = Math.max(2, bw*0.66);
   const bx = i => CP.l + i*bw + (bw - bwi)/2;
+  const bTip = b => "week ending " + (md(b.bar)||b.bar) + " · " + sgn(b.v)
+    + (b.bar === xd0 ? " · cross" : "");
 
-  // ROUTES: the operator's own calculation, stored in the ledger
+  // ROUTES: the operator's own calculation
   const routes = rowsOf(plg && plg.plan && plg.plan.routes);
-  const rFoot = "unit at " + x2(uAt) + " for MSTX " + (uAnc == null ? UNK : uAnc)
-    + " plus " + x2(uPer) + " per 1.00. December distribution assumed.";
+  const rAs = md((String((plg && plg.plan && plg.plan.routes_note) || "")
+    .match(/\d{4}-\d{2}-\d{2}/) || [""])[0]);
+  const rFoot = "Your calculation, " + (rAs || UNK) + ". Unit " + x2(uAt) + " at MSTX "
+    + (uAnc == null ? UNK : uAnc) + ", plus " + x2(uPer)
+    + " per 1.00. The December distribution is assumed.";
   const PNL = {background:tier?tier.darkBg:"#070f1f",border:"1px solid "+AC+"30",
     borderLeft:"3px solid "+AC,borderRadius:"6px",padding:"14px 16px",marginTop:11};
   const FT = {fontSize:10,color:GRY,letterSpacing:"0.04em",marginTop:9};
+  const ACH = {...CHIP,color:AC,background:AC+"18",border:"1px solid "+AC+"40"};
   const SC = {background:"#070f1f",border:"1px solid #0f2035",borderRadius:"6px",padding:"14px 16px"};
   const SV = {fontSize:22,fontWeight:700,letterSpacing:"-0.01em"};
   const SH = {fontSize:10,color:"#7a9ab8",marginTop:3};
+  const scards = [["LADDER QUANTILE", q == null ? UNK : q.toFixed(1),
+      q == null ? UNK : band(q), AC,
+      "The power law model on this page, run on the price above.", 1],
+    ["IV RANK 3M", iv3 == null ? UNK : iv3.toFixed(0),
+      iv3n == null ? UNK : iv3n + "-day window", "#facc15",
+      "AlphaQuery 30-day mean vol. Window " + (md(r3.first)||UNK) + " to " + (md(r3.last)||UNK)
+        + ", " + (iv3n == null ? UNK : iv3n) + " days."],
+    ["IV RANK 52W", iv52 == null ? UNK : iv52.toFixed(0),
+      ivH != null ? "your own number" : iv52d == null ? UNK : "52-week, as of " + iv52d, "#facc15",
+      ivH != null ? "Your own number, typed in the why panel."
+        : "projectoption, as of " + (iv52d||UNK) + "."
+          + (r52p != null ? " Their printed rank is " + r52p.toFixed(0) + "." : "")]];
   const wOf = r => { const a = nm(r.longK), b = nm(r.shortK);
     return (a != null && b != null) ? Math.abs(b - a) : null; };
   const sBad = (r, i) => {
@@ -978,12 +1040,15 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
         <button style={GST} onClick={()=>{ setEd(null); setRows(rs=>rs.filter((_,j)=>j!==i)); }}>drop</button></div>}
     </div>); };
 
-  // JOURNAL: repo rows by date, then browser rows. Only a browser row takes a pencil
+  // JOURNAL: repo rows, then browser rows
   const all = rowsOf(plg && plg.journal).concat(rowsOf(plg && plg.paper_calls))
     .sort((a,b) => String(a.date||"").localeCompare(String(b.date||"")))
     .map(r => [r, null]).concat(jnl.map((r,i) => [r, i]));
+  const jDet = r => [r.structure, isObj(r.odds_short_mid) && Object.keys(r.odds_short_mid)
+      .map(k => k + " at " + Math.round(nm(r.odds_short_mid[k])*100) + "%").join(", ") + ".",
+    r.odds_short_mid_note || r.implied_p_note || r.note].filter(Boolean).join(" ");
 
-  // WHY: the two trigger overrides sit behind the heading pencil
+  // WHY: the trigger overrides sit behind the heading pencil
   const pw = p => p == null ? UNK : p ? "pass" : "fail", pc = p => p == null ? "#eab308" : p ? GRN : RD;
   const xd = cross === false && md(cr.cross_bar_date);
   const wrows = [
@@ -995,75 +1060,80 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
         <select value={ovr[k]||""} onChange={e=>setOvr(o=>({...o,[k]:e.target.value}))}
           style={{...INP,width:70,flex:"0 0 70px",cursor:"pointer"}}>
           {["","pass","fail"].map(o=><option key={o} value={o}>{o||"auto"}</option>)}</select></span>)}</span>],
-    [iv3 == null ? "IV rank 3M unknown"
-      : "IV rank 3M " + iv3.toFixed(0) + (iv3n != null ? " over " + iv3n + " days" : "")
-        + " of AlphaQuery 30-day mean vol"],
-    [ivH != null ? "IV rank 52W " + ivH.toFixed(0) + " by hand, the hand field overrides this one"
-      : iv52 == null ? "IV rank 52W unknown, the hand field fills it"
-      : "IV rank 52W " + iv52.toFixed(0) + (iv52d ? ", projectoption as of " + iv52d : "")
-        + (nm(r52.printed) != null ? ", their printed rank " + nm(r52.printed).toFixed(0) : "")
-        + ", one source. The hand field overrides it", ()=>setIvEd(v=>!v)],
+    [iv3 == null ? "IV rank 3M is not known."
+      : "IV rank 3M " + iv3.toFixed(0) + ", AlphaQuery 30-day mean vol"
+        + (iv3n != null ? " over " + iv3n + " days" : "") + "."],
+    [ivH != null ? "IV rank 52W " + ivH.toFixed(0) + ", your own number."
+      : iv52 == null ? "IV rank 52W is not known. Type your own number in the field."
+      : "IV rank 52W " + iv52.toFixed(0) + (iv52d ? ", projectoption as of " + iv52d : "") + "."
+        + (r52p != null ? " Their printed rank is " + r52p.toFixed(0) + ", one source." : "")
+        + " Type your own number to override it.", ()=>setIvEd(v=>!v)],
     ivEd && [<input value={ovr.iv_rank||""} placeholder="52w rank" style={INP}
       onChange={e=>setOvr(o=>({...o,iv_rank:e.target.value}))}/>],
-    nm(L.cost_per_dollar_of_mstx) != null && ["unit cost rises about "
-      + nm(L.cost_per_dollar_of_mstx).toFixed(2) + " per 1.00 of " + String(L.ticker||"").toUpperCase()],
-    ["rules and numbers: doctrine.md, off this site"]].filter(Boolean);
+    nm(L.cost_per_dollar_of_mstx) != null && ["The unit costs about "
+      + nm(L.cost_per_dollar_of_mstx).toFixed(2) + " more per 1.00 of "
+      + String(L.ticker||"").toUpperCase() + "."],
+    ["Rules and numbers live in doctrine.md, off this site."]].filter(Boolean);
 
   return (
     <div>
-      {/* HERO: the tier card's frame */}
+      {/* HERO */}
       <div style={{background:tier?tier.darkBg:"#070f1f",border:"1px solid "+AC+"25",
         borderLeft:"4px solid "+AC,borderRadius:"6px",padding:"16px 20px",
         boxShadow:"-4px 0 24px "+AC+"15, inset 1px 0 0 "+AC+"08"}}>
-        <div style={{...LAB,marginBottom:6}}>TODAY</div>
+        <div style={{...ROW,justifyContent:"space-between",marginBottom:6}}>
+          <span style={LAB}>TODAY</span>
+          {genTxt && <span style={{fontSize:10,color:GRY,letterSpacing:"0.06em"}}>{genTxt}</span>}</div>
         <div style={{fontSize:"28px",fontWeight:700,color:TCOL[trig],lineHeight:1,letterSpacing:"0.02em"}}>
           {trig + (ph ? " · PHASE " + ph.id : "")}</div>
-        <div style={{fontSize:15,color:"#e2e8f0",lineHeight:1.5,marginTop:10}}>
-          {(ph && ph.next_action) || "No plan phase on file."}</div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:12}}>
-          {chips.map((c,i) => <span key={i} style={{fontSize:11,fontWeight:600,letterSpacing:"0.07em",
-            textTransform:"uppercase",color:AC,background:AC+"18",border:"1px solid "+AC+"40",
-            borderRadius:3,padding:"2px 6px"}}>{c}</span>)}</div>
+        <div style={{fontSize:15,color:"#e2e8f0",lineHeight:1.5,marginTop:10}}>{act1}</div>
+        {act2 && <div style={{fontSize:12,color:"#8aaac8",lineHeight:1.5,
+          marginTop:5}}>{act2}</div>}
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:14}}>
+          {chips.map(([c,to,t],i) => <span key={i} {...hit(t)} onClick={to ? go(to) : undefined}
+            style={{...ACH,cursor:(to||t)?"pointer":"default"}}>{c}</span>)}</div>
       </div>
 
-      {/* PHASE RAIL: the ladder's quantile rail, run in calendar time */}
-      <div style={PNL}>
-        <div style={{...ROW,justifyContent:"space-between",marginBottom:4}}>
-          <span style={HD}>PHASE RAIL</span>
-          <span style={{fontSize:10,color:GRY,letterSpacing:"0.06em"}}>
-            {"9/13 TO 12/19 PLUS A TAIL · NEEDLE ON " + (md(d0)||UNK)}</span></div>
-        <div style={{position:"relative",height:"40px"}}>
+      {/* PHASE RAIL */}
+      <div style={PNL} ref={railRef}>
+        <div style={{...HD,marginBottom:4}}>PHASE RAIL</div>
+        <div style={{position:"relative",height:"40px",marginTop:"24px"}}>
           {segs.map(s => (
-            <div key={s.x.id} style={{position:"absolute",top:"6px",bottom:"6px",
+            <div key={s.x.id} {...hit(s.lab + " · " + (s.x.structure||UNK))}
+              style={{position:"absolute",top:"6px",bottom:"6px",cursor:"pointer",
               left:s.l+"%",width:"calc("+s.w+"% - 2px)",
               background:s.on?AC+"30":AC+"0d",border:"1px solid "+(s.on?AC:AC+"40"),
               borderRadius:"4px",overflow:"hidden",boxShadow:s.on?"0 0 12px "+AC+"44":"none",
               display:"flex",alignItems:"center",justifyContent:"center",gap:"5px"}}>
-              <span style={{fontSize:10,fontWeight:700,letterSpacing:"0.08em",
-                color:s.on?AC:AC+"99",whiteSpace:"nowrap"}}>{"P"+s.x.id}</span>
-              {s.w >= 22 && <span style={{fontSize:9,color:s.on?AC+"cc":AC+"66",
-                whiteSpace:"nowrap"}}>{s.lab}</span>}
+              <span style={{fontSize:10,fontWeight:700,letterSpacing:"0.06em",lineHeight:1.15,
+                textAlign:"center",color:s.on?AC:AC+"99"}}>{"PHASE " + s.x.id + " · " + s.lab}</span>
             </div>))}
           <div style={{position:"absolute",top:0,bottom:0,left:nowPct+"%",width:"2px",
             marginLeft:"-1px",background:AC,boxShadow:"0 0 6px "+AC,borderRadius:"1px"}}/>
           <div style={{position:"absolute",top:"-3px",left:nowPct+"%",transform:"translateX(-50%)",
             width:0,height:0,borderLeft:"4px solid transparent",borderRight:"4px solid transparent",
             borderTop:"5px solid "+AC}}/>
+          <div {...hit("today " + (md(d0)||UNK))} style={{position:"absolute",top:0,bottom:0,
+            left:nowPct+"%",marginLeft:"-7px",width:"14px",cursor:"pointer"}}/>
+          <div style={{position:"absolute",top:"-17px",left:nowPct+"%",fontSize:10,color:AC,
+            fontWeight:700,letterSpacing:"0.08em",whiteSpace:"nowrap",
+            transform:nowPct < 12 ? "none" : nowPct > 88 ? "translateX(-100%)" : "translateX(-50%)"}}>
+            {"TODAY " + (md(d0)||UNK)}</div>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(168px,1fr))",
-          gap:"10px",marginTop:"12px"}}>
+          gap:"14px",marginTop:"14px"}}>
           {segs.map(s => (
-            <div key={s.x.id} style={{borderTop:SEP,paddingTop:"8px"}}>
-              <div style={{...LAB,color:s.on?AC:"#5a8fc0",marginBottom:4}}>
-                {"PHASE " + s.x.id + " · " + s.lab}</div>
-              <div style={{fontSize:12,color:"#b0c4d8",lineHeight:1.45}}>{s.x.structure||UNK}</div>
-              <div style={{fontSize:12,color:"#b0c4d8",lineHeight:1.45,marginTop:4}}>
-                {"ROLL · " + (s.x.roll_rules||UNK)}</div>
+            <div key={s.x.id} style={{borderTop:SEP,paddingTop:"8px",display:"flex",
+              flexDirection:"column",gap:"5px"}}>
+              <div style={{...LAB,color:s.on?AC:"#5a8fc0"}}>{"PHASE " + s.x.id}</div>
+              <div style={{fontSize:12,color:"#b0c4d8",lineHeight:1.5}}>{s.x.structure||UNK}</div>
+              <div style={{fontSize:12,color:"#8aaac8",lineHeight:1.5,marginTop:"auto"}}>
+                {"Roll: " + (s.x.roll_rules||UNK)}</div>
             </div>))}
         </div>
       </div>
 
-      {/* PHASE 1 STRUCTURE: every number off the 9/13 journal row */}
+      {/* PHASE 1 */}
       <div style={PNL}>
         <div style={{...HD,marginBottom:10}}>PHASE 1 · TWO SPREADS · SHORTS SEP 25</div>
         {p1.map((r,i) => (
@@ -1074,33 +1144,30 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
             <span style={{fontSize:13,color:"#a0b8cc"}}>{r.legs||UNK}</span>
             <span style={{fontSize:15,fontWeight:700,color:"#f1f5f9"}}>
               {"debit " + x2(r.mid," mid")}</span>
-            <span style={{fontSize:11,color:GRY}}>{"/ " + x2(r.nat," natural")}</span>
+            <span style={{fontSize:11,color:GRY}}>{"natural " + x2(r.nat)}</span>
             <span style={{fontSize:13,color:"#a0b8cc"}}>{"hurdle " + x2(r.hur)}</span>
-            <span style={{fontSize:10,color:GRY,letterSpacing:"0.05em",textTransform:"uppercase"}}>
-              {"odds of the " + (sk(r.k)||UNK) + " strike at "
-                + (md(j13.short_expiry)||UNK)}</span>
-            <span style={{fontSize:15,fontWeight:700,color:AC}}>
-              {r.odds == null ? UNK : (r.odds*100).toFixed(0) + "%"}</span>
-            <span style={{fontSize:10,color:GRY,letterSpacing:"0.08em"}}>MODEL</span>
+            <span {...hit(oddsTip)} style={{...ACH,marginLeft:"auto",cursor:"pointer"}}>
+              {(sk(r.k)||UNK) + " strike · " + (r.odds == null ? UNK + " odds"
+                : (r.odds*100).toFixed(0) + "% odds")}</span>
           </div>))}
         {!p1.length && <div style={{...BODY,padding:"7px 0"}}>No 9/13 row in the ledger.</div>}
         <div style={{...LINE,borderTop:SEP}}><span style={BODY}>
-          {"strikes shift with Monday's open: down a dollar at 13, up a dollar at 15 to 16. "
-            + "Structure and split unchanged."}</span></div>
-        <div style={FT}>{(md(j13.chain_reference)||UNK)
-          + " chain reference, Yahoo delayed. The morning quote wins."}</div>
+          {"Strikes move down a dollar at 13 and up a dollar at 15 to 16. "
+            + "The structure and the split do not change."}</span></div>
+        <div style={FT}>{"Quotes are the " + (md(j13.chain_reference)||UNK)
+          + " close, delayed. The morning quote wins. Odds are model odds."}</div>
       </div>
 
-      {/* UNITS AT THE 25TH: the Forward Projections table frame */}
+      {/* UNITS */}
       <div style={TBL}>
         <div style={{...HD,marginBottom:10}}>
-          LEAPS UNITS BOUGHT PER 100 OF CAPITAL, BY MSTX ON THE 25TH</div>
+          LEAPS UNITS PER 100 OF CAPITAL, BY MSTX CLOSE ON THE 25TH</div>
         <div style={{overflowX:"auto"}}><div style={{display:"grid",
-          gridTemplateColumns:"1fr 1fr 1fr 1fr",minWidth:"272px"}}>
-          {["MSTX AT CLOSE","PAIR VALUE PER 1.00 IN","UNIT PRICE","UNITS PER 100"].map((h,i) =>
+          gridTemplateColumns:"1fr 1fr 1fr 1fr",minWidth:"300px"}}>
+          {["MSTX","PAYOUT PER 1.00","UNIT PRICE","UNITS PER 100"].map((h,i) =>
             <div key={h} style={{...LAB,padding:"4px 6px",textAlign:i?"right":"left"}}>{h}</div>)}
-          {uRows.map(r => { const hl = r.S === 16.4;
-            return [r.S.toFixed(1), r.pv == null ? UNK : r.pv.toFixed(3), x2(r.up),
+          {uRows.map(r => { const hl = r.S === uSel;
+            return [r.S.toFixed(1), r.pv == null ? UNK : r.pv.toFixed(1), x2(r.up),
               r.n == null ? UNK : r.n.toFixed(1)].map((v,i) =>
               <div key={r.S+"-"+i} style={{padding:"5px 6px",fontSize:12,
                 borderBottom:"1px solid #070f1f",textAlign:i?"right":"left",
@@ -1108,12 +1175,30 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
                 color:hl?AC:i===3?"#d0dde8":"#8aaac8",fontWeight:(hl||i===3)?600:400}}>{v}</div>);
           })}
         </div></div>
-        <div style={FT}>long time value excluded, conservative</div>
-        <div style={{...FT,marginTop:3}}>the objective in section 19: units, not dollars</div>
+        <div style={{...ROW,gap:10,marginTop:14}}>
+          <span style={{...LAB,whiteSpace:"nowrap"}}>MSTX ON THE 25TH</span>
+          <div style={{position:"relative",display:"flex",alignItems:"center",
+            flex:"1 1 110px",minWidth:"88px",height:"20px"}}>
+            <div style={{position:"absolute",left:0,right:0,height:"3px",
+              background:"#0d1e30",borderRadius:"3px"}}/>
+            <div style={{position:"absolute",left:0,width:((uV-13)/6*100)+"%",height:"3px",
+              background:AC,borderRadius:"3px",opacity:0.75}}/>
+            <input type="range" min="13" max="19" step="0.1" value={uV}
+              onChange={e=>setUSl(parseFloat(e.target.value))}
+              style={{position:"absolute",left:0,right:0,width:"100%",appearance:"none",
+                WebkitAppearance:"none",background:"transparent",cursor:"pointer",
+                margin:0,height:"20px"}}/>
+          </div>
+          <span style={{fontSize:12,fontWeight:700,color:AC,minWidth:"32px",
+            textAlign:"right"}}>{uV.toFixed(1)}</span>
+        </div>
+        <div style={{fontSize:11,color:"#b0c4d8",marginTop:7}}>{uRead}</div>
+        <div style={FT}>{"Legs settle at intrinsic, long time value excluded, the conservative read. "
+          + "Objective: units, not dollars (doctrine section 19)."}</div>
       </div>
 
-      {/* TRIGGER: the weekly histogram, the ladder quantile and the IV rank */}
-      <div style={{...TBL,display:"flex",gap:"12px",flexWrap:"wrap",alignItems:"flex-start"}}>
+      {/* TRIGGER */}
+      <div ref={trigRef} style={{...TBL,display:"flex",gap:"14px",flexWrap:"wrap"}}>
         <div style={{flex:"1 1 250px",minWidth:0}}>
           <div style={{...HD,marginBottom:8}}>WEEKLY MACD (8,21,5) · HISTOGRAM</div>
           {bars.length ? (
@@ -1122,7 +1207,7 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
               <rect x={CP.l} y={CP.t} width={cwd} height={cht} fill="#070f1f" rx="2"/>
               {bars.map((b,i) => <rect key={b.bar} x={bx(i)} y={Math.min(cy(b.v), zy)} width={bwi}
                 height={Math.max(1, Math.abs(cy(b.v) - zy))} rx="1"
-                fill={b.v >= 0 ? GRN : RD} opacity="0.85"/>)}
+                fill={b.v >= 0 ? GRN : RD} opacity={hb === i ? 1 : 0.85}/>)}
               <line x1={CP.l} x2={CP.l+cwd} y1={zy} y2={zy} stroke="#5a7fa0" strokeWidth="0.7"/>
               <text x={CP.l+2} y={zy+8} fill="#7aa5c8" fontSize="8">0</text>
               {xIdx >= 0 && <line x1={bx(xIdx)+bwi/2} x2={bx(xIdx)+bwi/2} y1={CP.t} y2={CP.t+cht}
@@ -1134,97 +1219,96 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
               <text x={CP.l} y={CP.t+cht+10} fill="#7aa5c8" fontSize="8">{md(bars[0].bar)}</text>
               <text x={CP.l+cwd} y={CP.t+cht+10} fill="#7aa5c8" fontSize="8"
                 textAnchor="end">{md(bars[bars.length-1].bar)}</text>
+              <text x={CP.l+cwd} y={CP.t-4} fill="#7aa5c8" fontSize="9"
+                textAnchor="end">{sgn(bars[bars.length-1].v)}</text>
               <text x={CP.l} y={CP.t+cht+20} fill="#5a7fa0" fontSize="8">
-                {bars.length + " COMPLETED WEEKLY BARS"}</text>
+                {"LAST " + bars.length + " WEEKS"}</text>
+              {bars.map((b,i) => <rect key={"h"+b.bar} x={CP.l+i*bw} y={CP.t} width={bw}
+                height={cht} fill="transparent" style={{cursor:"pointer"}} {...hit(bTip(b), i)}/>)}
             </svg>) : <div style={BODY}>Weekly histogram bars unknown.</div>}
           <div style={{fontSize:11,color:"#b0c4d8",marginTop:7}}>
-            {"rising since " + (md(rise)||UNK) + ", cross " + (md(xd0)||UNK) + ", "
-              + (isNaN(wkN) ? UNK : wkN) + " weeks old"}</div>
+            {"Rising since " + (md(rise)||UNK) + ". Crossed " + (md(xd0)||UNK) + ", "
+              + (isNaN(wkN) ? UNK : wkN) + " weeks ago."}</div>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(104px,1fr))",
-          gap:"10px",flex:"1 1 230px",alignContent:"flex-start"}}>
-          <div style={{...SC,background:tier?tier.darkBg:"#070f1f",
-            border:"1px solid "+AC+"30",boxShadow:"0 0 20px "+AC+"11"}}>
-            <div style={{...LAB,marginBottom:6}}>LADDER QUANTILE</div>
-            <div style={{...SV,color:AC}}>{q == null ? UNK : q.toFixed(1)}</div>
-            <div style={SH}>{q == null ? UNK
-              : q < 15 ? "below 15" : q < 50 ? "15 to 50" : q <= 85 ? "50 to 85" : "above 85"}</div>
-          </div>
-          <div style={SC}>
-            <div style={{...LAB,marginBottom:6}}>IV RANK 3M</div>
-            <div style={{...SV,color:"#facc15"}}>{iv3 == null ? UNK : iv3.toFixed(0)}</div>
-            <div style={SH}>{iv3n == null ? UNK : iv3n + "-day window, AlphaQuery"}</div>
-          </div>
-          <div style={SC}>
-            <div style={{...LAB,marginBottom:6}}>IV RANK 52W</div>
-            <div style={{...SV,color:"#facc15"}}>{iv52 == null ? UNK : iv52.toFixed(0)}</div>
-            <div style={SH}>{ivH != null ? "by hand"
-              : iv52d == null ? UNK : "projectoption, as of " + iv52d}</div>
-          </div>
+          gap:"10px",flex:"1 1 230px",gridAutoRows:"1fr"}}>
+          {scards.map(([h,v,sub,c,t,on]) => (
+            <div key={h} {...hit(t)} style={on ? {...SC,cursor:"pointer",
+              background:tier?tier.darkBg:"#070f1f",border:"1px solid "+AC+"30",
+              boxShadow:"0 0 20px "+AC+"11"} : {...SC,cursor:"pointer"}}>
+              <div style={{...LAB,marginBottom:6}}>{h}</div>
+              <div style={{...SV,color:c}}>{v}</div>
+              <div style={SH}>{sub}</div>
+            </div>))}
         </div>
       </div>
 
-      {/* POSITIONS: the Structure panel's frame */}
+      {/* POSITIONS */}
       <div style={{background:tier?tier.darkBg:"#070f1f",border:"1px solid "+AC+"30",
         borderLeft:"3px solid "+AC,borderRadius:"6px",padding:"14px 16px",marginTop:11}}>
         <div style={{...ROW,justifyContent:"space-between",marginBottom:4}}>
           <span style={HD}>POSITIONS</span>
           {rows.length < MAXS && <button style={GST} onClick={()=>{ setEd(rows.length);
             setRows(rs => [...rs, {expiry:"",longK:"",shortK:"",debit:""}]); }}>+ spread</button>}</div>
-        {prow("leaps", luTxt, luBad, null)}
+        {prow("leaps", <>{luTxt}{uTod && <span style={{display:"block",fontSize:11,color:GRY,
+          marginTop:3}}>{uTod}</span>}</>, luBad, null)}
         {rows.map((r,i) => prow(i, sTxt(r), sBad(r,i), i))}
-        {ph && ph.roll_rules && <div style={{borderTop:SEP,padding:"7px 0"}}>
-          <div style={{...BODY,paddingLeft:18}}>{"ROLL RULES · " + ph.roll_rules}</div></div>}
+        {ph && ph.roll_rules && <div style={{...LINE,borderTop:SEP,gap:12,paddingLeft:18,
+          alignItems:"baseline"}}>
+          <span style={{...LAB,width:"46px",flexShrink:0}}>ROLL</span>
+          <span style={BODY}>{ph.roll_rules}</span></div>}
       </div>
 
-      {/* ROUTES: the operator's own unit count, route by route */}
+      {/* ROUTES */}
       <div style={TBL}>
-        <div style={{...HD,marginBottom:10}}>
-          EXPECTED LEAPS UNITS AT THE END, BY ROUTE (OPERATOR'S CALCULATION, 9/13)</div>
+        <div style={{...HD,marginBottom:10}}>LEAPS UNITS AT THE END, BY ROUTE</div>
         <div style={{overflowX:"auto"}}><div style={{display:"grid",
-          gridTemplateColumns:"1fr 56px 62px",minWidth:"276px"}}>
-          {["ROUTE","UNITS ON THE THESIS","UNITS ON MARKET ODDS"].map((h,i) =>
+          gridTemplateColumns:"1fr 84px 96px",minWidth:"420px"}}>
+          {["ROUTE","YOUR ODDS","MARKET ODDS"].map((h,i) =>
             <div key={h} style={{...LAB,padding:"4px 6px",textAlign:i?"right":"left"}}>{h}</div>)}
           {routes.map((r,n) => [String(r.route||UNK), nm(r.units_thesis), nm(r.units_market)]
             .map((v,i) => <div key={n+"-"+i} style={{padding:"5px 6px",fontSize:12,
-              borderBottom:"1px solid #070f1f",textAlign:i?"right":"left",
+              borderBottom:"1px solid #070f1f",textAlign:i?"right":"left",whiteSpace:"nowrap",
               background:n%2?"transparent":"#050d1c",color:i===1?AC:"#8aaac8",
-              fontWeight:i?600:400,overflowWrap:"anywhere"}}>
+              fontWeight:i?600:400}}>
               {i === 0 ? v : v == null ? UNK : v.toFixed(0)}</div>))}
         </div></div>
         {!routes.length && <div style={{...BODY,paddingTop:7}}>No routes in the ledger.</div>}
         <div style={FT}>{rFoot}</div>
       </div>
 
-      {(
-        <div style={TBL}>
-          <div style={{...ROW,justifyContent:"space-between",marginBottom:8}}>
-            <span style={HD}>{"JOURNAL · " + all.length}</span>
-            <button style={GST} onClick={()=>{ setJEd(jnl.length);
-              setJnl(rs => [...rs, {date:d0,trade:"",odds:"",result:""}]); }}>+ row</button></div>
-          <div style={{overflowX:"auto"}}><div style={{minWidth:"420px"}}>
-            <div style={JG}>{["DATE","TRADE","ODDS AT ENTRY","RESULT",""].map((h,i) =>
-              <span key={i} style={LAB}>{h}</span>)}</div>
-            {all.map(([r,i], n) => { const e = i != null && jEd === i, p = nm(r.implied_p);
-              const res = String(r.result || r.outcome || "") || UNK;
-              return (
-              <div key={n} style={{...JG,background:n%2?"transparent":"#050d1c"}}>
-                {[["date",r.date||UNK,{fontSize:12,color:"#d0dde8",fontWeight:600}],
-                  ["trade",r.trade || join([r.ticker, r.structure || r.event]) || UNK, CEL],
-                  ["odds",r.odds || (p == null ? UNK : (p*100).toFixed(1) + "%"), CEL],
-                  ["result",res,{...CEL,color:/hit/i.test(res)?GRN:/miss/i.test(res)?RD:GRY}]].map(([k,v,st]) =>
-                  e ? <input key={k} value={r[k]||""} placeholder={k}
-                        style={{...INP,width:"100%",flex:"1 1 auto"}}
-                        onChange={x=>setJnl(rs=>rs.map((y,j)=>j===i?{...y,[k]:x.target.value}:y))}/>
-                    : <span key={k} style={st}>{v}</span>)}
-                {i != null && <button style={PEN}
-                  onClick={()=>setJEd(v => v===i ? null : i)}>{e?"▾":"✎"}</button>}
-              </div>); })}
-          </div></div>
-        </div>)}
-
-      <div style={{...ROW,justifyContent:"flex-end",marginTop:10}}>
-        <Lnk on={()=>setWhy(v=>!v)}>WHY</Lnk>
+      <div style={TBL}>
+        <div style={{...ROW,justifyContent:"space-between",marginBottom:8}}>
+          <span style={HD}>{"JOURNAL · " + all.length}</span>
+          <button style={GST} onClick={()=>{ setJEd(jnl.length);
+            setJnl(rs => [...rs, {date:d0,trade:"",odds:"",result:""}]); }}>+ row</button></div>
+        <div style={{overflowX:"auto"}}><div style={{minWidth:"420px"}}>
+          <div style={JG}>{["DATE","TRADE","ODDS AT ENTRY","RESULT",""].map((h,i) =>
+            <span key={i} style={LAB}>{h}</span>)}</div>
+          {all.map(([r,i], n) => { const e = i != null && jEd === i, p = nm(r.implied_p);
+            const res = String(r.result || r.outcome || "") || NS, dt = jDet(r);
+            return (
+            <React.Fragment key={n}>
+            <div style={{...JG,background:n%2?"transparent":"#050d1c",
+              cursor:(e || !dt) ? "default" : "pointer"}}
+              onClick={(e || !dt) ? undefined : () => setJOp(v => v===n ? null : n)}>
+              {[["date",r.date||NS,{fontSize:12,color:"#d0dde8",fontWeight:600}],
+                ["trade",r.trade || join([r.ticker, r.rule || r.event]) || NS, CEL],
+                ["odds",r.odds || (p == null ? NS : (p*100).toFixed(0) + "%"), CEL],
+                ["result",res,{...CEL,color:/hit/i.test(res)?GRN:/miss/i.test(res)?RD:GRY}]].map(([k,v,st]) =>
+                e ? <input key={k} value={r[k]||""} placeholder={k}
+                      style={{...INP,width:"100%",flex:"1 1 auto"}}
+                      onChange={x=>setJnl(rs=>rs.map((y,j)=>j===i?{...y,[k]:x.target.value}:y))}/>
+                  : <span key={k} style={st}>{v}</span>)}
+              {i != null && <button style={PEN} onClick={x=>{ x.stopPropagation();
+                setJEd(v => v===i ? null : i); }}>{e?"▾":"✎"}</button>}
+            </div>
+            {jOp === n && <div style={{padding:"0 6px 8px",fontSize:11,color:"#8aaac8",
+              lineHeight:1.5,background:n%2?"transparent":"#050d1c"}}>{dt}</div>}
+            </React.Fragment>); })}
+        </div></div>
+        <div style={{...ROW,justifyContent:"flex-end",borderTop:SEP,marginTop:8,paddingTop:8}}>
+          <Lnk on={()=>setWhy(v=>!v)}>WHY</Lnk></div>
       </div>
 
       {why && (
@@ -1236,6 +1320,12 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
             <span style={BODY}>{b}</span>
             {on && <button style={PEN} onClick={on}>{ivEd ? "▾" : "✎"}</button>}</div>)}
         </div>)}
+
+      {tip && <div style={{position:"fixed",left:tip.x,top:tip.y-10,zIndex:60,
+        transform:"translate(-50%,-100%)",pointerEvents:"none",maxWidth:"264px",
+        background:"#070f1f",border:"1px solid #1e5f8a",borderRadius:6,padding:"6px 9px",
+        fontSize:11,color:"#e2e8f0",lineHeight:1.45,
+        boxShadow:"0 4px 14px #0008"}}>{tip.t}</div>}
     </div>
   );
 }
@@ -1429,6 +1519,12 @@ function BTCPowerLaw() {
       #root svg text[fill="#22d3ee"]   { fill: #0a8ca8; }
       #root svg circle[stroke="#020817"] { stroke: #f2f6fa; }
       #root svg rect[fill="#020817"]   { fill: #1a2a3a; }
+      /* Playbook */
+      #root [style*="border: 1px solid rgb(22, 40, 64)"] { border-color: #b8cce0 !important; }
+      #root [style*="rgba(255, 255, 255, 0.063)"] { border-top-color: #cdd9e6 !important; }
+      #root [style*="border-bottom: 1px solid rgb(7, 15, 31)"] { border-bottom-color: #cdd9e6 !important; }
+      #root svg text[fill="#5a7fa0"]   { fill: #4a6a8a; }
+      #root svg text[fill="#facc15"]   { fill: #946f00; }
     `;
     document.head.appendChild(s);
   }, [lightMode]);

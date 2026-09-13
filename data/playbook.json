@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-13T19:20:37Z",
+  "generated_at": "2026-09-13T20:10:11Z",
   "as_of_run_date": "2026-09-13",
   "inputs": {
     "btc_above_200d": {
@@ -8,9 +8,9 @@
       "source": "yahoo_daily",
       "as_of": "2026-09-13",
       "error": null,
-      "btc_close": 77222.507812,
-      "sma_200d": 70137.446055,
-      "gap_pct": 10.101682
+      "btc_close": 77253.710938,
+      "sma_200d": 70137.60207,
+      "gap_pct": 10.145926
     },
     "btc_above_200w": {
       "value": true,
@@ -18,9 +18,9 @@
       "source": "yahoo_weekly",
       "as_of": "2026-09-13 price vs week ending 2026-09-06",
       "error": null,
-      "btc_close": 77222.507812,
+      "btc_close": 77253.710938,
       "sma_200w": 64867.387324,
-      "gap_pct": 19.046737,
+      "gap_pct": 19.09484,
       "weeks": 558,
       "note": "SMA over completed calendar weeks only"
     },
@@ -135,19 +135,19 @@
       "note": "MACD(8,21,5) on the same completed Monday-to-Sunday UTC weekly closes as the histogram-rising row, EMA seeded on the first value. Passes when the last complete bar's histogram is above zero and at least one of the three bars before it was at or below zero, which is a bullish cross inside the last three weekly bars. cross_bar_date is the first bar after the most recent non-positive bar. Entry timing, not a hold condition."
     },
     "ladder_quantile": {
-      "value": 9.272789,
+      "value": 9.292729,
       "pass": true,
       "source": "site formula",
       "as_of": "2026-09-13",
       "error": null,
       "band": "below 15",
-      "btc_close": 77222.507812,
+      "btc_close": 77253.710938,
       "fair_value": 140389.837203,
       "days_since_genesis": 6462.0,
       "note": "the page's own priceToQuantile, ported into this script. Fair value is 10 ** (5.82 * log10(days since 2009-01-03) - 17.029), bands are offsets in log10(price / fair value), and the decaying bands cap their slope term at the run date. Passes when the quantile is not above the 85th band."
     },
     "btc_price": {
-      "value": 77222.507812,
+      "value": 77253.710938,
       "pass": null,
       "source": "yahoo_daily",
       "as_of": "2026-09-13",

@@ -814,6 +814,10 @@ const nm = s => { if (s == null) return null;
 const qband = q => q < 15 ? "below 15" : q < 50 ? "15 to 50" : q <= 85 ? "50 to 85" : "above 85";
 const day0 = () => new Date().toISOString().slice(0,10);
 const join = a => a.filter(Boolean).join(" · ");
+// plan-phase bounds: "through X", "A to B", "from A"
+const shortD = s => String(s==null?"":s).replace(/2026-0?(\d+)-0?(\d+)/g,(_,m,d)=>m+"/"+d);
+const phBnd = s => { const x=String(s==null?"":s), m=x.match(/\d{4}-\d{2}-\d{2}/g)||[];
+  return /^through/i.test(x)?[null,m[0]||null]:/^from/i.test(x)?[m[0]||null,null]:[m[0]||null,m[1]||null]; };
 // trading days between two dates, either order. Weekdays only, so a holiday counts.
 function biz(a, b) {
   const t0 = Date.parse(String(a)+"T00:00:00Z"), t1 = Date.parse(String(b)+"T00:00:00Z");
@@ -949,6 +953,11 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
         + (soon ? " Half size, " + soon.type + " in " + evd(soon) + " days." : "")
     : "No new vertical. Sleeve full or inside the red-expiry cooldown.") + (funded ? "" : " Sleeve is paper.");
 
+  // the live phase: holds today, else the first not yet past
+  const phs = rowsOf(plg && plg.plan && plg.plan.phases), d0 = day0();
+  const ph = phs.find(x => { const [a,e] = phBnd(x.dates); return (!a||a<=d0) && (!e||d0<=e); })
+    || phs.find(x => { const e = phBnd(x.dates)[1]; return !e || d0 <= e; }) || null;
+
   const jr = rowsOf(jnl);
   const repoJ = rowsOf(plg && plg.journal), repoC = rowsOf(plg && plg.paper_calls);
   const paperN = jr.filter(r => /paper/i.test(String(r.mode||""))).length + repoJ.length + repoC.length;
@@ -1007,6 +1016,11 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
           border:"1px solid "+(tier?tier.color+"25":"#0a1628"),borderLeft:"4px solid "+TCOL[trig],
           boxShadow:"-4px 0 24px "+TCOL[trig]+"15",fontSize:15,fontWeight:600,color:"#e2e8f0",
           lineHeight:1.5}}>{act}</div>
+
+        {ph && (ph.next_action || ph.roll_rules) && <div style={{display:"flex",
+          flexDirection:"column",gap:4,marginTop:-6}}>
+          {ph.next_action && <div style={NOTE}>{"PHASE "+ph.id+" · "+shortD(ph.dates)+" · next: "+ph.next_action}</div>}
+          {ph.roll_rules && <div style={NOTE}>{"ROLL RULES · "+ph.roll_rules}</div>}</div>}
 
         <div>
           <div style={{...ROW,justifyContent:"space-between",marginBottom:8}}>
@@ -1067,7 +1081,8 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
                   {join([r.mode,r.ticker,r.structure,r.event,r.trigger]) || UNK}</span>
                 <span style={{fontSize:12,color:/hit/i.test(String(r.result||r.outcome||""))?GRN
                   :/miss/i.test(String(r.result||r.outcome||""))?RD:GRY}}>{r.result || r.outcome || "open"}</span>
-                <span style={{display:"flex",justifyContent:"flex-end"}}><span style={RCH}>repo</span></span>
+                <span style={{display:"flex",justifyContent:"flex-end"}}><span style={RCH}>{/scheduled/i.test(
+                  String(r.result||r.outcome||"")) ? "scheduled" : "repo"}</span></span>
               </div>))}
             {jr.map((r,i) => { const e = lEd === i, cell = (k,ph,view) => e
               ? <input value={r[k]||""} placeholder={ph} style={SINP} onChange={x=>setJ(i,k,x.target.value)}/> : view;

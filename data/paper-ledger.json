@@ -1,4 +1,30 @@
 {
+  "plan": {
+    "phases": [
+      {
+        "id": 1,
+        "dates": "through 2026-09-25",
+        "structure": "14/15 diagonal with the long on Oct 2 and 16/17 diagonal with the long on Oct 9, both shorts Sep 25, equal dollars",
+        "next_action": "Monday 9/14, 30 to 60 minutes after the open: convert the 17/17.50 diagonal into the two Phase 1 spreads, strikes shifted with the open, equal dollars, two spread orders at the mid",
+        "roll_rules": "each short rolls against its own long if unfilled at 9/25; the mark is taken on a rip past 17.50"
+      },
+      {
+        "id": 2,
+        "dates": "2026-09-26 to 2026-12-18",
+        "structure": "March 15 call long against Dec 18 22 call short, strikes shifted up with the stock at entry",
+        "next_action": "9/26: all Phase 1 proceeds into the Phase 2 spread",
+        "roll_rules": "roll the short up to 25 on a close above 22 before December 1; January and February short rolls scheduled at entry"
+      },
+      {
+        "id": 3,
+        "dates": "from 2026-12-19",
+        "structure": "the LEAPS leg, ticker and strikes per the ladder",
+        "next_action": "open with whatever is there",
+        "roll_rules": "per doctrine section 15"
+      }
+    ],
+    "objective": "LEAPS units, not dollars: the count of MSTX Dec 2028 33 / Jan 2028 60 units the account can buy after the trade settles, at that day's unit price, about 2.25 at MSTX 14 plus 0.25 per 1.00 of MSTX"
+  },
   "journal": [
     {
       "date": "2026-09-13",
@@ -6,13 +32,57 @@
       "ticker": "MSTX",
       "rule": "section 19 paired diagonal, units objective",
       "structure": "long Oct 2 14C / short Sep 25 15C and long Oct 9 16C / short Sep 25 17C, equal dollars",
-      "debit_mid": {"14/15": 0.67, "16/17": 0.73},
-      "debit_natural": {"14/15": 1.19, "16/17": 1.28},
-      "width": {"14/15": 1.0, "16/17": 1.0},
-      "hurdle": {"14/15": 0.67, "16/17": 0.73},
+      "debit_mid": {
+        "14/15": 0.67,
+        "16/17": 0.73
+      },
+      "debit_natural": {
+        "14/15": 1.19,
+        "16/17": 1.28
+      },
+      "width": {
+        "14/15": 1.0,
+        "16/17": 1.0
+      },
+      "hurdle": {
+        "14/15": 0.67,
+        "16/17": 0.73
+      },
       "execution": "equal dollars, contracts = half the capital / (mid debit x 100); two spread orders at the mid in pieces, no four-leg combo; read strikes and expiries off the ticket before submit",
       "exit": "hold to 9/25; mark on a rip past 17.50; roll shorts against own longs if unfilled; LEAPS leg on 9/26",
       "result": "pending"
+    },
+    {
+      "date": "2026-09-14",
+      "mode": "paper",
+      "ticker": "MSTX",
+      "rule": "section 19 Phase 1 entry, Monday conversion",
+      "structure": "close the 17/17.50 diagonal; open the 14/15 (long Oct 2) and 16/17 (long Oct 9) diagonals, shorts Sep 25, strikes shifted with the open",
+      "debit_mid": {
+        "14/15": 0.67,
+        "16/17": 0.73
+      },
+      "debit_natural": {
+        "14/15": 1.19,
+        "16/17": 1.28
+      },
+      "hurdle": {
+        "14/15": 0.67,
+        "16/17": 0.73
+      },
+      "implied_p": 0.244,
+      "quote_note": "reference; replace with the entry quote",
+      "result": "scheduled"
+    },
+    {
+      "date": "2026-09-26",
+      "mode": "paper",
+      "ticker": "MSTX",
+      "rule": "section 19 Phase 2 entry",
+      "structure": "March 15 call long against Dec 18 22 call short, strikes shifted up with the stock at entry",
+      "implied_p": null,
+      "implied_p_note": "score against the implied odds at entry: N(d2) of the short strike at Dec 18 and of the long strike at March expiry, from the chain that morning",
+      "result": "scheduled"
     }
   ],
   "paper_calls": [
@@ -22,7 +92,10 @@
       "trigger": "hold condition on, entry week no (cross of 7/26); decision taken on the units objective",
       "implied_p": 0.244,
       "implied_p_note": "interpolated between the Sep 25 16 strike at 0.269 and the Sep 25 17 strike at 0.209, Black-Scholes N(d2) at 4% on each row's Yahoo IV",
-      "hurdle_p": {"14/15": 0.67, "16/17": 0.73},
+      "hurdle_p": {
+        "14/15": 0.67,
+        "16/17": 0.73
+      },
       "own_p": null,
       "scored_at": "2026-09-25",
       "outcome": "pending",

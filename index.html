@@ -786,7 +786,7 @@ const PLAYBOOK_RULES = {
       situation:"LEAPS leg on, regime unchanged.",
       fields:[
         ["Structure", "HOLD the diagonal."],
-        ["Roll", "Short rolls up when BTC crosses a quantile boundary upward (new short strike = new regime-exit price). Whole position rolls to the next ticker when BTC crosses a rotation boundary past the 1q buffer."],
+        ["Roll", "Short rolls up when BTC crosses a quantile boundary upward (new short strike = new regime-exit price). When the short expires, sell the next 15-to-16-month short at the regime-exit price, never a monthly while the ladder reads bullish. Whole position rolls to the next ticker when BTC crosses a rotation boundary past the 1q buffer."],
         ["Size", "The LEAPS leg is 45% of the account."],
       ] },
     { id:"R2", color:"#f97316",

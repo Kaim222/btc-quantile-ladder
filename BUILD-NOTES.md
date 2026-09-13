@@ -71,144 +71,60 @@ A tab row sits under the header: LADDER | PLAYBOOK. State lives in `localStorage
 under `bql_tab`. LADDER renders exactly what v2 rendered. The passcode gate,
 the model selector and the light-mode toggle are shared by both tabs.
 
-### PLAYBOOK tab
+### PLAYBOOK tab · the daily card
 
-Static rules first, live inputs second.
+The tab is one card, written in the ladder tab's own visual language. Five stat
+tiles run across the top: the regime and its ticker off the ladder's tier for the
+live quantile, the quantile with its band word, IV rank (a hand-entered 52-week
+rank first, then the ledger-window rank labelled with its window length, then
+"unknown"), the trigger as one word coloured by state, and the days to the next
+known event, each with a short phrase under the value. The regime tile is tinted
+with the tier colour the way the ladder's quantile card is. Under the tiles sits
+one action sentence in a tier-card callout with a left accent in the trigger
+colour, chosen in a fixed order: above the 85th band it says STRC per the ladder,
+an unknown IV rank stops the day, OFF and HOLD say what not to open, and ENTRY
+with fewer than three verticals open and no red expiry inside the last ten
+trading days prices a paper call, halved when a known event falls inside two
+weeks. It always ends "Sleeve is paper." while nothing is adopted. Then the
+allocation bar: one rounded target bar at the 45 / 30 / 25 split in the tier
+palette, with a thinner deployed bar drawn beneath it at whatever three hand
+fields say is deployed, reading "not filled" until they are. Then the positions
+as a structure-panel list, one row each with a status dot, the position written
+as text, and the failing rule in three words when the dot is red. The LEAPS leg
+is green when its net debit is under the strike width and its ticker matches the
+regime, and up to three verticals are green when the debit is under the strike
+gap, no two share an expiry, and the expiries sit ten trading days apart. Every
+input hides behind a pencil, so the card shows no input boxes until one is
+clicked. A price counts only when it came from the live feed, a hand entry, or
+the refresh's close, so the ladder's 85,000 render seed is never shown as a
+market price and every number off a BTC level reads "unknown" without one. One
+footer line closes the card. "Paper ledger" carries the count of paper calls and
+opens the journal as a text table, with the sleeve fields, the copy-as-JSON
+button, and an input row that appears only after "+ row". "Why" opens the two
+weekly inputs with a hand override each, the IV rank hand field, and the refresh
+timestamp. Both panels stay closed until clicked, and every hand field persists
+in `localStorage` under a `bql_pb_` key. The rule card, the backtest notes, the
+long note strings, the two stack verdicts, the ENTRY WEEK line, the events list
+and the gate list left `index.html`: the rules live in `doctrine.md`, which is
+not on this site.
 
-1. **Rule card.** An allocation line, then R1 to R5, rendered from the
-   `PLAYBOOK_RULES` constant at the top of the script. R1 hold, R2 entry after a
-   rotation, R3 vertical-sleeve FIRE, R4 NO TRADE, R5 refill. The text is fixed
-   and versioned (v3, 2026-09-12); it changes only between sessions, never
-   mid-trade. The allocation line above R1 is the frame the sizing rules sit in:
-   LEAPS leg 45% of the account, cash floor 30% and never deployed,
-   vertical sleeve the rest and paper until the eight-week record beats implied
-   odds. v3 settles the sizing and the sleeve limits. The LEAPS leg is 45%
-   of the account in R1 and R2, sized so a 50% drop in the underlying does not
-   touch the 30% cash floor. An R3 vertical is the smaller of 5% of the account
-   and half-Kelly on the sleeve. The open-vertical cap drops from 5 to 3 in R3,
-   R4 and the sleeve table. R5 refills the sleeve from its own realized profits
-   or its own undeployed reserve on the first trading day of the month, never
-   from the cash floor, and a sleeve that has spent its reserve is dead until a
-   session re-funds it. v3 keeps the 9/12
-   study's conclusions: R3 structure splits on *dated versus undated* rather
-   than on IV rank alone (a dated thesis of six weeks or less takes a vertical at
-   any IV rank; the diagonal is the preferred shape only under IV rank 30 with a
-   tail past the date; an undated thesis needs IV rank under 50), R3 exit is 75%
-   of max profit with sell-half-at-100% ruled out, R3 reinvests 25% with 50%
-   ruled out, R4's undated-thesis block moves from IV rank 30 to 50, and R2
-   carries the IV-rank scale line (low under 30 is a 30-day IV under about 71%,
-   high over 50 is over about 85%, on the 2026-09-11 52-week range).
-2. **Ladder inputs.** Quantile, regime ticker, distance to each rotation
-   boundary in quantile points and BTC dollars, buffer flag. Same
-   rotateUp / rotateDown and 1.0q hysteresis the tier card uses, recomputed in
-   the tab off the price the tab is allowed to use rather than taken from the
-   ladder tab, so a quantile is never printed beside a level from a different
-   price. **The tab never renders the render seed as a price.** The ladder's price
-   input starts on a hard-coded 85,000 so the page has something to draw before
-   any fetch returns. A price counts here only when it came from the live feed,
-   from `btc_price` in `data/playbook.json`, or from a hand entry, and with none
-   of those the card reads "no live price yet" and every number off a BTC level
-   stays blank: quantile, ticker, buffer, the rotation rows, the short strike and
-   the whole mapping output. A "BTC price by hand" field in the mapping box
-   unblocks the tab, and the card prints which of the four the number came
-   from.
-3. **LEAPS leg rule for today.** Ticker by regime, the 0.60-delta long rule, and
-   the short strike as the regime-exit BTC price at the short's expiry
-   (`quantileToPrice(tier.qMax + HYST, todayTs + 16 months)`). The mapping box
-   below it defaults to the operator's projection sheet of 2026-09-12, holdings
-   845,050, diluted shares 450,121,000, chop 1.85, and every default is
-   labelled "from your sheet, 2026-09-12". mNAV is not hand-seeded: it follows
-   the sheet's own rule, `0.9 + (BTC − 75,000) / 100,000` clamped to 0.65 and
-   1.525, evaluated at the exit BTC price, with a hand override field beside it.
-   MSTR now and MSTX now default to the Yahoo closes in `data/playbook.json`
-   (130.97 and 14.01 as of 2026-09-11, labelled Yahoo delayed), each with a hand
-   override. The MSTX mapping is the sheet's **power** form,
-   `MSTX_exit = MSTX_now × (MSTR_exit / MSTR_now) ^ chop`, not a linear multiple
-   of the MSTR move, and it carries the standing caveat that 1.85 is a ceiling
-   for a two-week rally (plan 1.8, stress 1.6, selloffs about 2.1) and that
-   daily-reset drag over 16 months makes the mapping optimistic. Every derived
-   number is labelled "from your sheet inputs". Empty fields read "fill by hand"
-   and never a placeholder number. The mapping's localStorage key is
-   `bql_pb_mapping_v2`: v1 shipped invented defaults, and the key had to move for
-   the sheet's figures to land in a browser that already stored the old shape.
-4. **Trigger inputs.** Thirteen rows from `data/playbook.json`, each with value,
-   pass or fail, source, as-of date, a status chip, and a hand override that
-   marks the row "by hand". Status is the 9/12 backtest verdict from
-   `tools/playbook_rules.json`, gold for PROMISING, red for NEGATIVE, muted for
-   UNPROVEN and UNTESTABLE; the Bollinger row stays visible with its NEGATIVE
-   chip rather than being dropped, and each component's one-line reading prints
-   under the table. Realized-vol rank now carries a pass/fail at the 70
-   threshold instead of being context only. The last three rows (MSTR 30-day IV,
-   MSTX 30-day IV, MSTX/MSTR IV ratio) read the `iv` block, are informational,
-   and show a dash in the pass and override columns. An implied-vol pull that
-   failed on the last refresh still shows its newest ledger reading, dated by its
-   own observation date, and carries a STALE chip plus a one-line reason instead
-   of passing an old number off as today's. BTC above its 200-day is
-   also computed in the page from the 365-day CoinGecko history, and both
-   readings show when both exist. Then **two** verdicts: FUNDED STACK, from the
-   adopted components only, which reads "no adopted trigger; sleeve cannot be
-   funded" while nothing is adopted, and PAPER STACK LIVE / NOT LIVE from the
-   rules file's `paper_trigger` (see the 2026-09-13 paragraph below for its
-   current composition), naming the failing components. When the paper stack is
-   live the page says to log a paper call in the sleeve state and score it at 10
-   trading days against the implied probability.
-
-   **2026-09-13 · the paper trigger switches to the 9/13 research's pair.** The
-   9/13 vertical-trigger backtest found nothing adoptable in 397 candidates and
-   named one pair as the closest thing: BTC weekly MACD(8,21,5) histogram
-   positive and rising, plus the ladder not above its 85th band. That pair
-   replaces the trend trio plus realized-vol rank as `paper_trigger` in
-   `tools/playbook_rules.json` (now v3, eight components), and the superseded
-   composition stays in the same file as `paper_trigger_previous`, so both
-   records build in parallel. The tab reads both: the PAPER STACK verdict is the
-   new pair, and a smaller line under it reads "previous paper stack (9/12)"
-   with its own LIVE or NOT LIVE. Two new inputs back it.
-   `btc_weekly_macd_8_21_5_hist_rising` runs MACD(8,21,5) over completed
-   Monday-to-Sunday UTC weekly bars built from the Yahoo daily closes, drops the
-   in-progress week, seeds the EMAs on their first value, and passes when the
-   last complete bar's histogram is above zero and above the prior complete
-   bar's. `ladder_quantile` is the page's own `priceToQuantile` ported into the
-   refresh script rather than imported, scored at the Yahoo daily close, passing
-   at 85 or below and carrying its band label (below 15, 15 to 50, 50 to 85,
-   above 85); the script's self-test pins the port to the 9.303rd quantile the
-   site read at BTC 77,200 on 2026-09-12. Both components are PROMISING and
-   adopted by neither asset, so nothing about the funding gate moves: the pair
-   beat its complement by 9 points on BTC 14-day and 16 on MSTR 10-day and cut
-   the chance of a 10% drop inside two weeks from 24% to 14%, and it cleared the
-   adoption bar nowhere. The journal's rows now carry an optional `trigger`
-   field that seeds with the current stack's two ids, so a logged paper call
-   says which stack it followed. A third input,
-   `btc_weekly_macd_8_21_5_fresh_cross`, asks the same weekly histogram whether
-   it crossed above zero inside the last three complete bars, which is the
-   research's entry-timing cell and the one cell that cleared the adoption bar,
-   so it lands as a ninth PROMISING component that sits outside `paper_trigger`
-   under the rules file's new `entry_timing` key and reads on the tab as an ENTRY
-   WEEK line under the PAPER STACK verdict.
-5. **Sleeve state.** Hand-kept: balance, open verticals (up to three, implied
-   probability = debit / width), last expiry, paper gate, refill date. Produces
-   CAN FIRE / CANNOT FIRE with every gate from R3 and R4 listed. The R3 trigger
-   gate is the FUNDED stack, so the sleeve cannot fire real size while nothing is
-   adopted. **The paper gate counts weeks, not rows.** It passes only when the
-   journal's paper rows span 56 calendar days or more from the first dated row to
-   the last, at least eight rows carry a scored outcome, and the hit rate over
-   those scored rows beats their average implied probability. Eight rows logged
-   the same afternoon are one afternoon, so the span is a hard requirement and it
-   can only be read off dated journal rows. The three hand fields stay as a
-   running tally and leave the gate unknown, because a hand-entered count carries
-   no dates. The "10 or more trading days since the last entry" gate skips
-   weekends and a US market holiday list for 2026 and 2027 (New Year's Day, MLK
-   Day, Presidents Day, Good Friday, Memorial Day, Juneteenth, Independence Day
-   observed, Labor Day, Thanksgiving, Christmas observed), so a shut market never
-   counts toward the wait, and the refill date is the first trading day of next
-   month off the same list.
-6. **Journal.** Hand rows for closed trades with a copy-as-JSON button. Each row
-   carries a paper-or-funded field. When any row is marked paper the paper-gate
-   counters (calls, hits, implied average) are computed from those rows. A
-   result reading hit, win, green or yes counts as a hit, the implied average is
-   the mean of debit ÷ width. The three hand fields say they are ignored.
-   With no paper rows the hand fields still drive the gate.
-
-Every hand-filled field persists in `localStorage` under a `bql_pb_` key.
+**The trigger inputs, 2026-09-13.** The 9/13 vertical-trigger backtest found
+nothing adoptable in 397 candidates and named one pair as the closest thing, so
+`tools/playbook_rules.json` (v3, nine components) carries it as `paper_trigger`
+and keeps the superseded 9/12 composition as `paper_trigger_previous`.
+`btc_weekly_macd_8_21_5_hist_rising` runs MACD(8,21,5) over completed
+Monday-to-Sunday UTC weekly bars built from the Yahoo daily closes, drops the
+in-progress week, seeds the EMAs on their first value, and passes when the last
+complete bar's histogram is above zero and above the prior bar's.
+`btc_weekly_macd_8_21_5_fresh_cross` asks the same bars whether the histogram
+turned positive inside the last three, which is the entry-timing cell and the one
+cell that cleared the adoption bar; it sits outside `paper_trigger` under
+`entry_timing`. `ladder_quantile` is the page's own `priceToQuantile` ported into
+the refresh script, scored at the Yahoo daily close, passing at 85 or below and
+carrying its band label; the script's self-test pins the port to the 9.303rd
+quantile the site read at BTC 77,200 on 2026-09-12. Those two weekly inputs are
+what the card's trigger word reads. Nothing is adopted, so the funded stack
+cannot go live and the sleeve stays on paper.
 
 ### Refresh script
 
@@ -266,7 +182,7 @@ Yahoo option-chain entries stay in the ledger but are excluded from the min/max,
 because Yahoo's ATM chain vol and AlphaQuery's 30-day mean are different
 constructions and a range that mixes them ranks nothing. The page prefers, in
 order, a hand-entered 52-week rank from the broker, then the ledger-window rank
-with its window label, then "fill by hand", and prints one muted outside
+with its window label, then "unknown", and prints one muted outside
 reference beside it (projectoption 2026-09-11: 30-day IV 67.3%, 52-week 49.2% to
 120.6%, rank 25, percentile 29, a single source, un-cross-checked).
 
@@ -274,22 +190,23 @@ reference beside it (projectoption 2026-09-11: 30-day IV 67.3%, 52-week 49.2% to
 silently reuse the old number. The ticker's window is still computed from the
 ledger, which is what the ledger is for, but the block carries `error`,
 `as_of_fetch: null` and `stale: true`, and `iv.stale` goes true for the run, which
-is what the tab's STALE chip reads. The MSTX/MSTR IV ratio is computed only when
+is what the ledger window reports. The MSTX/MSTR IV ratio is computed only when
 the two readings carry the same observation date, and is null with the two dates
 named when they differ. A BTC or MSTR download failure writes `btc_price` and
 `mstr_price` as null plus the error string rather than omitting the key, so the
 page can tell "the source failed" from "nobody asked".
 
 **A field is never a fabricated number.** Every source is wrapped, and a source
-that fails writes `value: null` plus an error string, which the page renders as
-"source failed" or "fill by hand". A missing `data/playbook.json` renders
-"refresh not run" and the page still works on its own inputs.
+that fails writes `value: null` plus an error string, which the card renders as
+"unknown" on a state line and "fill by hand" on a hand field. A missing
+`data/playbook.json` renders "refresh not run" in the why panel and the card
+still works on its own hand inputs.
 
 ### Files
 
 | File | What |
 |---|---|
-| `index.html` | tab row, `PLAYBOOK_RULES`, `PlaybookTab` |
+| `index.html` | tab row, `PlaybookTab`, the daily card |
 | `tools/playbook_refresh.py` | the refresh script |
 | `tools/events.json` | hand calendar, every row carries a `verified` flag, a source URL and a note |
 | `tools/playbook_rules.json` | v3: eight trigger components with their backtest status and adopted flag, plus `paper_trigger` and `paper_trigger_previous` |
@@ -306,8 +223,8 @@ Every row verified against the primary source except MSTR earnings: FOMC 9/16,
 10/28 and 12/9 and CPI 10/14, 11/10 and 12/10 come from federalreserve.gov and
 bls.gov. MSTR earnings 11/4 is a third-party calendar (tipranks) and stays
 `verified: false` with the note "third-party calendar; confirm on the IR page",
-because the company IR page was unreachable. The tab prints VERIFIED or UNVERIFIED per
-row straight off the flag.
+because the company IR page was unreachable. The card names only the next event and its days
+out. The flags stay in the JSON.
 
 ### Backtest status, 2026-09-12
 
@@ -328,4 +245,4 @@ above, all passing. It was the two PROMISING readings from the study and nothing
 more: no component is ADOPTED, so the funded stack cannot go live and the sleeve
 stays on paper until the 8-week record beats implied odds. The 2026-09-13
 research replaced it as `paper_trigger` and it now sits in the same file as
-`paper_trigger_previous`, still scored on the page.
+`paper_trigger_previous`, kept for the record and no longer scored on the page.

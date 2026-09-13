@@ -2,7 +2,13 @@
   "version": "v3",
   "as_of": "2026-09-13",
   "note": "Trigger-stack components with the backtest verdict on each. status is the backtest reading, adopted is whether the component may fund real size. Nothing is adopted, so the FUNDED STACK cannot go live and the sleeve stays on paper. input is the data/playbook.json inputs key the component scores against. The refresh script only reads this file, it never rewrites status or adopted. The first six components come from the 2026-09-12 MSTR backtest, the last three from the 2026-09-13 vertical-trigger research. entry_timing names the component that says which week to open a vertical, separate from the paper trigger's hold conditions.",
-  "status_enum": ["UNPROVEN", "NEGATIVE", "UNTESTABLE", "PROMISING", "ADOPTED"],
+  "status_enum": [
+    "UNPROVEN",
+    "NEGATIVE",
+    "UNTESTABLE",
+    "PROMISING",
+    "ADOPTED"
+  ],
   "backtest": "9/12: MSTR trading days 2020-01-02 to 2026-08-26, n=1671, forward 10 trading-day return. 9/13: BTC daily 2014-09-17 to 2026-09-12 on a forward 14-day return, plus MSTR on a forward 10-day return, 397 candidates, held-out test window 2022-01-01 to 2026-09-12. Hit rates quoted signal-on versus signal-off (the complement), not versus the diluted base rate.",
   "components": [
     {
@@ -79,13 +85,21 @@
     }
   ],
   "paper_trigger": {
-    "components": ["btc_weekly_macd_8_21_5_hist_rising", "ladder_quantile"],
+    "components": [
+      "btc_weekly_macd_8_21_5_hist_rising",
+      "ladder_quantile"
+    ],
     "rule": "all pass",
     "status": "PROMISING",
     "note": "the 9/13 research's closest candidate: BTC weekly MACD(8,21,5) histogram positive and rising, plus the ladder not in its top band. Beat its complement by 9 points on BTC 14-day and 16 on MSTR 10-day, cut the chance of a 10% drop inside two weeks from 24% to 14%, and cleared the adoption bar nowhere. Paper only."
   },
   "paper_trigger_previous": {
-    "components": ["btc_200d", "btc_200w", "mstr_weekly_macd", "rv_rank_high"],
+    "components": [
+      "btc_200d",
+      "btc_200w",
+      "mstr_weekly_macd",
+      "rv_rank_high"
+    ],
     "rule": "all pass",
     "status": "PROMISING",
     "note": "the 9/12 MSTR backtest's two promising readings; kept for the ledger"
@@ -93,5 +107,19 @@
   "entry_timing": {
     "component": "btc_weekly_macd_8_21_5_fresh_cross",
     "note": "the best week to open a new vertical is the cross week; the hold condition is the histogram rising row"
+  },
+  "leaps_unit": {
+    "ticker": "MSTX",
+    "long": "Dec 2028 33 call",
+    "short": "Jan 2028 60 call",
+    "long_price": 6.5,
+    "short_price": 4.25,
+    "net_debit": 2.25,
+    "width": 27,
+    "debit_over_width": 0.083,
+    "short_funds_pct": 65,
+    "cost_per_dollar_of_mstx": 0.25,
+    "source": "operator broker quotes, 2026-09-13",
+    "rule": "the 40% funding test passes with room; re-quote before every entry"
   }
 }

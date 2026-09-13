@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-13T06:09:36Z",
+  "generated_at": "2026-09-13T08:53:53Z",
   "as_of_run_date": "2026-09-13",
   "inputs": {
     "btc_above_200d": {
@@ -8,9 +8,9 @@
       "source": "yahoo_daily",
       "as_of": "2026-09-13",
       "error": null,
-      "btc_close": 77284.679688,
-      "sma_200d": 70091.205195,
-      "gap_pct": 10.26302
+      "btc_close": 76808.132812,
+      "sma_200d": 70135.37418,
+      "gap_pct": 9.514113
     },
     "btc_above_200w": {
       "value": true,
@@ -18,9 +18,9 @@
       "source": "yahoo_weekly",
       "as_of": "2026-09-13 price vs week ending 2026-09-06",
       "error": null,
-      "btc_close": 77284.679688,
+      "btc_close": 76808.132812,
       "sma_200w": 64867.387324,
-      "gap_pct": 19.142581,
+      "gap_pct": 18.407933,
       "weeks": 558,
       "note": "SMA over completed calendar weeks only"
     },
@@ -69,19 +69,19 @@
       "note": "MACD(8,21,5) on the same completed Monday-to-Sunday UTC weekly closes as the histogram-rising row, EMA seeded on the first value. Passes when the last complete bar's histogram is above zero and at least one of the three bars before it was at or below zero, which is a bullish cross inside the last three weekly bars. cross_bar_date is the first bar after the most recent non-positive bar. Entry timing, not a hold condition."
     },
     "ladder_quantile": {
-      "value": 9.312512,
+      "value": 9.007215,
       "pass": true,
       "source": "site formula",
       "as_of": "2026-09-13",
       "error": null,
       "band": "below 15",
-      "btc_close": 77284.679688,
+      "btc_close": 76808.132812,
       "fair_value": 140389.837203,
       "days_since_genesis": 6462.0,
       "note": "the page's own priceToQuantile, ported into this script. Fair value is 10 ** (5.82 * log10(days since 2009-01-03) - 17.029), bands are offsets in log10(price / fair value), and the decaying bands cap their slope term at the run date. Passes when the quantile is not above the 85th band."
     },
     "btc_price": {
-      "value": 77284.679688,
+      "value": 76808.132812,
       "pass": null,
       "source": "yahoo_daily",
       "as_of": "2026-09-13",
@@ -472,6 +472,20 @@
     "entry_timing": {
       "component": "btc_weekly_macd_8_21_5_fresh_cross",
       "note": "the best week to open a new vertical is the cross week; the hold condition is the histogram rising row"
+    },
+    "leaps_unit": {
+      "ticker": "MSTX",
+      "long": "Dec 2028 33 call",
+      "short": "Jan 2028 60 call",
+      "long_price": 6.5,
+      "short_price": 4.25,
+      "net_debit": 2.25,
+      "width": 27,
+      "debit_over_width": 0.083,
+      "short_funds_pct": 65,
+      "cost_per_dollar_of_mstx": 0.25,
+      "source": "operator broker quotes, 2026-09-13",
+      "rule": "the 40% funding test passes with room; re-quote before every entry"
     }
   },
   "sources": {

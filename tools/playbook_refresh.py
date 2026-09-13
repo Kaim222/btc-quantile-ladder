@@ -1201,6 +1201,7 @@ def main() -> int:
             "paper_trigger": rules.get("paper_trigger"),
             "paper_trigger_previous": rules.get("paper_trigger_previous"),
             "entry_timing": rules.get("entry_timing"),
+            "leaps_unit": rules.get("leaps_unit"),
         },
         "sources": {
             "prices": "Yahoo Finance daily bars via yfinance. Delayed and unofficial.",

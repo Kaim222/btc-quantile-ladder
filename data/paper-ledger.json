@@ -1,0 +1,32 @@
+{
+  "journal": [
+    {
+      "date": "2026-09-13",
+      "mode": "paper",
+      "ticker": "MSTX",
+      "rule": "section 19 paired diagonal, units objective",
+      "structure": "long Oct 2 14C / short Sep 25 15C and long Oct 9 16C / short Sep 25 17C, equal dollars",
+      "debit_mid": {"14/15": 0.67, "16/17": 0.73},
+      "debit_natural": {"14/15": 1.19, "16/17": 1.28},
+      "width": {"14/15": 1.0, "16/17": 1.0},
+      "hurdle": {"14/15": 0.67, "16/17": 0.73},
+      "execution": "equal dollars, contracts = half the capital / (mid debit x 100); two spread orders at the mid in pieces, no four-leg combo; read strikes and expiries off the ticket before submit",
+      "exit": "hold to 9/25; mark on a rip past 17.50; roll shorts against own longs if unfilled; LEAPS leg on 9/26",
+      "result": "pending"
+    }
+  ],
+  "paper_calls": [
+    {
+      "date": "2026-09-13",
+      "event": "MSTX above 16.42 at the 9/25 close (BTC above 80,000)",
+      "trigger": "hold condition on, entry week no (cross of 7/26); decision taken on the units objective",
+      "implied_p": 0.244,
+      "implied_p_note": "interpolated between the Sep 25 16 strike at 0.269 and the Sep 25 17 strike at 0.209, Black-Scholes N(d2) at 4% on each row's Yahoo IV",
+      "hurdle_p": {"14/15": 0.67, "16/17": 0.73},
+      "own_p": null,
+      "scored_at": "2026-09-25",
+      "outcome": "pending",
+      "note": "scored against the implied odds at entry; units bought on 9/26 are the result"
+    }
+  ]
+}

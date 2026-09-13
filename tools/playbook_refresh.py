@@ -114,6 +114,87 @@ def dstr(ts) -> str:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# ladder quantile: a port of the page's own priceToQuantile
+#
+# Copied from index.html rather than imported, so the script has no dependency
+# outside this repo. Fair value is 10 ** (A * log10(days since genesis) + B).
+# Bands are offsets in log10(price / fair value); the three decaying bands take
+# the smaller of days-elapsed and today's days for their slope term, which is
+# what the page's Date.now() does. The quantile is a linear interpolation in
+# quantile space between the two band offsets that bracket the residual, with
+# the outermost pair's slope extrapolating off either end.
+# ─────────────────────────────────────────────────────────────────────────────
+LADDER_GENESIS = datetime(2009, 1, 3, tzinfo=timezone.utc)
+LADDER_A = 5.82
+LADDER_B = -17.029
+LADDER_BANDS = [                     # (quantile, slope, intercept), highest first
+    (99.9, -0.0000756204, 0.7434),
+    (95.0, -0.0000583518, 0.5943),
+    (85.0, -0.0000516698, 0.4318),
+    (50.0, 0.0, -0.000400),
+    (15.0, 0.0, -0.209200),
+    (0.1, 0.0, -0.340300),
+]
+
+
+def ladder_days(when) -> float:
+    """Float days from the genesis block to `when` (a date or a UTC datetime)."""
+    if isinstance(when, datetime):
+        d = when if when.tzinfo else when.replace(tzinfo=timezone.utc)
+    else:
+        d = datetime(when.year, when.month, when.day, tzinfo=timezone.utc)
+    return (d - LADDER_GENESIS).total_seconds() / 86400.0
+
+
+def ladder_fair_value(days: float) -> float:
+    return 10 ** (LADDER_A * math.log10(days) + LADDER_B) if days > 0 else 0.0
+
+
+def ladder_band_offsets(days: float, today_days: float) -> list[tuple[float, float]]:
+    out = []
+    for q, m, c in LADDER_BANDS:
+        eff = min(days, today_days) if m < 0 else days
+        out.append((q, m * eff + c))
+    return out
+
+
+def price_to_quantile_days(price: float, days: float, today_days: float | None = None) -> float:
+    td = ladder_days(TODAY_UTC) if today_days is None else today_days
+    fv = ladder_fair_value(days)
+    if not fv or price <= 0:
+        raise RuntimeError(f"ladder quantile undefined at price {price} and {days} days")
+    res = math.log10(price / fv)
+    bands = ladder_band_offsets(days, td)
+    for i in range(len(bands) - 1):
+        hi_q, hi_off = bands[i]
+        lo_q, lo_off = bands[i + 1]
+        if lo_off <= res <= hi_off:
+            t = (res - lo_off) / (hi_off - lo_off)
+            return lo_q + t * (hi_q - lo_q)
+    if res > bands[0][1]:                                     # above the top band
+        slope = (bands[0][0] - bands[1][0]) / (bands[0][1] - bands[1][1])
+        return min(99.99, bands[0][0] + slope * (res - bands[0][1]))
+    a, z = bands[-2], bands[-1]                               # below the bottom band
+    slope = (a[0] - z[0]) / (a[1] - z[1])
+    return max(0.01, z[0] + slope * (res - z[1]))
+
+
+def price_to_quantile(price: float, when, today_days: float | None = None) -> float:
+    return price_to_quantile_days(price, ladder_days(when), today_days)
+
+
+def ladder_band_label(q: float) -> str:
+    """The four bands the 9/13 research scores, in its own words."""
+    if q < 15.0:
+        return "below 15"
+    if q < 50.0:
+        return "15 to 50"
+    if q < 85.0:
+        return "50 to 85"
+    return "above 85"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # market data
 # ─────────────────────────────────────────────────────────────────────────────
 def download(ticker: str) -> pd.DataFrame:
@@ -156,6 +237,37 @@ def weekly_closes(close: pd.Series, today: date | None = None) -> pd.Series:
     if len(wk):
         wk = wk[[d.date() <= end for d in wk.index]]
     return wk
+
+
+def macd_hist(closes: pd.Series, fast: int = 8, slow: int = 21, signal: int = 5) -> pd.Series:
+    """MACD histogram: line minus signal, EMAs seeded on the first value.
+
+    `adjust=False` is the standard first-value seed, the same convention the MSTR
+    weekly MACD row already uses and the one the 9/13 backtest ran on.
+    """
+    line = closes.ewm(span=fast, adjust=False).mean() - closes.ewm(span=slow, adjust=False).mean()
+    return line - line.ewm(span=signal, adjust=False).mean()
+
+
+def macd_hist_rising(closes: pd.Series, fast: int = 8, slow: int = 21, signal: int = 5,
+                     warmup: int = 30) -> dict:
+    """The 9/13 research's weekly leg: histogram above zero and above the prior bar.
+
+    `closes` must already be completed bars only. Fewer than `warmup` bars is an
+    error rather than a reading, because the seeded EMA has not settled.
+    """
+    hist = macd_hist(closes, fast, slow, signal).dropna()
+    if len(hist) < warmup:
+        raise RuntimeError(f"only {len(hist)} histogram bars, {warmup} needed for warm-up")
+    last, prev = float(hist.iloc[-1]), float(hist.iloc[-2])
+    return {
+        "flag": bool(last > 0.0 and last > prev),
+        "hist": last,
+        "hist_prev": prev,
+        "bar": dstr(hist.index[-1]),
+        "prev_bar": dstr(hist.index[-2]),
+        "bars": int(len(hist)),
+    }
 
 
 def rsi(close: pd.Series, n: int = 14) -> pd.Series:
@@ -649,6 +761,25 @@ def self_test() -> list[str]:
     assert abs(float(rsi(falling).iloc[-1]) - 0.0) < 1e-9, "falling series did not read RSI 0"
     checks.append("Wilder RSI: 14-bar warm-up NaN, rising reads 100, falling reads 0")
 
+    # the 9/13 weekly leg: a rising series must read the histogram positive and
+    # rising, a falling one must not. 60 bars clears the 30-bar warm-up.
+    wks = pd.date_range("2025-08-03", periods=60, freq="W")
+    up = pd.Series(100.0 * np.power(1.02, np.arange(60)), index=wks)
+    r_up = macd_hist_rising(up)
+    assert r_up["flag"] is True, f"rising weekly series read flag False, hist {r_up['hist']}"
+    assert r_up["hist"] > 0 and r_up["hist"] > r_up["hist_prev"], "rising series histogram not positive and rising"
+    down = pd.Series(100.0 * np.power(0.98, np.arange(60)), index=wks)
+    assert macd_hist_rising(down)["flag"] is False, "falling weekly series read flag True"
+    checks.append("weekly MACD(8,21,5): rising series reads positive and rising, falling does not")
+
+    # ladder port fixture: the site showed the 9.303rd quantile at BTC 77,200 on
+    # 2026-09-12, which is what pins this port to the page's own formula.
+    qq = price_to_quantile(77200.0078125, date(2026, 9, 12), ladder_days(date(2026, 9, 12)))
+    assert abs(qq - 9.303) < 0.01, f"ladder port read {qq:.3f}, the site read 9.303"
+    assert ladder_band_label(qq) == "below 15", f"9.3 labelled {ladder_band_label(qq)}"
+    assert ladder_band_label(90.0) == "above 85" and ladder_band_label(60.0) == "50 to 85"
+    checks.append("ladder port: 77,200 on 2026-09-12 reads 9.303q, below 15")
+
     # ledger normalization: a Yahoo entry no longer blocks the AlphaQuery
     # observation on the same date.
     book = normalize_book({"2026-09-12": {"iv": 0.7, "source": "yahoo_option_chain"}})
@@ -676,7 +807,8 @@ def main() -> int:
         # btc_price is written as null plus the error rather than omitted: a
         # missing key reads to the page as "never asked for", and the page then
         # has nothing to say the BTC level it is showing did not come from here.
-        for k in ("btc_above_200d", "btc_above_200w", "btc_price"):
+        for k in ("btc_above_200d", "btc_above_200w", "btc_price",
+                  "btc_weekly_macd_8_21_5_hist_rising", "ladder_quantile"):
             inputs[k] = failed(k, exc)
 
     if btc is not None:
@@ -715,6 +847,53 @@ def main() -> int:
             )
         except Exception as exc:
             inputs["btc_above_200w"] = failed("btc_above_200w", exc)
+
+        # the 9/13 research's weekly leg, on completed Monday-to-Sunday UTC bars
+        try:
+            wk = weekly_closes(close)
+            info = macd_hist_rising(wk)
+            inputs["btc_weekly_macd_8_21_5_hist_rising"] = row(
+                info["flag"],
+                passes=info["flag"],
+                source="yahoo_weekly",
+                as_of=f"week ending {info['bar']}",
+                histogram=f(info["hist"]),
+                histogram_prev=f(info["hist_prev"]),
+                bar_date=info["bar"],
+                prev_bar_date=info["prev_bar"],
+                weeks=info["bars"],
+                note=(
+                    "MACD(8,21,5) on completed Monday-to-Sunday UTC weekly closes, EMA seeded on "
+                    "the first value. Passes when the last complete bar's histogram is above zero "
+                    "and above the prior complete bar's."
+                ),
+            )
+        except Exception as exc:
+            inputs["btc_weekly_macd_8_21_5_hist_rising"] = failed(
+                "btc_weekly_macd_8_21_5_hist_rising", exc)
+
+        # the 9/13 research's ladder leg, from the page's own formula
+        try:
+            days = ladder_days(date.fromisoformat(last_dt))
+            quant = price_to_quantile_days(last_px, days)
+            inputs["ladder_quantile"] = row(
+                f(quant),
+                passes=bool(quant <= 85.0),
+                source="site formula",
+                as_of=last_dt,
+                band=ladder_band_label(quant),
+                btc_close=f(last_px),
+                fair_value=f(ladder_fair_value(days)),
+                days_since_genesis=f(days),
+                note=(
+                    "the page's own priceToQuantile, ported into this script. Fair value is "
+                    "10 ** (5.82 * log10(days since 2009-01-03) - 17.029), bands are offsets in "
+                    "log10(price / fair value), and the decaying bands cap their slope term at "
+                    "the run date. Passes when the quantile is not above the 85th band."
+                ),
+            )
+        except Exception as exc:
+            inputs["ladder_quantile"] = failed("ladder_quantile", exc)
 
         inputs["btc_price"] = row(
             f(last_px), source="yahoo_daily", as_of=last_dt,
@@ -940,13 +1119,15 @@ def main() -> int:
             "as_of": rules.get("as_of"),
             "components": rules.get("components", []),
             "paper_trigger": rules.get("paper_trigger"),
+            "paper_trigger_previous": rules.get("paper_trigger_previous"),
         },
         "sources": {
             "prices": "Yahoo Finance daily bars via yfinance. Delayed and unofficial.",
             "implied_vol": "AlphaQuery 30-day mean IV (keyless chart endpoint) for the MSTR / MSTX / IBIT series and the IV rank; Yahoo's option-chain impliedVolatility field for the single mstr_atm_iv_30d row. Both delayed, neither a computed mid-market vol.",
             "iv_rank": "Computed over data/iv-ledger.json, the AlphaQuery entries only, trailing 252 entries at most. Labelled with its window length and called a 52-week window only at a full 252 entries. A ticker whose fetch failed keeps its ledger reading, carries an error string with as_of_fetch null, and sets iv.stale.",
             "events": "tools/events.json, hand maintained. Every row carries a verified flag and a source URL.",
-            "rule_flags": "tools/playbook_rules.json, hand maintained: backtest status plus the adopted flag plus the paper trigger.",
+            "rule_flags": "tools/playbook_rules.json, hand maintained: backtest status plus the adopted flag plus the current and previous paper triggers.",
+            "ladder_quantile": "The page's own priceToQuantile ported into this script, scored at the Yahoo daily close and its own date. Not a second model, the same formula the ladder tab draws.",
             "rule": "No field is ever a fabricated number. A source that fails is written as null with an error string.",
         },
         "errors": ERRORS,
@@ -965,7 +1146,10 @@ def main() -> int:
     ratio = (iv.get("mstx_mstr_iv_ratio") or {}).get("value")
     print(
         "playbook_refresh "
-        f"btc={show('btc_price', '${:,.0f}')} >200d={show('btc_above_200d')} >200w={show('btc_above_200w')} | "
+        f"btc={show('btc_price', '${:,.0f}')} >200d={show('btc_above_200d')} >200w={show('btc_above_200w')} "
+        f"wkhist8215rising={show('btc_weekly_macd_8_21_5_hist_rising')} "
+        f"ladderq={show('ladder_quantile', '{:.2f}')}"
+        f"({(inputs.get('ladder_quantile') or {}).get('band', '-')}) | "
         f"mstr={show('mstr_price', '${:,.2f}')} mstx={show('mstx_price', '${:,.2f}')} "
         f"macd>sig={show('mstr_weekly_macd')} "
         f"hiddendiv={show('mstr_hidden_bull_div')} bbtight={show('bollinger_tight')}(pct={bb_pct}) "

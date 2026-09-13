@@ -131,7 +131,7 @@ Static rules first, live inputs second.
    and never a placeholder number. The mapping's localStorage key is
    `bql_pb_mapping_v2`: v1 shipped invented defaults, and the key had to move for
    the sheet's figures to land in a browser that already stored the old shape.
-4. **Trigger inputs.** Eleven rows from `data/playbook.json`, each with value,
+4. **Trigger inputs.** Thirteen rows from `data/playbook.json`, each with value,
    pass or fail, source, as-of date, a status chip, and a hand override that
    marks the row "by hand". Status is the 9/12 backtest verdict from
    `tools/playbook_rules.json`, gold for PROMISING, red for NEGATIVE, muted for
@@ -148,10 +148,36 @@ Static rules first, live inputs second.
    readings show when both exist. Then **two** verdicts: FUNDED STACK, from the
    adopted components only, which reads "no adopted trigger; sleeve cannot be
    funded" while nothing is adopted, and PAPER STACK LIVE / NOT LIVE from the
-   rules file's `paper_trigger` (the trend trio plus realized-vol rank at 70 or
-   above), naming the failing components. When the paper stack is live the page
-   says to log a paper call in the sleeve state and score it at 10 trading days
-   against the implied probability.
+   rules file's `paper_trigger` (see the 2026-09-13 paragraph below for its
+   current composition), naming the failing components. When the paper stack is
+   live the page says to log a paper call in the sleeve state and score it at 10
+   trading days against the implied probability.
+
+   **2026-09-13 · the paper trigger switches to the 9/13 research's pair.** The
+   9/13 vertical-trigger backtest found nothing adoptable in 397 candidates and
+   named one pair as the closest thing: BTC weekly MACD(8,21,5) histogram
+   positive and rising, plus the ladder not above its 85th band. That pair
+   replaces the trend trio plus realized-vol rank as `paper_trigger` in
+   `tools/playbook_rules.json` (now v3, eight components), and the superseded
+   composition stays in the same file as `paper_trigger_previous`, so both
+   records build in parallel. The tab reads both: the PAPER STACK verdict is the
+   new pair, and a smaller line under it reads "previous paper stack (9/12)"
+   with its own LIVE or NOT LIVE. Two new inputs back it.
+   `btc_weekly_macd_8_21_5_hist_rising` runs MACD(8,21,5) over completed
+   Monday-to-Sunday UTC weekly bars built from the Yahoo daily closes, drops the
+   in-progress week, seeds the EMAs on their first value, and passes when the
+   last complete bar's histogram is above zero and above the prior complete
+   bar's. `ladder_quantile` is the page's own `priceToQuantile` ported into the
+   refresh script rather than imported, scored at the Yahoo daily close, passing
+   at 85 or below and carrying its band label (below 15, 15 to 50, 50 to 85,
+   above 85); the script's self-test pins the port to the 9.303rd quantile the
+   site read at BTC 77,200 on 2026-09-12. Both components are PROMISING and
+   adopted by neither asset, so nothing about the funding gate moves: the pair
+   beat its complement by 9 points on BTC 14-day and 16 on MSTR 10-day and cut
+   the chance of a 10% drop inside two weeks from 24% to 14%, and it cleared the
+   adoption bar nowhere. The journal's rows now carry an optional `trigger`
+   field that seeds with the current stack's two ids, so a logged paper call
+   says which stack it followed.
 5. **Sleeve state.** Hand-kept: balance, open verticals (up to three, implied
    probability = debit / width), last expiry, paper gate, refill date. Produces
    CAN FIRE / CANNOT FIRE with every gate from R3 and R4 listed. The R3 trigger
@@ -260,7 +286,7 @@ that fails writes `value: null` plus an error string, which the page renders as
 | `index.html` | tab row, `PLAYBOOK_RULES`, `PlaybookTab` |
 | `tools/playbook_refresh.py` | the refresh script |
 | `tools/events.json` | hand calendar, every row carries a `verified` flag, a source URL and a note |
-| `tools/playbook_rules.json` | v2: six trigger components with their backtest status and adopted flag, plus `paper_trigger` |
+| `tools/playbook_rules.json` | v3: eight trigger components with their backtest status and adopted flag, plus `paper_trigger` and `paper_trigger_previous` |
 | `data/playbook.json` | generated, the page's live inputs plus the `iv` block |
 | `data/iv-ledger.json` | generated, append-only implied-vol history, keyed ticker, then date, then source |
 
@@ -291,7 +317,9 @@ days 2020-01-02 to 2026-08-26 on a forward 10-trading-day return:
 | MSTR Bollinger width bottom quintile | NEGATIVE | 40.6% vs 52.6% off; added to the trend stack it cut the hit rate to 31% |
 | MSTR realized-vol rank 70 or above | PROMISING | 54.8% vs 47.7% off, n_eff 45 |
 
-`paper_trigger` is the trend trio plus realized-vol rank at 70 or above, all
-passing. It is the two PROMISING readings from the study and nothing more: no
-component is ADOPTED, so the funded stack cannot go live and the sleeve stays on
-paper until the 8-week record beats implied odds.
+This study's `paper_trigger` was the trend trio plus realized-vol rank at 70 or
+above, all passing. It was the two PROMISING readings from the study and nothing
+more: no component is ADOPTED, so the funded stack cannot go live and the sleeve
+stays on paper until the 8-week record beats implied odds. The 2026-09-13
+research replaced it as `paper_trigger` and it now sits in the same file as
+`paper_trigger_previous`, still scored on the page.

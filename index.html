@@ -847,12 +847,25 @@ const PLAYBOOK_RULES = {
       status:"NEGATIVE",   adopted:false, note:"40.6% vs 52.6% off; adding it to the trend stack cut the hit rate to 31%" },
     { id:"rv_rank_high",     input:"realized_vol_rank",    label:"MSTR realized-vol rank 70 or above",
       status:"PROMISING",  adopted:false, note:"RV rank 70 or above: 54.8% vs 47.7% off, n_eff 45, interval straddles" },
+    { id:"btc_weekly_macd_8_21_5_hist_rising", input:"btc_weekly_macd_8_21_5_hist_rising",
+      label:"BTC weekly MACD(8,21,5) histogram positive and rising",
+      status:"PROMISING",  adopted:false,
+      note:"the 9/13 research's closest candidate. BTC 14-day hit 61.1% on 113 independent observations against a 56.8% base, Wilson lower bound 51.8%, and 54.8% out of sample since 2022. Cleared the adoption bar nowhere. Paper only." },
+    { id:"ladder_quantile",  input:"ladder_quantile",      label:"Ladder quantile not above the 85th band",
+      status:"PROMISING",  adopted:false,
+      note:"the 9/13 research's other leg. The hit-rate gradient across bands is mostly a fitting artifact, but the drawdown gradient survives a causal refit: a 10% drop inside two weeks runs 13% below the 15th band against 34% above the 85th. Paper only." },
   ],
   paperTrigger: {
+    components: ["btc_weekly_macd_8_21_5_hist_rising","ladder_quantile"],
+    rule: "all pass",
+    status: "PROMISING",
+    note: "the 9/13 research's closest candidate: BTC weekly MACD(8,21,5) histogram positive and rising, plus the ladder not in its top band. Beat its complement by 9 points on BTC 14-day and 16 on MSTR 10-day, cut the chance of a 10% drop inside two weeks from 24% to 14%, and cleared the adoption bar nowhere. Paper only.",
+  },
+  paperTriggerPrevious: {
     components: ["btc_200d","btc_200w","mstr_weekly_macd","rv_rank_high"],
     rule: "all pass",
     status: "PROMISING",
-    note: "trend trio plus high realized-vol rank; the two PROMISING readings in the 9/12 backtest; nothing is ADOPTED, so the sleeve stays on paper until the 8-week record beats implied odds",
+    note: "the 9/12 MSTR backtest's two promising readings; kept for the ledger",
   },
 };
 
@@ -868,6 +881,14 @@ const PB_TRIGGERS = [
     sub:"hand field: 52-week IV rank from your broker" },
   { id:"btc_above_200d",      label:"BTC above 200-day",           kind:"bool" },
   { id:"btc_above_200w",      label:"BTC above 200-week",          kind:"bool" },
+  { id:"btc_weekly_macd_8_21_5_hist_rising", label:"BTC weekly MACD(8,21,5) histogram rising", kind:"bool",
+    sub:"completed Monday-to-Sunday weeks; positive and above the prior bar",
+    extra:r=>r.histogram!=null&&r.histogram_prev!=null
+      ? r.histogram.toFixed(0)+" vs "+r.histogram_prev.toFixed(0) : null },
+  { id:"ladder_quantile",     label:"Ladder quantile not above 85th band", kind:"num",
+    fmt:v=>v.toFixed(1)+"q", passAt:v=>v<=85,
+    sub:"the page's own ladder formula, at the Yahoo close",
+    extra:r=>r.band?r.band+" band":null },
   { id:"mstr_weekly_macd",    label:"MSTR weekly MACD above signal",kind:"bool" },
   { id:"mstr_hidden_bull_div",label:"MSTR hidden bullish divergence",kind:"bool" },
   { id:"bollinger_tight",     label:"Bollinger width tight",       kind:"bool", extra:r=>r.width_pct!=null?r.width_pct.toFixed(0)+" pctile":null },
@@ -1057,6 +1078,10 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, liveFetch,
   const components = jsonComponents.length ? jsonComponents : PLAYBOOK_RULES.components;
   const jsonPaper = (pb && pb.rules && pbIsObj(pb.rules.paper_trigger)) ? pb.rules.paper_trigger : null;
   const paperTrigger = jsonPaper || PLAYBOOK_RULES.paperTrigger;
+  // the superseded 9/12 composition, kept so both records can be logged side by side
+  const jsonPaperPrev = (pb && pb.rules && pbIsObj(pb.rules.paper_trigger_previous))
+    ? pb.rules.paper_trigger_previous : null;
+  const paperTriggerPrev = jsonPaperPrev || PLAYBOOK_RULES.paperTriggerPrevious;
 
   // ── hand-fill state ───────────────────────────────────────────────────────
   // _v2 key: the v1 defaults were invented numbers, so the sheet's figures have
@@ -1196,6 +1221,14 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, liveFetch,
     : paper.failing.length ? "failing: " + paper.failing.join(", ")
     : paper.unknown.length ? "unknown inputs: " + paper.unknown.join(", ")
     : "all " + paper.list.length + " components pass";
+
+  const paperPrevIds = (paperTriggerPrev && paperTriggerPrev.components) || [];
+  const paperPrev = stackOf(paperPrevIds.map(id => components.find(c => c.id === id)).filter(Boolean));
+  const paperPrevReason = paperPrev.list.length === 0
+    ? "names no component the rules file defines"
+    : paperPrev.failing.length ? "failing: " + paperPrev.failing.join(", ")
+    : paperPrev.unknown.length ? "unknown inputs: " + paperPrev.unknown.join(", ")
+    : "all " + paperPrev.list.length + " components pass";
 
   const ivRank = effNum("iv_rank");
   const ivRankLabel = (pbIn.iv_rank && pbIn.iv_rank.rank_label) || null;
@@ -1694,6 +1727,19 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, liveFetch,
             {" "}{paper.list.map(c => c.label).join(", ") || "none"}.
           </div>
           {(paperTrigger && paperTrigger.note) && <div style={{...PB_DIM,marginTop:"4px"}}>{paperTrigger.note}</div>}
+          {/* the superseded 9/12 composition, still scored so both records build in parallel */}
+          <div style={{display:"flex",gap:"8px",alignItems:"baseline",flexWrap:"wrap",marginTop:"8px",
+            paddingTop:"6px",borderTop:"1px solid #0a1628"}}>
+            <span style={{fontSize:"11px",fontWeight:700,letterSpacing:"0.06em",
+              color:paperPrev.live?"#facc15":"#8aaac8"}}>
+              previous paper stack (9/12): {paperPrev.live ? "LIVE" : "NOT LIVE"}
+            </span>
+            <span style={PB_DIM}>{paperPrevReason}</span>
+          </div>
+          <div style={{...PB_DIM,marginTop:"3px"}}>
+            {paperPrev.list.map(c => c.label).join(", ") || "none"}
+            {(paperTriggerPrev && paperTriggerPrev.note) ? " · " + paperTriggerPrev.note : ""}
+          </div>
           <div style={{...PB_BODY,marginTop:"6px",color:"#a0b8cc"}}>
             When the paper stack is live, log a paper call in the sleeve state below and score it at 10 trading days
             against the implied probability.
@@ -1815,25 +1861,26 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, liveFetch,
         <div style={{display:"flex",alignItems:"center",gap:"10px",flexWrap:"wrap",marginBottom:"8px"}}>
           <div style={PB_LABEL}>Journal · closed trades</div>
           <button style={PB_BTN} onClick={()=>setJournal(rs=>[...(Array.isArray(rs)?rs:[]),
-            {date:"",mode:"paper",rule:"",ticker:"",structure:"",debit:"",width:"",ownP:"",result:"",followed:""}])}>+ row</button>
+            {date:"",mode:"paper",rule:"",trigger:paperIds.join(" + "),ticker:"",structure:"",
+             debit:"",width:"",ownP:"",result:"",followed:""}])}>+ row</button>
           <button style={PB_BTN} onClick={copyJournal}>copy as json</button>
           {copied && <span style={PB_DIM}>{copied}</span>}
         </div>
         {journalRows.length === 0 ? <div style={PB_DIM}>no closed trades logged</div> : (
           <div style={{overflowX:"auto"}}>
-            <div style={{minWidth:"940px"}}>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(10,1fr) 70px 44px",gap:"5px",...PB_LABEL,marginBottom:"4px"}}>
-                <div>date</div><div>paper/funded</div><div>rule</div><div>ticker</div><div>structure</div><div>debit</div>
+            <div style={{minWidth:"1040px"}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(11,1fr) 70px 44px",gap:"5px",...PB_LABEL,marginBottom:"4px"}}>
+                <div>date</div><div>paper/funded</div><div>rule</div><div>trigger</div><div>ticker</div><div>structure</div><div>debit</div>
                 <div>width</div><div>own p</div><div>result</div><div>followed</div><div>implied p</div><div/>
               </div>
               {journalRows.map((row,i) => {
                 const d = pbNum(row.debit), w = pbNum(row.width);
                 const ip = (d != null && w) ? d / w * 100 : null;
                 return (
-                  <div key={i} style={{display:"grid",gridTemplateColumns:"repeat(10,1fr) 70px 44px",gap:"5px",marginBottom:"4px",alignItems:"center"}}>
-                    {["date","mode","rule","ticker","structure","debit","width","ownP","result","followed"].map(k => (
+                  <div key={i} style={{display:"grid",gridTemplateColumns:"repeat(11,1fr) 70px 44px",gap:"5px",marginBottom:"4px",alignItems:"center"}}>
+                    {["date","mode","rule","trigger","ticker","structure","debit","width","ownP","result","followed"].map(k => (
                       <input key={k} value={row[k]||""}
-                        placeholder={k==="date"?"YYYY-MM-DD":k==="mode"?"paper/funded":k==="rule"?"R3":k==="result"?"hit/miss":k==="followed"?"yes/no":""}
+                        placeholder={k==="date"?"YYYY-MM-DD":k==="mode"?"paper/funded":k==="rule"?"R3":k==="trigger"?"optional: which stack":k==="result"?"hit/miss":k==="followed"?"yes/no":""}
                         onChange={e=>setJournal(rs=>rs.map((r,j)=>j===i?{...r,[k]:e.target.value}:r))}
                         style={{...PB_INPUT,fontSize:"10px",padding:"4px 5px"}}/>
                     ))}
@@ -1846,7 +1893,8 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, liveFetch,
               })}
               <div style={PB_DIM}>
                 implied p = debit ÷ width. Rows marked paper feed the paper gate above;
-                result reading hit, win, green or yes counts as a hit.
+                result reading hit, win, green or yes counts as a hit. Trigger is optional and seeds
+                with the current paper stack's component ids, so a paper call says which stack it followed.
               </div>
             </div>
           </div>

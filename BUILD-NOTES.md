@@ -80,9 +80,9 @@ Static rules first, live inputs second.
    rotation, R3 vertical-sleeve FIRE, R4 NO TRADE, R5 refill. The text is fixed
    and versioned (v3, 2026-09-12); it changes only between sessions, never
    mid-trade. The allocation line above R1 is the frame the sizing rules sit in:
-   LEAPS leg 40 to 50% of the account, cash floor 30% and never deployed,
+   LEAPS leg 45% of the account, cash floor 30% and never deployed,
    vertical sleeve the rest and paper until the eight-week record beats implied
-   odds. v3 settles the sizing and the sleeve limits. The LEAPS leg is 40 to 50%
+   odds. v3 settles the sizing and the sleeve limits. The LEAPS leg is 45%
    of the account in R1 and R2, sized so a 50% drop in the underlying does not
    touch the 30% cash floor. An R3 vertical is the smaller of 5% of the account
    and half-Kelly on the sleeve. The open-vertical cap drops from 5 to 3 in R3,

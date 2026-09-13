@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-13T04:37:42Z",
+  "generated_at": "2026-09-13T06:09:36Z",
   "as_of_run_date": "2026-09-13",
   "inputs": {
     "btc_above_200d": {
@@ -8,9 +8,9 @@
       "source": "yahoo_daily",
       "as_of": "2026-09-13",
       "error": null,
-      "btc_close": 77197.9375,
-      "sma_200d": 70090.771484,
-      "gap_pct": 10.139945
+      "btc_close": 77284.679688,
+      "sma_200d": 70091.205195,
+      "gap_pct": 10.26302
     },
     "btc_above_200w": {
       "value": true,
@@ -18,9 +18,9 @@
       "source": "yahoo_weekly",
       "as_of": "2026-09-13 price vs week ending 2026-09-06",
       "error": null,
-      "btc_close": 77197.9375,
+      "btc_close": 77284.679688,
       "sma_200w": 64867.387324,
-      "gap_pct": 19.008859,
+      "gap_pct": 19.142581,
       "weeks": 558,
       "note": "SMA over completed calendar weeks only"
     },
@@ -37,20 +37,51 @@
       "weeks": 558,
       "note": "MACD(8,21,5) on completed Monday-to-Sunday UTC weekly closes, EMA seeded on the first value. Passes when the last complete bar's histogram is above zero and above the prior complete bar's."
     },
+    "btc_weekly_macd_8_21_5_fresh_cross": {
+      "value": false,
+      "pass": false,
+      "source": "yahoo_weekly",
+      "as_of": "week ending 2026-09-06",
+      "error": null,
+      "histogram": 2379.228808,
+      "bar_date": "2026-09-06",
+      "cross_bar_date": "2026-07-26",
+      "bars_since_cross": null,
+      "histogram_last4": [
+        {
+          "bar": "2026-08-16",
+          "hist": 376.176916
+        },
+        {
+          "bar": "2026-08-23",
+          "hist": 1661.652661
+        },
+        {
+          "bar": "2026-08-30",
+          "hist": 2125.723557
+        },
+        {
+          "bar": "2026-09-06",
+          "hist": 2379.228808
+        }
+      ],
+      "weeks": 558,
+      "note": "MACD(8,21,5) on the same completed Monday-to-Sunday UTC weekly closes as the histogram-rising row, EMA seeded on the first value. Passes when the last complete bar's histogram is above zero and at least one of the three bars before it was at or below zero, which is a bullish cross inside the last three weekly bars. cross_bar_date is the first bar after the most recent non-positive bar. Entry timing, not a hold condition."
+    },
     "ladder_quantile": {
-      "value": 9.257082,
+      "value": 9.312512,
       "pass": true,
       "source": "site formula",
       "as_of": "2026-09-13",
       "error": null,
       "band": "below 15",
-      "btc_close": 77197.9375,
+      "btc_close": 77284.679688,
       "fair_value": 140389.837203,
       "days_since_genesis": 6462.0,
       "note": "the page's own priceToQuantile, ported into this script. Fair value is 10 ** (5.82 * log10(days since 2009-01-03) - 17.029), bands are offsets in log10(price / fair value), and the decaying bands cap their slope term at the run date. Passes when the quantile is not above the 85th band."
     },
     "btc_price": {
-      "value": 77197.9375,
+      "value": 77284.679688,
       "pass": null,
       "source": "yahoo_daily",
       "as_of": "2026-09-13",
@@ -402,6 +433,14 @@
         "note": "the 9/13 research's closest candidate. BTC 14-day hit 61.1% on 113 independent observations against a 56.8% base, Wilson lower bound 51.8%, and 54.8% out of sample since 2022. Beat its complement by 9 points on BTC 14-day and 16 on MSTR 10-day when paired with the ladder. Cleared the adoption bar nowhere. Paper only."
       },
       {
+        "id": "btc_weekly_macd_8_21_5_fresh_cross",
+        "input": "btc_weekly_macd_8_21_5_fresh_cross",
+        "label": "BTC weekly MACD(8,21,5) fresh cross (entry week)",
+        "status": "PROMISING",
+        "adopted": false,
+        "note": "the 9/13 research's entry-timing cell: 63.6% against a 56.8% base on 55 independent BTC 14-day signals, 68.6% against 51.6% on BTC 7-day since 2022 (the one cell that cleared the adoption bar). Entry timing, not a hold condition."
+      },
+      {
         "id": "ladder_quantile",
         "input": "ladder_quantile",
         "label": "Ladder quantile not above the 85th band",
@@ -429,6 +468,10 @@
       "rule": "all pass",
       "status": "PROMISING",
       "note": "the 9/12 MSTR backtest's two promising readings; kept for the ledger"
+    },
+    "entry_timing": {
+      "component": "btc_weekly_macd_8_21_5_fresh_cross",
+      "note": "the best week to open a new vertical is the cross week; the hold condition is the histogram rising row"
     }
   },
   "sources": {

@@ -177,7 +177,13 @@ Static rules first, live inputs second.
    the chance of a 10% drop inside two weeks from 24% to 14%, and it cleared the
    adoption bar nowhere. The journal's rows now carry an optional `trigger`
    field that seeds with the current stack's two ids, so a logged paper call
-   says which stack it followed.
+   says which stack it followed. A third input,
+   `btc_weekly_macd_8_21_5_fresh_cross`, asks the same weekly histogram whether
+   it crossed above zero inside the last three complete bars, which is the
+   research's entry-timing cell and the one cell that cleared the adoption bar,
+   so it lands as a ninth PROMISING component that sits outside `paper_trigger`
+   under the rules file's new `entry_timing` key and reads on the tab as an ENTRY
+   WEEK line under the PAPER STACK verdict.
 5. **Sleeve state.** Hand-kept: balance, open verticals (up to three, implied
    probability = debit / width), last expiry, paper gate, refill date. Produces
    CAN FIRE / CANNOT FIRE with every gate from R3 and R4 listed. The R3 trigger

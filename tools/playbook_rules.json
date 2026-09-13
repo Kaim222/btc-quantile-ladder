@@ -1,7 +1,7 @@
 {
   "version": "v3",
   "as_of": "2026-09-13",
-  "note": "Trigger-stack components with the backtest verdict on each. status is the backtest reading, adopted is whether the component may fund real size. Nothing is adopted, so the FUNDED STACK cannot go live and the sleeve stays on paper. input is the data/playbook.json inputs key the component scores against. The refresh script only reads this file, it never rewrites status or adopted. The first six components come from the 2026-09-12 MSTR backtest, the last two from the 2026-09-13 vertical-trigger research.",
+  "note": "Trigger-stack components with the backtest verdict on each. status is the backtest reading, adopted is whether the component may fund real size. Nothing is adopted, so the FUNDED STACK cannot go live and the sleeve stays on paper. input is the data/playbook.json inputs key the component scores against. The refresh script only reads this file, it never rewrites status or adopted. The first six components come from the 2026-09-12 MSTR backtest, the last three from the 2026-09-13 vertical-trigger research. entry_timing names the component that says which week to open a vertical, separate from the paper trigger's hold conditions.",
   "status_enum": ["UNPROVEN", "NEGATIVE", "UNTESTABLE", "PROMISING", "ADOPTED"],
   "backtest": "9/12: MSTR trading days 2020-01-02 to 2026-08-26, n=1671, forward 10 trading-day return. 9/13: BTC daily 2014-09-17 to 2026-09-12 on a forward 14-day return, plus MSTR on a forward 10-day return, 397 candidates, held-out test window 2022-01-01 to 2026-09-12. Hit rates quoted signal-on versus signal-off (the complement), not versus the diluted base rate.",
   "components": [
@@ -62,6 +62,14 @@
       "note": "the 9/13 research's closest candidate. BTC 14-day hit 61.1% on 113 independent observations against a 56.8% base, Wilson lower bound 51.8%, and 54.8% out of sample since 2022. Beat its complement by 9 points on BTC 14-day and 16 on MSTR 10-day when paired with the ladder. Cleared the adoption bar nowhere. Paper only."
     },
     {
+      "id": "btc_weekly_macd_8_21_5_fresh_cross",
+      "input": "btc_weekly_macd_8_21_5_fresh_cross",
+      "label": "BTC weekly MACD(8,21,5) fresh cross (entry week)",
+      "status": "PROMISING",
+      "adopted": false,
+      "note": "the 9/13 research's entry-timing cell: 63.6% against a 56.8% base on 55 independent BTC 14-day signals, 68.6% against 51.6% on BTC 7-day since 2022 (the one cell that cleared the adoption bar). Entry timing, not a hold condition."
+    },
+    {
       "id": "ladder_quantile",
       "input": "ladder_quantile",
       "label": "Ladder quantile not above the 85th band",
@@ -81,5 +89,9 @@
     "rule": "all pass",
     "status": "PROMISING",
     "note": "the 9/12 MSTR backtest's two promising readings; kept for the ledger"
+  },
+  "entry_timing": {
+    "component": "btc_weekly_macd_8_21_5_fresh_cross",
+    "note": "the best week to open a new vertical is the cross week; the hold condition is the histogram rising row"
   }
 }

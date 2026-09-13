@@ -270,6 +270,38 @@ def macd_hist_rising(closes: pd.Series, fast: int = 8, slow: int = 21, signal: i
     }
 
 
+def macd_hist_fresh_cross(closes: pd.Series, fast: int = 8, slow: int = 21, signal: int = 5,
+                          warmup: int = 30, window: int = 3) -> dict:
+    """The 9/13 research's entry-timing cell: a bullish cross inside the last `window` bars.
+
+    Same bars and same EMA seeding as `macd_hist_rising`, a different question.
+    The cross bar is the first bar after the most recent non-positive bar, so the
+    flag is exactly "the last complete bar is above zero and at least one of the
+    `window - 1` bars before it was at or below zero". A histogram that has never
+    been non-positive over the series has no cross bar and no reading; a cross
+    older than `window` bars reads false with the cross date still reported.
+    """
+    hist = macd_hist(closes, fast, slow, signal).dropna()
+    if len(hist) < warmup:
+        raise RuntimeError(f"only {len(hist)} histogram bars, {warmup} needed for warm-up")
+    vals = [float(v) for v in hist]
+    n = len(vals)
+    last_np = next((i for i in range(n - 1, -1, -1) if vals[i] <= 0.0), None)
+    cross = last_np + 1 if (last_np is not None and last_np + 1 < n) else None
+    since = (n - 1 - cross) if cross is not None else None
+    fresh = since is not None and since <= window - 1
+    tail = min(4, n)
+    return {
+        "flag": bool(fresh),
+        "hist": vals[-1],
+        "bar": dstr(hist.index[-1]),
+        "cross_bar": dstr(hist.index[cross]) if cross is not None else None,
+        "bars_since_cross": int(since) if fresh else None,
+        "last4": [{"bar": dstr(hist.index[i]), "hist": f(vals[i])} for i in range(n - tail, n)],
+        "bars": int(n),
+    }
+
+
 def rsi(close: pd.Series, n: int = 14) -> pd.Series:
     """Wilder's RSI(n).
 
@@ -772,6 +804,24 @@ def self_test() -> list[str]:
     assert macd_hist_rising(down)["flag"] is False, "falling weekly series read flag True"
     checks.append("weekly MACD(8,21,5): rising series reads positive and rising, falling does not")
 
+    # the entry-timing cell: a 26-week sine on weekly bars crosses the histogram
+    # above zero on the bar dated 2025-05-11. Cut two bars later the cross is
+    # inside the window, cut six bars later it is not.
+    cyc = pd.date_range("2024-06-02", periods=90, freq="W")
+    sine = pd.Series(100.0 + 12.0 * np.sin(2 * np.pi * np.arange(90) / 26.0), index=cyc)
+    near = macd_hist_fresh_cross(sine.iloc[:52])
+    assert near["flag"] is True, f"cross two bars back read flag False, {near}"
+    assert near["bars_since_cross"] == 2, f"cross two bars back counted {near['bars_since_cross']}"
+    assert near["cross_bar"] == "2025-05-11", f"cross bar read {near['cross_bar']}"
+    assert len(near["last4"]) == 4 and near["last4"][0]["hist"] < 0 < near["last4"][-1]["hist"], \
+        "the four-bar tail does not straddle zero"
+    far = macd_hist_fresh_cross(sine.iloc[:56])
+    assert far["flag"] is False, f"cross six bars back read flag True, {far}"
+    assert far["bars_since_cross"] is None, f"stale cross counted {far['bars_since_cross']} bars"
+    assert far["cross_bar"] == "2025-05-11" and far["hist"] > 0, \
+        "stale cross lost its date or its positive histogram"
+    checks.append("weekly MACD(8,21,5) fresh cross: two bars back reads true, six bars back false")
+
     # ladder port fixture: the site showed the 9.303rd quantile at BTC 77,200 on
     # 2026-09-12, which is what pins this port to the page's own formula.
     qq = price_to_quantile(77200.0078125, date(2026, 9, 12), ladder_days(date(2026, 9, 12)))
@@ -808,7 +858,8 @@ def main() -> int:
         # missing key reads to the page as "never asked for", and the page then
         # has nothing to say the BTC level it is showing did not come from here.
         for k in ("btc_above_200d", "btc_above_200w", "btc_price",
-                  "btc_weekly_macd_8_21_5_hist_rising", "ladder_quantile"):
+                  "btc_weekly_macd_8_21_5_hist_rising",
+                  "btc_weekly_macd_8_21_5_fresh_cross", "ladder_quantile"):
             inputs[k] = failed(k, exc)
 
     if btc is not None:
@@ -871,6 +922,35 @@ def main() -> int:
         except Exception as exc:
             inputs["btc_weekly_macd_8_21_5_hist_rising"] = failed(
                 "btc_weekly_macd_8_21_5_hist_rising", exc)
+
+        # the entry-timing cell: the same weekly histogram, asked whether it
+        # crossed above zero inside the last three complete bars
+        try:
+            wk = weekly_closes(close)
+            info = macd_hist_fresh_cross(wk)
+            inputs["btc_weekly_macd_8_21_5_fresh_cross"] = row(
+                info["flag"],
+                passes=info["flag"],
+                source="yahoo_weekly",
+                as_of=f"week ending {info['bar']}",
+                histogram=f(info["hist"]),
+                bar_date=info["bar"],
+                cross_bar_date=info["cross_bar"],
+                bars_since_cross=info["bars_since_cross"],
+                histogram_last4=info["last4"],
+                weeks=info["bars"],
+                note=(
+                    "MACD(8,21,5) on the same completed Monday-to-Sunday UTC weekly closes as the "
+                    "histogram-rising row, EMA seeded on the first value. Passes when the last "
+                    "complete bar's histogram is above zero and at least one of the three bars "
+                    "before it was at or below zero, which is a bullish cross inside the last "
+                    "three weekly bars. cross_bar_date is the first bar after the most recent "
+                    "non-positive bar. Entry timing, not a hold condition."
+                ),
+            )
+        except Exception as exc:
+            inputs["btc_weekly_macd_8_21_5_fresh_cross"] = failed(
+                "btc_weekly_macd_8_21_5_fresh_cross", exc)
 
         # the 9/13 research's ladder leg, from the page's own formula
         try:
@@ -1120,6 +1200,7 @@ def main() -> int:
             "components": rules.get("components", []),
             "paper_trigger": rules.get("paper_trigger"),
             "paper_trigger_previous": rules.get("paper_trigger_previous"),
+            "entry_timing": rules.get("entry_timing"),
         },
         "sources": {
             "prices": "Yahoo Finance daily bars via yfinance. Delayed and unofficial.",
@@ -1148,6 +1229,8 @@ def main() -> int:
         "playbook_refresh "
         f"btc={show('btc_price', '${:,.0f}')} >200d={show('btc_above_200d')} >200w={show('btc_above_200w')} "
         f"wkhist8215rising={show('btc_weekly_macd_8_21_5_hist_rising')} "
+        f"wkhist8215freshcross={show('btc_weekly_macd_8_21_5_fresh_cross')}"
+        f"(barssince={(inputs.get('btc_weekly_macd_8_21_5_fresh_cross') or {}).get('bars_since_cross')}) "
         f"ladderq={show('ladder_quantile', '{:.2f}')}"
         f"({(inputs.get('ladder_quantile') or {}).get('band', '-')}) | "
         f"mstr={show('mstr_price', '${:,.2f}')} mstx={show('mstx_price', '${:,.2f}')} "

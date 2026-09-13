@@ -851,6 +851,10 @@ const PLAYBOOK_RULES = {
       label:"BTC weekly MACD(8,21,5) histogram positive and rising",
       status:"PROMISING",  adopted:false,
       note:"the 9/13 research's closest candidate. BTC 14-day hit 61.1% on 113 independent observations against a 56.8% base, Wilson lower bound 51.8%, and 54.8% out of sample since 2022. Cleared the adoption bar nowhere. Paper only." },
+    { id:"btc_weekly_macd_8_21_5_fresh_cross", input:"btc_weekly_macd_8_21_5_fresh_cross",
+      label:"BTC weekly MACD(8,21,5) fresh cross (entry week)",
+      status:"PROMISING",  adopted:false,
+      note:"the 9/13 research's entry-timing cell: 63.6% against a 56.8% base on 55 independent BTC 14-day signals, 68.6% against 51.6% on BTC 7-day since 2022 (the one cell that cleared the adoption bar). Entry timing, not a hold condition." },
     { id:"ladder_quantile",  input:"ladder_quantile",      label:"Ladder quantile not above the 85th band",
       status:"PROMISING",  adopted:false,
       note:"the 9/13 research's other leg. The hit-rate gradient across bands is mostly a fitting artifact, but the drawdown gradient survives a causal refit: a 10% drop inside two weeks runs 13% below the 15th band against 34% above the 85th. Paper only." },
@@ -866,6 +870,11 @@ const PLAYBOOK_RULES = {
     rule: "all pass",
     status: "PROMISING",
     note: "the 9/12 MSTR backtest's two promising readings; kept for the ledger",
+  },
+  // which week to open a vertical, separate from the paper trigger's hold conditions
+  entryTiming: {
+    component: "btc_weekly_macd_8_21_5_fresh_cross",
+    note: "the best week to open a new vertical is the cross week; the hold condition is the histogram rising row",
   },
 };
 
@@ -885,6 +894,13 @@ const PB_TRIGGERS = [
     sub:"completed Monday-to-Sunday weeks; positive and above the prior bar",
     extra:r=>r.histogram!=null&&r.histogram_prev!=null
       ? r.histogram.toFixed(0)+" vs "+r.histogram_prev.toFixed(0) : null },
+  { id:"btc_weekly_macd_8_21_5_fresh_cross", label:"BTC weekly MACD(8,21,5) fresh cross (entry week)", kind:"bool",
+    sub:"the same weekly bars, asked whether the histogram turned positive inside the last three weeks",
+    extra:r=>r.bars_since_cross!=null ? r.bars_since_cross+" bars since cross"
+         : (r.cross_bar_date&&r.bar_date)
+         ? Math.round((Date.parse(r.bar_date)-Date.parse(r.cross_bar_date))/6048e5)
+           +" weeks since cross "+r.cross_bar_date
+         : null },
   { id:"ladder_quantile",     label:"Ladder quantile not above 85th band", kind:"num",
     fmt:v=>v.toFixed(1)+"q", passAt:v=>v<=85,
     sub:"the page's own ladder formula, at the Yahoo close",
@@ -1082,6 +1098,8 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, liveFetch,
   const jsonPaperPrev = (pb && pb.rules && pbIsObj(pb.rules.paper_trigger_previous))
     ? pb.rules.paper_trigger_previous : null;
   const paperTriggerPrev = jsonPaperPrev || PLAYBOOK_RULES.paperTriggerPrevious;
+  const jsonEntry = (pb && pb.rules && pbIsObj(pb.rules.entry_timing)) ? pb.rules.entry_timing : null;
+  const entryTiming = jsonEntry || PLAYBOOK_RULES.entryTiming;
 
   // ── hand-fill state ───────────────────────────────────────────────────────
   // _v2 key: the v1 defaults were invented numbers, so the sheet's figures have
@@ -1229,6 +1247,15 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, liveFetch,
     : paperPrev.failing.length ? "failing: " + paperPrev.failing.join(", ")
     : paperPrev.unknown.length ? "unknown inputs: " + paperPrev.unknown.join(", ")
     : "all " + paperPrev.list.length + " components pass";
+
+  // entry timing: which week to open a vertical. Read off the fresh-cross input,
+  // scored separately from the paper stack because it is not a hold condition.
+  const entryId    = (entryTiming && entryTiming.component) || "btc_weekly_macd_8_21_5_fresh_cross";
+  const entryWeek  = effBool(entryId);
+  const entryRow   = pbIn[entryId] || null;
+  const entryCross = (entryRow && entryRow.cross_bar_date) || null;
+  const entryBars  = (entryRow && typeof entryRow.bars_since_cross === "number")
+    ? entryRow.bars_since_cross : null;
 
   const ivRank = effNum("iv_rank");
   const ivRankLabel = (pbIn.iv_rank && pbIn.iv_rank.rank_label) || null;
@@ -1739,6 +1766,24 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, liveFetch,
           <div style={{...PB_DIM,marginTop:"3px"}}>
             {paperPrev.list.map(c => c.label).join(", ") || "none"}
             {(paperTriggerPrev && paperTriggerPrev.note) ? " · " + paperTriggerPrev.note : ""}
+          </div>
+          {/* entry timing, not a hold condition: the cross week is the week to open */}
+          <div style={{display:"flex",gap:"8px",alignItems:"baseline",flexWrap:"wrap",marginTop:"8px",
+            paddingTop:"6px",borderTop:"1px solid #0a1628"}}>
+            <span style={{fontSize:"11px",fontWeight:700,letterSpacing:"0.06em",
+              color:entryWeek === true ? "#facc15" : "#8aaac8"}}>
+              ENTRY WEEK: {entryWeek == null ? "unknown" : entryWeek ? "yes" : "no"}
+            </span>
+            <span style={PB_DIM}>
+              {entryWeek === true
+                ? "the weekly histogram crossed above zero on the bar ending " + (entryCross || "an unreported bar")
+                  + (entryBars != null ? ", " + entryBars + " bars back" : "")
+                : entryWeek === false
+                ? (entryCross ? "the last cross was the bar ending " + entryCross + ", outside the three-week window"
+                              : "no cross on record inside the window")
+                : "the fresh-cross input has no reading"}
+              {(entryTiming && entryTiming.note) ? " · " + entryTiming.note : ""}
+            </span>
           </div>
           <div style={{...PB_BODY,marginTop:"6px",color:"#a0b8cc"}}>
             When the paper stack is live, log a paper call in the sleeve state below and score it at 10 trading days

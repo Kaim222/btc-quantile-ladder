@@ -513,6 +513,23 @@ function PriceLookup({ btcPrice, liveHistory, dateStr, setDateStr, modelA=JV_A, 
           })}
         </div>
       )}
+      {results && btcPrice > 0 && (() => {
+        const tq = priceToQuantile(btcPrice, Date.now(), modelA, modelB);
+        const hp = quantileToPrice(tq, results.ts, modelA, modelB);
+        if (!(hp > 0)) return null;
+        const {tier: tt} = getTier(tq);
+        const chg = (hp / btcPrice - 1) * 100;
+        return (
+          <div title="Today's quantile carried to the selected date"
+            style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:"10px",flexWrap:"wrap",
+            marginTop:"8px",background:"#070f1f",border:`1px solid ${tt.color}33`,borderRadius:"5px",padding:"8px 10px"}}>
+            <span style={{fontSize:"11px",color:tt.color,fontWeight:700,letterSpacing:"0.06em"}}>
+              {"TODAY'S " + tq.toFixed(1) + "q HELD TO THIS DATE"}</span>
+            <span style={{fontSize:"14px",color:"#d0dde8",fontWeight:600}}>{fmtFull(hp)}</span>
+            <span style={{fontSize:"10px",color:chg >= 0 ? "#22c55e" : "#ef4444"}}>
+              {(chg >= 0 ? "+" : "") + chg.toFixed(1) + "% from today's price"}</span>
+          </div>);
+      })()}
     </div>
   );
 }
@@ -936,7 +953,11 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
   const pairs = Object.keys(dm);
   const gv = (o, k) => isObj(o) ? nm(o[k]) : null;
   const lk = k => nm(String(k).split("/")[0]), sk = k => String(k).split("/")[1] || null;
-  const p1 = pairs.map(k => ({k, legs:(isObj(j13.legs) && j13.legs[k]) || null,
+  const ph1 = phs.find(x => String(x.id) === "1") || null;
+  const sp1 = rowsOf(ph1 && ph1.spreads);
+  const p1 = sp1.length ? sp1.map(s => ({k:String(s.key||UNK), legs:s.legs||null, mid:nm(s.debit),
+      nat:nm(s.debit_natural), hur:nm(s.hurdle), odds:nm(s.odds_short)}))
+    : pairs.map(k => ({k, legs:(isObj(j13.legs) && j13.legs[k]) || null,
     mid:gv(dm,k), nat:gv(j13.debit_natural,k), hur:gv(j13.hurdle,k),
     odds:gv(j13.odds_short_mid,k)}));
   const x2 = (v, s) => v == null ? UNK : v.toFixed(2) + (s||"");
@@ -954,12 +975,22 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
       if (!d || a == null) return null;
       v += Math.max(Math.min(S - a, wid(k)), 0)/d/pairs.length; }
     return v; };
-  const uRows = [13,14,15,16,16.4,17,17.5,18,19].map(S => { const pv = pairVal(S), up = uPx(S);
+  const ub = rowsOf(ph1 && ph1.units_by_price).filter(r => nm(r.mstx) != null);
+  const uLive = ub.length > 0;
+  const uRows = uLive ? ub.map(r => ({S:nm(r.mstx), pv:nm(r.dollars), up:nm(r.unit), n:nm(r.leaps)}))
+    : [13,14,15,16,16.4,17,17.5,18,19].map(S => { const pv = pairVal(S), up = uPx(S);
     return {S, pv, up, n:(pv == null || !up) ? null : 100*pv/up}; });
-  const uV = Math.min(19, Math.max(13, nm(uSl) == null ? 16.4 : nm(uSl)));
-  const uSel = uRows.reduce((a,r) => Math.abs(r.S-uV) < Math.abs(a-uV) ? r.S : a, 13);
+  const uMin = uRows.length ? Math.min(...uRows.map(r => r.S)) : 13;
+  const uMax = uRows.length ? Math.max(...uRows.map(r => r.S)) : 19;
+  const uV = Math.min(uMax, Math.max(uMin, nm(uSl) == null ? 16.4 : nm(uSl)));
+  const uSel = uRows.reduce((a,r) => Math.abs(r.S-uV) < Math.abs(a-uV) ? r.S : a, uRows.length ? uRows[0].S : 13);
+  const uSelR = uRows.find(r => r.S === uSel) || {};
   const uNow = pairVal(uV), uNowP = uPx(uV);
-  const uRead = "At " + uV.toFixed(1) + ": payout " + (uNow == null ? UNK : uNow.toFixed(2))
+  const uRead = uLive
+    ? "At " + uSel.toFixed(0) + " on the 25th: position about "
+      + (uSelR.pv == null ? UNK : "$" + Math.round(uSelR.pv).toLocaleString("en-US"))
+      + ", unit " + x2(uSelR.up) + ", " + (uSelR.n == null ? UNK : uSelR.n.toFixed(0)) + " LEAPS"
+    : "At " + uV.toFixed(1) + ": payout " + (uNow == null ? UNK : uNow.toFixed(2))
     + " per 1.00, unit " + x2(uNowP) + ", "
     + ((uNow == null || !uNowP) ? UNK : (100*uNow/uNowP).toFixed(1)) + " units per 100";
   const mx = inp.mstx_price || {}, mxV = nm(mx.value);
@@ -990,7 +1021,8 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
   const routes = rowsOf(plg && plg.plan && plg.plan.routes);
   const rAs = md((String((plg && plg.plan && plg.plan.routes_note) || "")
     .match(/\d{4}-\d{2}-\d{2}/) || [""])[0]);
-  const rFoot = "Your calculation, " + (rAs || UNK) + ". Unit " + x2(uAt) + " at MSTX "
+  const rNote = String((plg && plg.plan && plg.plan.routes_note) || "");
+  const rFoot = /^Leif model/.test(rNote) ? rNote : "Your calculation, " + (rAs || UNK) + ". Unit " + x2(uAt) + " at MSTX "
     + (uAnc == null ? UNK : uAnc) + ", plus " + x2(uPer)
     + " per 1.00. The December distribution is assumed.";
   const PNL = {background:tier?tier.darkBg:"#070f1f",border:"1px solid "+AC+"30",
@@ -1135,7 +1167,7 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
 
       {/* PHASE 1 */}
       <div style={PNL}>
-        <div style={{...HD,marginBottom:10}}>PHASE 1 · TWO SPREADS · SHORTS SEP 25</div>
+        <div style={{...HD,marginBottom:10}}>{(ph1 && ph1.panel_title) || "PHASE 1 · TWO SPREADS · SHORTS SEP 25"}</div>
         {p1.map((r,i) => (
           <div key={r.k} style={{display:"flex",alignItems:"baseline",gap:"12px",flexWrap:"wrap",
             padding:"7px 0",borderTop:i?SEP:"none"}}>
@@ -1143,8 +1175,8 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
               width:"46px",flexShrink:0}}>{r.k}</span>
             <span style={{fontSize:13,color:"#a0b8cc"}}>{r.legs||UNK}</span>
             <span style={{fontSize:15,fontWeight:700,color:"#f1f5f9"}}>
-              {"debit " + x2(r.mid," mid")}</span>
-            <span style={{fontSize:11,color:GRY}}>{"natural " + x2(r.nat)}</span>
+              {"debit " + x2(r.mid, sp1.length ? " fill" : " mid")}</span>
+            {r.nat != null && <span style={{fontSize:11,color:GRY}}>{"natural " + x2(r.nat)}</span>}
             <span style={{fontSize:13,color:"#a0b8cc"}}>{"hurdle " + x2(r.hur)}</span>
             <span {...hit(oddsTip)} style={{...ACH,marginLeft:"auto",cursor:"pointer"}}>
               {(sk(r.k)||UNK) + " strike · " + (r.odds == null ? UNK + " odds"
@@ -1152,23 +1184,25 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
           </div>))}
         {!p1.length && <div style={{...BODY,padding:"7px 0"}}>No 9/13 row in the ledger.</div>}
         <div style={{...LINE,borderTop:SEP}}><span style={BODY}>
-          {"Strikes move down a dollar at 13 and up a dollar at 15 to 16. "
-            + "The structure and the split do not change."}</span></div>
-        <div style={FT}>{"Quotes are the " + (md(j13.chain_reference)||UNK)
+          {(ph1 && ph1.note) || ("Strikes move down a dollar at 13 and up a dollar at 15 to 16. "
+            + "The structure and the split do not change.")}</span></div>
+        <div style={FT}>{sp1.length ? "Fills are yours. Odds are model odds of the short strike finishing in the money."
+          : "Quotes are the " + (md(j13.chain_reference)||UNK)
           + " close, delayed. The morning quote wins. Odds are model odds."}</div>
       </div>
 
       {/* UNITS */}
       <div style={TBL}>
         <div style={{...HD,marginBottom:10}}>
-          LEAPS UNITS PER 100 OF CAPITAL, BY MSTX CLOSE ON THE 25TH</div>
+          {uLive ? "LEAPS YOU COULD BUY, BY MSTX CLOSE ON THE 25TH" : "LEAPS UNITS PER 100 OF CAPITAL, BY MSTX CLOSE ON THE 25TH"}</div>
         <div style={{overflowX:"auto"}}><div style={{display:"grid",
           gridTemplateColumns:"1fr 1fr 1fr 1fr",minWidth:"300px"}}>
-          {["MSTX","PAYOUT PER 1.00","UNIT PRICE","UNITS PER 100"].map((h,i) =>
+          {(uLive ? ["MSTX","POSITION VALUE","UNIT PRICE","LEAPS"] : ["MSTX","PAYOUT PER 1.00","UNIT PRICE","UNITS PER 100"]).map((h,i) =>
             <div key={h} style={{...LAB,padding:"4px 6px",textAlign:i?"right":"left"}}>{h}</div>)}
           {uRows.map(r => { const hl = r.S === uSel;
-            return [r.S.toFixed(1), r.pv == null ? UNK : r.pv.toFixed(1), x2(r.up),
-              r.n == null ? UNK : r.n.toFixed(1)].map((v,i) =>
+            return (uLive ? [r.S.toFixed(0), r.pv == null ? UNK : "$" + Math.round(r.pv).toLocaleString("en-US"), x2(r.up),
+              r.n == null ? UNK : r.n.toFixed(0)] : [r.S.toFixed(1), r.pv == null ? UNK : r.pv.toFixed(1), x2(r.up),
+              r.n == null ? UNK : r.n.toFixed(1)]).map((v,i) =>
               <div key={r.S+"-"+i} style={{padding:"5px 6px",fontSize:12,
                 borderBottom:"1px solid #070f1f",textAlign:i?"right":"left",
                 background:hl?AC+"14":"transparent",
@@ -1181,9 +1215,9 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
             flex:"1 1 110px",minWidth:"88px",height:"20px"}}>
             <div style={{position:"absolute",left:0,right:0,height:"3px",
               background:"#0d1e30",borderRadius:"3px"}}/>
-            <div style={{position:"absolute",left:0,width:((uV-13)/6*100)+"%",height:"3px",
+            <div style={{position:"absolute",left:0,width:((uV-uMin)/((uMax-uMin)||1)*100)+"%",height:"3px",
               background:AC,borderRadius:"3px",opacity:0.75}}/>
-            <input type="range" min="13" max="19" step="0.1" value={uV}
+            <input type="range" min={uMin} max={uMax} step={uLive ? 1 : 0.1} value={uV}
               onChange={e=>setUSl(parseFloat(e.target.value))}
               style={{position:"absolute",left:0,right:0,width:"100%",appearance:"none",
                 WebkitAppearance:"none",background:"transparent",cursor:"pointer",
@@ -1193,8 +1227,8 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
             textAlign:"right"}}>{uV.toFixed(1)}</span>
         </div>
         <div style={{fontSize:11,color:"#b0c4d8",marginTop:7}}>{uRead}</div>
-        <div style={FT}>{"Legs settle at intrinsic, long time value excluded, the conservative read. "
-          + "Objective: units, not dollars (doctrine section 19)."}</div>
+        <div style={FT}>{uLive ? ((ph1 && ph1.units_note) || "") : ("Legs settle at intrinsic, long time value excluded, the conservative read. "
+          + "Objective: units, not dollars (doctrine section 19).")}</div>
       </div>
 
       {/* TRIGGER */}
@@ -1252,6 +1286,7 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
             setRows(rs => [...rs, {expiry:"",longK:"",shortK:"",debit:""}]); }}>+ spread</button>}</div>
         {prow("leaps", <>{luTxt}{uTod && <span style={{display:"block",fontSize:11,color:GRY,
           marginTop:3}}>{uTod}</span>}</>, luBad, null)}
+        {rowsOf(ph1 && ph1.positions).map((s,i) => prow("pos"+i, String(s.text||UNK), null, null))}
         {rows.map((r,i) => prow(i, sTxt(r), sBad(r,i), i))}
         {ph && ph.roll_rules && <div style={{...LINE,borderTop:SEP,gap:12,paddingLeft:18,
           alignItems:"baseline"}}>

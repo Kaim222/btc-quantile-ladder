@@ -4,70 +4,199 @@
       {
         "id": 1,
         "dates": "through 2026-09-25",
-        "structure": "14/15 diagonal with the long on Oct 2 and 16/17 diagonal with the long on Oct 9, both shorts Sep 25, equal dollars",
-        "next_action": "Monday 9/14, 30 to 60 minutes after the open: convert the 17/17.50 diagonal into the two Phase 1 spreads, strikes shifted with the open, equal dollars, two spread orders at the mid",
-        "roll_rules": "each short rolls against its own long if unfilled at 9/25. The mark is taken on a rip past 17.50"
+        "structure": "321 x long Oct 2 15 call / short Sep 25 16 call, and 55 x Sep 25 16.50/18 call debit spreads. Everything else closed 9/15.",
+        "next_action": "Hold to the 25th. On the afternoon of the 25th close the diagonal as one spread ticket; the 16.50/18s settle on their own. A BTC daily close under 75k moves everything into Phase 2 at the next open.",
+        "roll_rules": "No rolls. Close the diagonal as a spread on the afternoon of the 25th.",
+        "status": "on",
+        "fills_2026_09_14": {
+          "long_oct2_14c": 1.94,
+          "short_sep25_15c": 1.2,
+          "n_14_15": 175,
+          "long_oct9_16c": 1.58,
+          "short_sep25_17c": 0.73,
+          "n_16_17": 150,
+          "entry_cost": 25700,
+          "units_on_25th_by_price": {
+            "13": 83,
+            "14": 130,
+            "15": 186,
+            "16": 181,
+            "17": 188,
+            "20": 113
+          },
+          "expected_units": {
+            "alex_lens": 156,
+            "market": 138
+          }
+        },
+        "hedge_2026_09_14": {
+          "rolled_oct9_16c_to_oct2": 150,
+          "sep25_20_22_call_debit_spreads": 60,
+          "sep25_17_50_19_50_call_debit_spreads": 36,
+          "sep25_16_50_18_50_call_debit_spreads": 47,
+          "broker_mark_2026_09_14_1503": 29010,
+          "units_on_25th_by_price": {
+            "13": 72,
+            "14": 113,
+            "15": 166,
+            "16": 162,
+            "17": 178,
+            "18": 167,
+            "19": 163,
+            "20": 150,
+            "21": 155,
+            "22": 159,
+            "25": 134
+          },
+          "expected_units_market": 125
+        },
+        "position_2026_09_15": {
+          "diag_oct2_15c_sep25_16c": 321,
+          "diag_fill": 0.59,
+          "sep25_16_50_18_50_call_debit_spreads": 45,
+          "vertical_avg": 0.45,
+          "account_approx": "21k-22k"
+        },
+        "panel_title": "PHASE 1 · WHAT IS ON · SHORTS SEP 25",
+        "spreads": [
+          {
+            "key": "15/16",
+            "legs": "321 × long Oct 2 15 call / short Sep 25 16 call",
+            "debit": 0.59,
+            "hurdle": 0.59,
+            "odds_short": 0.206
+          },
+          {
+            "key": "16.50/18",
+            "legs": "55 × long Sep 25 16.50 call / short Sep 25 18 call",
+            "debit": 0.45,
+            "hurdle": 0.3,
+            "odds_short": 0.092
+          }
+        ],
+        "note": "Fills 9/15: the diagonal at 0.59 average; the first 45 verticals at 0.45 (the 18.50 shorts later rolled down to 18 and 10 added). Odds are model odds from the 9/15 spot of 13.58.",
+        "positions": [
+          {
+            "text": "321 × long Oct 2 15 call / short Sep 25 16 call, 0.59 average"
+          },
+          {
+            "text": "55 × long Sep 25 16.50 call / short Sep 25 18 call"
+          }
+        ],
+        "units_by_price": [
+          {
+            "mstx": 13,
+            "dollars": 12000,
+            "unit": 2.0,
+            "leaps": 60
+          },
+          {
+            "mstx": 14,
+            "dollars": 22600,
+            "unit": 2.25,
+            "leaps": 100
+          },
+          {
+            "mstx": 15,
+            "dollars": 37700,
+            "unit": 2.5,
+            "leaps": 151
+          },
+          {
+            "mstx": 16,
+            "dollars": 57100,
+            "unit": 2.75,
+            "leaps": 208
+          },
+          {
+            "mstx": 17,
+            "dollars": 50900,
+            "unit": 3.0,
+            "leaps": 170
+          },
+          {
+            "mstx": 18,
+            "dollars": 50500,
+            "unit": 3.25,
+            "leaps": 155
+          },
+          {
+            "mstx": 19,
+            "dollars": 46600,
+            "unit": 3.5,
+            "leaps": 133
+          },
+          {
+            "mstx": 20,
+            "dollars": 44300,
+            "unit": 3.75,
+            "leaps": 118
+          },
+          {
+            "mstx": 21,
+            "dollars": 42800,
+            "unit": 4.0,
+            "leaps": 107
+          },
+          {
+            "mstx": 22,
+            "dollars": 42000,
+            "unit": 4.25,
+            "leaps": 99
+          },
+          {
+            "mstx": 25,
+            "dollars": 41200,
+            "unit": 5.0,
+            "leaps": 82
+          }
+        ],
+        "units_note": "Position value on the 25th close (Leif model: the Oct 2 15 long marked at about 140% with a week left, the 16.50/18s at intrinsic, about 300 cash) divided by that day's LEAPS unit price. LEAPS if the proceeds bought the unit straight away, before Phase 2."
       },
       {
         "id": 2,
         "dates": "2026-09-26 to 2026-12-18",
-        "structure": "March 15 call long against Dec 18 22 call short, strikes shifted up with the stock at entry",
-        "next_action": "9/26: all Phase 1 proceeds into the Phase 2 spread",
-        "roll_rules": "roll the short up to 25 on a close above 22 before December 1. January and February short rolls scheduled at entry"
+        "structure": "January 2027 call long against Dec 18 call short, all in; long one strike above the 9/25 close, short about 1.67x the close ($15 close: Jan 16 / Dec 25)",
+        "next_action": "9/26: all Phase 1 proceeds into the Jan long / Dec 18 short off the strike map (a 15 close: Jan 16 / Dec 25). Re-quote on the broker first.",
+        "roll_rules": "none; sold as one ticket on 12/18 or 12/19 into Phase 3",
+        "strike_map": {
+          "13": "Jan 14 / Dec 22",
+          "14": "Jan 15 / Dec 23",
+          "15": "Jan 16 / Dec 25",
+          "16": "Jan 17 / Dec 27",
+          "17": "Jan 18 / Dec 28",
+          "18": "Jan 19 / Dec 30",
+          "20": "Jan 21 / Dec 33"
+        }
       },
       {
         "id": 3,
         "dates": "from 2026-12-19",
-        "structure": "the LEAPS leg, ticker and strikes per the ladder",
-        "next_action": "open with whatever is there",
-        "roll_rules": "per doctrine section 15"
+        "structure": "The LEAPS leg. Ticker and strikes come from the ladder.",
+        "next_action": "Open with whatever is there.",
+        "roll_rules": "Follow doctrine section 15."
       }
     ],
     "objective": "LEAPS units, not dollars: the count of MSTX Dec 2028 33 / Jan 2028 60 units the account can buy after the trade settles, at that day's unit price, about 2.25 at MSTX 14 plus 0.25 per 1.00 of MSTX",
     "unit_price_anchor_mstx": 14,
     "routes": [
       {
-        "route": "Full plan: Phase 1, then March long / Dec 22 short, then LEAPS",
-        "units_thesis": 227,
-        "units_market": 160
+        "route": "Phase 1 → Jan long / Dec 18 short (strike map) → LEAPS 12/19 (the plan)",
+        "units_thesis": 175,
+        "units_market": 62
       },
       {
-        "route": "Phase 1, then Jan 15 long / Dec 20 short, then LEAPS",
-        "units_thesis": 212,
-        "units_market": 141
+        "route": "Phase 1 → March long / Dec 18 short (conservative) → LEAPS 12/19",
+        "units_thesis": 125,
+        "units_market": 65
       },
       {
-        "route": "Phase 1, then March long / Dec 25 short, then LEAPS",
-        "units_thesis": 206,
-        "units_market": 139
-      },
-      {
-        "route": "Phase 1, then Jan long / Dec 22 short, then LEAPS",
-        "units_thesis": 211,
-        "units_market": 131
-      },
-      {
-        "route": "Phase 1, then March / Dec 22 with half, half to LEAPS on 9/26",
-        "units_thesis": 182,
-        "units_market": 136
-      },
-      {
-        "route": "Skip Phase 1, March / Dec 22, then LEAPS",
-        "units_thesis": 145,
-        "units_market": 126
-      },
-      {
-        "route": "Phase 1, then LEAPS on 9/26",
-        "units_thesis": 130,
-        "units_market": 112
-      },
-      {
-        "route": "Straight to LEAPS now",
-        "units_thesis": 102,
-        "units_market": 102
+        "route": "Phase 1 → LEAPS on 9/26",
+        "units_thesis": 126,
+        "units_market": 100
       }
     ],
-    "routes_note": "operator's calculation of 2026-09-13. Units are LEAPS units per 100 of capital at the end of the route. Thesis column runs the operator's distribution, market column the chain's."
+    "routes_note": "Leif model, 2026-09-15, from the current Phase 1 position. Your odds: the market's 9/25 odds from 13.58 shifted two dollars up, and a December centered about 1.9x the 25th's close (29 from a 15 close). Market odds: the chain's own for both. LEAPS priced off the 33/60 quotes at the December close."
   },
   "journal": [
     {
@@ -75,7 +204,7 @@
       "mode": "paper",
       "ticker": "MSTX",
       "rule": "section 19 paired diagonal, units objective",
-      "structure": "long Oct 2 14C / short Sep 25 15C and long Oct 9 16C / short Sep 25 17C, equal dollars",
+      "structure": "Long Oct 2 14 call against short Sep 25 15 call, and long Oct 9 16 call against short Sep 25 17 call, equal dollars.",
       "debit_mid": {
         "14/15": 0.67,
         "16/17": 0.73
@@ -99,10 +228,10 @@
         "14/15": 0.351,
         "16/17": 0.209
       },
-      "odds_short_mid_note": "model odds of the short strike being in the money at the 9/25 close, Black-Scholes N(d2) at 4% on the 9/11 chain's IV for that strike",
+      "odds_short_mid_note": "Model odds of the short strike finishing in the money at the 9/25 close. Black-Scholes N(d2) at 4% on the 9/11 chain IV for that strike.",
       "legs": {
-        "14/15": "long Oct 2 14 call \u00b7 short Sep 25 15 call",
-        "16/17": "long Oct 9 16 call \u00b7 short Sep 25 17 call"
+        "14/15": "long Oct 2 14 call · short Sep 25 15 call",
+        "16/17": "long Oct 9 16 call · short Sep 25 17 call"
       },
       "short_expiry": "2026-09-25",
       "chain_reference": "2026-09-11"
@@ -112,7 +241,7 @@
       "mode": "paper",
       "ticker": "MSTX",
       "rule": "section 19 Phase 1 entry, Monday conversion",
-      "structure": "close the 17/17.50 diagonal; open the 14/15 (long Oct 2) and 16/17 (long Oct 9) diagonals, shorts Sep 25, strikes shifted with the open",
+      "structure": "Close the 17/17.50 diagonal. Open the 14/15 with the long on Oct 2 and the 16/17 with the long on Oct 9, shorts Sep 25, strikes shifted with the open.",
       "debit_mid": {
         "14/15": 0.67,
         "16/17": 0.73
@@ -134,9 +263,9 @@
       "mode": "paper",
       "ticker": "MSTX",
       "rule": "section 19 Phase 2 entry",
-      "structure": "March 15 call long against Dec 18 22 call short, strikes shifted up with the stock at entry",
+      "structure": "Long the March 15 call against a short Dec 18 22 call. Strikes shift up with the stock at entry.",
       "implied_p": null,
-      "implied_p_note": "score against the implied odds at entry: N(d2) of the short strike at Dec 18 and of the long strike at March expiry, from the chain that morning",
+      "implied_p_note": "Score against the implied odds at entry. N(d2) of the short strike at Dec 18 and of the long strike at March expiry, from the chain that morning.",
       "result": "scheduled"
     }
   ],
@@ -146,7 +275,7 @@
       "event": "MSTX above 16.42 at the 9/25 close (BTC above 80,000)",
       "trigger": "hold condition on, entry week no (cross of 7/26); decision taken on the units objective",
       "implied_p": 0.244,
-      "implied_p_note": "interpolated between the Sep 25 16 strike at 0.269 and the Sep 25 17 strike at 0.209, Black-Scholes N(d2) at 4% on each row's Yahoo IV",
+      "implied_p_note": "Interpolated between the Sep 25 16 strike at 0.269 and the Sep 25 17 strike at 0.209. Black-Scholes N(d2) at 4% on each row's IV.",
       "hurdle_p": {
         "14/15": 0.67,
         "16/17": 0.73
@@ -154,7 +283,7 @@
       "own_p": null,
       "scored_at": "2026-09-25",
       "outcome": "pending",
-      "note": "scored against the implied odds at entry; units bought on 9/26 are the result"
+      "note": "Scored against the implied odds at entry. The units bought on 9/26 are the result."
     }
   ]
 }

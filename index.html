@@ -1172,7 +1172,7 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
           <div key={r.k} style={{display:"flex",alignItems:"baseline",gap:"12px",flexWrap:"wrap",
             padding:"7px 0",borderTop:i?SEP:"none"}}>
             <span style={{fontSize:11,fontWeight:700,letterSpacing:"0.1em",color:AC,
-              width:"46px",flexShrink:0}}>{r.k}</span>
+              minWidth:"46px",whiteSpace:"nowrap",flexShrink:0}}>{r.k}</span>
             <span style={{fontSize:13,color:"#a0b8cc"}}>{r.legs||UNK}</span>
             <span style={{fontSize:15,fontWeight:700,color:"#f1f5f9"}}>
               {"debit " + x2(r.mid, sp1.length ? " fill" : " mid")}</span>

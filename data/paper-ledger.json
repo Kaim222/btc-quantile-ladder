@@ -4,9 +4,9 @@
       {
         "id": 1,
         "dates": "through 2026-09-25",
-        "structure": "321 x long Oct 2 15 call / short Sep 25 16 call, and 55 x Sep 25 16.50/18 call debit spreads. Everything else closed 9/15.",
-        "next_action": "Hold to the 25th. On the afternoon of the 25th close the diagonal as one spread ticket; the 16.50/18s settle on their own. A BTC daily close under 75k moves everything into Phase 2 at the next open.",
-        "roll_rules": "No rolls. Close the diagonal as a spread on the afternoon of the 25th.",
+        "structure": "204 x long Sep 25 13.50 call / short Sep 18 14.50 call, and 60 x Sep 18 15/16 call debit spreads. The 15/16 diagonal and the 16.50/18s were closed 9/15 into this.",
+        "next_action": "Friday 9/18 is the decision: at or under 14.50, sell a Sep 25 14.50 against the long and hold the vertical to the 25th. Above 14.50, close the diagonal that day. The 60 x 15/16 expire on the 18th.",
+        "roll_rules": "No rolls. One decision on Friday 9/18.",
         "status": "on",
         "fills_2026_09_14": {
           "long_oct2_14c": 1.94,
@@ -57,101 +57,101 @@
           "vertical_avg": 0.45,
           "account_approx": "21k-22k"
         },
-        "panel_title": "PHASE 1 · WHAT IS ON · SHORTS SEP 25",
+        "panel_title": "PHASE 1 · WHAT IS ON · SHORTS SEP 18",
         "spreads": [
           {
-            "key": "15/16",
-            "legs": "321 × long Oct 2 15 call / short Sep 25 16 call",
-            "debit": 0.59,
-            "hurdle": 0.59,
-            "odds_short": 0.206
+            "key": "13.50/14.50",
+            "legs": "204 × long Sep 25 13.50 call / short Sep 18 14.50 call",
+            "debit": 0.71,
+            "hurdle": 0.71,
+            "odds_short": 0.09
           },
           {
-            "key": "16.50/18",
-            "legs": "55 × long Sep 25 16.50 call / short Sep 25 18 call",
-            "debit": 0.45,
-            "hurdle": 0.3,
-            "odds_short": 0.092
+            "key": "15/16",
+            "legs": "60 × Sep 18 15/16 call debit spread",
+            "debit": 0.1,
+            "hurdle": 0.1,
+            "odds_short": 0.02
           }
         ],
-        "note": "Fills 9/15: the diagonal at 0.59 average; the first 45 verticals at 0.45 (the 18.50 shorts later rolled down to 18 and 10 added). Odds are model odds from the 9/15 spot of 13.58.",
+        "note": "Fills 9/15 with MSTX near 13.00: the diagonal at 0.71, the 15/16 at 0.10 average. Cost basis $15,084, no cash left. Odds are model odds of the short strike finishing in the money by Sep 18.",
         "positions": [
           {
-            "text": "321 × long Oct 2 15 call / short Sep 25 16 call, 0.59 average"
+            "text": "204 × long Sep 25 13.50 call / short Sep 18 14.50 call, 0.71"
           },
           {
-            "text": "55 × long Sep 25 16.50 call / short Sep 25 18 call"
+            "text": "60 × Sep 18 15/16 call debit spread, 0.10"
           }
         ],
         "units_by_price": [
           {
             "mstx": 13,
-            "dollars": 12000,
+            "dollars": 5100,
             "unit": 2.0,
-            "leaps": 60
+            "leaps": 26
           },
           {
             "mstx": 14,
-            "dollars": 22600,
+            "dollars": 15300,
             "unit": 2.25,
-            "leaps": 100
+            "leaps": 68
           },
           {
             "mstx": 15,
-            "dollars": 37700,
+            "dollars": 25500,
             "unit": 2.5,
-            "leaps": 151
+            "leaps": 102
           },
           {
             "mstx": 16,
-            "dollars": 57100,
+            "dollars": 25500,
             "unit": 2.75,
-            "leaps": 208
+            "leaps": 93
           },
           {
             "mstx": 17,
-            "dollars": 50900,
+            "dollars": 25500,
             "unit": 3.0,
-            "leaps": 170
+            "leaps": 85
           },
           {
             "mstx": 18,
-            "dollars": 50500,
+            "dollars": 25500,
             "unit": 3.25,
-            "leaps": 155
+            "leaps": 78
           },
           {
             "mstx": 19,
-            "dollars": 46600,
+            "dollars": 25500,
             "unit": 3.5,
-            "leaps": 133
+            "leaps": 73
           },
           {
             "mstx": 20,
-            "dollars": 44300,
+            "dollars": 25500,
             "unit": 3.75,
-            "leaps": 118
+            "leaps": 68
           },
           {
             "mstx": 21,
-            "dollars": 42800,
+            "dollars": 25500,
             "unit": 4.0,
-            "leaps": 107
+            "leaps": 64
           },
           {
             "mstx": 22,
-            "dollars": 42000,
+            "dollars": 25500,
             "unit": 4.25,
-            "leaps": 99
+            "leaps": 60
           },
           {
             "mstx": 25,
-            "dollars": 41200,
+            "dollars": 25500,
             "unit": 5.0,
-            "leaps": 82
+            "leaps": 51
           }
         ],
-        "units_note": "Position value on the 25th close (Leif model: the Oct 2 15 long marked at about 140% with a week left, the 16.50/18s at intrinsic, about 300 cash) divided by that day's LEAPS unit price. LEAPS if the proceeds bought the unit straight away, before Phase 2."
+        "units_note": "Assumes the Sep 18 short expires worthless and a Sep 25 14.50 call is sold against the long for about 0.25 on the 18th, leaving a 13.50/14.50 vertical into the 25th. If MSTX is above 14.50 on the 18th the diagonal is closed that day instead, and these rows do not apply."
       },
       {
         "id": 2,

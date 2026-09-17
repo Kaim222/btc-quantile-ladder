@@ -245,30 +245,40 @@ function fmtMonth(ts) { return new Date(ts).toLocaleDateString("en-US", { month:
 // Short = band ceiling quantile projected at the short expiry
 //         (short strike doubles as the rotation trigger)
 // ─────────────────────────────────────────────────────────────────────────────
-const HYST = 1.0; // rotation buffer in quantile points — monitor fires past boundary ± HYST
+// rotation happens on the monthly close (see monthlyClose below); there is no daily buffer
 
 const LADDER = [
   { name:"STRC Margin", color:"#22c55e", darkBg:"#071a0f", qMin:85, qMax:100.01, kind:"margin",
     debt:"< 3%",
-    desc:"Perpetual preferred, 12% variable yield on $100 par. No BTC beta.",
-    typeNote:"shares only · 1.5× margin",
+    desc:"Sell zone. Above the 85 line the BTC beta is sold and the proceeds sit in STRC: 12% on $100 par, no BTC beta. Last monthly close up here was March 2022; the 2024 top peaked at quantile 81 and never reached it.",
+    typeNote:"sell · proceeds to STRC · 1.5× margin",
     margin:{ leverage:1.5, yield:0.12, rate:0.0475, maint:0.50 } },
   { name:"IBIT PMCC", color:"#22d3ee", darkBg:"#0c1e26", qMin:50, qMax:85, kind:"pmcc",
     debt:"< 6%",
-    desc:"Spot BTC ETF diagonal. ~2× beta on the long leg.",
-    typeNote:"long ~12 mo · short ~9 mo",
-    longQ:50, longMo:12, shortQ:85, shortMo:9 },
+    desc:"Spot BTC ETF diagonal. ~2× beta on the long leg. If 2024 is the shape of a top, the upper half of the cycle plays out here and Rich readings are the sell.",
+    typeNote:"long 12 mo · short 90 d, rolled",
+    longQ:50, longMo:12, shortQ:85, shortDays:90 },
   { name:"MSTR PMCC", color:"#f97316", darkBg:"#1c0e00", qMin:15, qMax:50, kind:"pmcc",
     debt:"< 9%",
     desc:"Strategy (MSTR) diagonal. ~4× beta on the long leg.",
-    typeNote:"long ~9 mo · short ~6 mo",
-    longQ:15, longMo:9, shortQ:50, shortMo:6 },
+    typeNote:"long 12 mo · short 90 d, rolled",
+    longQ:15, longMo:12, shortQ:50, shortDays:90 },
   { name:"MSTX PMCC", color:"#ef4444", darkBg:"#1c0505", qMin:0, qMax:15, kind:"pmcc",
     debt:"< 12%",
-    desc:"2× levered MSTR ETF diagonal. ~8× beta on the long leg.",
-    typeNote:"long ~6 mo · short ~3 mo",
-    longQ:0.1, longMo:6, shortQ:15, shortMo:3 },
+    desc:"2× levered MSTR ETF diagonal. ~8× beta on the long leg. Bottom visits are short, bottom episodes ran 13 to 16 months: buy the 12 months.",
+    typeNote:"long 12 mo · short 90 d, rolled",
+    longQ:0.1, longMo:12, shortQ:15, shortDays:90 },
 ];
+
+// The band is read on the monthly close. The lines get crossed about three times a year on the daily; a touch is not a rotation.
+// liveHistory is [[ts, price], ...] daily (CoinGecko dates each point at 00:00 UTC, so the point on the 1st is the prior month's close).
+function monthlyClose(liveHistory, nowTs) {
+  if (!Array.isArray(liveHistory) || liveHistory.length < 2) return null;
+  const n = new Date(nowTs), m0 = Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), 1);
+  // the daily points sit at 00:00 UTC; the last element is the live price and never counts as a close
+  const pt = liveHistory.slice(0, -1).find(p => Array.isArray(p) && p[0] >= m0 && p[0] < m0 + 3600000 && p[1] > 0);
+  return pt ? { ts: m0 - 1, price: pt[1] } : null;    // no boundary point yet: the caller reads the live price and says so
+}
 
 function getTier(q) {
   const idx = LADDER.findIndex(t => q >= t.qMin && q < t.qMax);
@@ -280,10 +290,10 @@ function getTier(q) {
 function tierStrikes(t, nowTs, A=JV_A, B=JV_B) {
   if (t.kind !== "pmcc") return null;
   const longTs  = addMonths(nowTs, t.longMo);
-  const shortTs = addMonths(nowTs, t.shortMo);
+  const shortTs = nowTs + t.shortDays * 86400000;      // 90 days, the same clock the monitor's band push uses
   return {
     long:  { q: t.longQ,  ts: longTs,  price: quantileToPrice(t.longQ,  longTs,  A, B), mo: t.longMo },
-    short: { q: t.shortQ, ts: shortTs, price: quantileToPrice(t.shortQ, shortTs, A, B), mo: t.shortMo },
+    short: { q: t.shortQ, ts: shortTs, price: quantileToPrice(t.shortQ, shortTs, A, B), days: t.shortDays },
   };
 }
 
@@ -891,6 +901,64 @@ const phBnd = s => { const x = String(s||""), m = x.match(/\d{4}-\d{2}-\d{2}/g) 
 const days = (a, b) => { const t = Date.parse(a+"T00:00:00Z"), u = Date.parse(b+"T00:00:00Z");
   return (isNaN(t) || isNaN(u)) ? null : Math.round((u - t)/864e5); };
 
+// THE RULES and BAND HISTORY cards on the Ladder tab, from data/ladder-rules.json (the rules agreed 9/17; the monitor's pushes carry the same plays)
+function LadderRules({ tier }) {
+  const [lr, setLr] = useState(null);
+  useEffect(() => {
+    let on = true;
+    fetch("data/ladder-rules.json?t=" + Date.now(), {cache:"no-store"})
+      .then(r => { if (!r.ok) throw 0; return r.json(); })
+      .then(j => { if (on && j && Array.isArray(j.rules)) setLr(j); }).catch(() => {});
+    return () => { on = false; };
+  }, []);
+  if (!lr) return null;
+  const card = {background:"#070f1f",border:"1px solid #0f2035",borderRadius:"6px",padding:"14px 16px"};
+  const head = {fontSize:"12px",color:"#7ab8d8",textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:600,marginBottom:"10px"};
+  const dim  = {color:"#3a5a78",fontWeight:500,letterSpacing:0,textTransform:"none"};
+  const td   = {padding:"6px 8px 6px 0",color:"#c8d8e8",verticalAlign:"top"};
+  const h = (lr.history && typeof lr.history === "object") ? lr.history : {};
+  return (<>
+    <div style={card}>
+      <div style={head}>The rules <span style={dim}>· agreed {lr.as_of}</span></div>
+      {lr.rules.map(r => (
+        <div key={r.k} style={{display:"flex",gap:"12px",padding:"6px 0",borderTop:"1px solid #ffffff08",alignItems:"baseline"}}>
+          <span style={{fontSize:"11px",fontWeight:700,letterSpacing:"0.1em",color:tier.color,width:"58px",flex:"none",textTransform:"uppercase"}}>{r.k}</span>
+          <span style={{fontSize:"13px",color:"#c8d8e8",lineHeight:1.45}}>{r.rule}</span>
+        </div>
+      ))}
+      {Array.isArray(lr.sizing) && lr.sizing.length > 0 && (
+        <div style={{fontSize:"12px",color:"#8aaac8",marginTop:"8px"}}>
+          Primary share of the sleeve: {lr.sizing.map(s => s.primary_pct + "% from " + s.when).join(" · ")}. The rest is the two 10% gap sleeves and the cash floor.
+          {lr.phase_note ? " " + lr.phase_note : ""}
+        </div>
+      )}
+    </div>
+    {Array.isArray(h.bands) && (
+      <div style={card}>
+        <div style={head}>Band history <span style={dim}>· {h.note}</span></div>
+        <div style={{overflowX:"auto"}}>
+          <table style={{borderCollapse:"collapse",width:"100%",fontSize:"13px"}}>
+            <thead><tr>{["band","visits","median months","longest"].map(c => (
+              <th key={c} style={{textAlign:"left",fontSize:"10px",color:"#5a8fc0",textTransform:"uppercase",letterSpacing:"0.1em",padding:"4px 8px 6px 0",fontWeight:600}}>{c}</th>))}</tr></thead>
+            <tbody>{h.bands.map(b => (
+              <tr key={b.band} style={{borderTop:"1px solid #ffffff08"}}>
+                <td style={{...td,color:"#e2e8f0",fontWeight:600,whiteSpace:"nowrap"}}>{b.band}</td>
+                <td style={td}>{b.visits}</td>
+                <td style={td}>{b.median_months}</td>
+                <td style={td}>{b.longest_months}{b.note ? <span style={{color:"#7a9ab8"}}> · {b.note}</span> : null}</td>
+              </tr>))}</tbody>
+          </table>
+        </div>
+        {Array.isArray(h.tops) && (
+          <div style={{fontSize:"12px",color:"#8aaac8",marginTop:"10px",lineHeight:1.5}}>
+            Cycle peaks by quantile: {h.tops.map(t => t.cycle + " " + t.peak_q).join(" · ")}. {h.tops_note || ""}
+          </div>
+        )}
+      </div>
+    )}
+  </>);
+}
+
 function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB }) {
   const [pb, setPb] = useState(null), [plg, setPlg] = useState(null);
   useEffect(() => {
@@ -1471,7 +1539,9 @@ function MstrTab({ btcPrice, priceStr, livePrice, liveHistory, liveUpdatedAt }) 
   const maS = avg(ser.slice(-50).map(r => nm(r.btc)).filter(v => v != null && v > 0));
   const ma50 = maL != null ? maL : maS;
   const mReg = (mon.st && typeof mon.st.regime === "string") ? mon.st.regime : null;
-  const up = (ma50 != null && vBtc != null) ? vBtc >= ma50 : mReg ? /above/i.test(mReg) : null;
+  // the gate is the daily close vs the 50-day of closes: the last daily point (the array's last element is the live price)
+  const closeBtc = (Array.isArray(liveHistory) && liveHistory.length > 1) ? Number(liveHistory[liveHistory.length - 2][1]) : null;
+  const up = (ma50 != null && closeBtc != null && closeBtc > 0) ? closeBtc >= ma50 : mReg ? /above/i.test(mReg) : null;
   const regTxt = up == null ? "regime unavailable" : up ? "above its 50-day" : "below its 50-day";
   // the monitor's log, newest first, and whether a lag alert fired inside the hour
   const ledAll = rowsOf(mon.led).slice().sort((a, b) => msTs(b.time) - msTs(a.time));
@@ -2037,7 +2107,7 @@ function MstrTab({ btcPrice, priceStr, livePrice, liveHistory, liveUpdatedAt }) 
 // MAIN
 // ─────────────────────────────────────────────────────────────────────────────
 function BTCPowerLaw() {
-  const today   = useMemo(()=>new Date(),[]);
+  const [today, setToday] = useState(()=>new Date());   // rolled by the poller, so a page left open crosses midnight and month end
   const todayTs = today.getTime();
 
 
@@ -2096,6 +2166,7 @@ function BTCPowerLaw() {
         setLiveFetch("unavailable");
       }
     }
+    let histDay = null;   // the UTC day of the last good history fetch
     async function fetchHistory(){
       try {
         const res = await fetch("https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=365&interval=daily");
@@ -2106,25 +2177,33 @@ function BTCPowerLaw() {
           const liveStart = j.prices[0][0];
           const seedOld = SEED_PRICES.map(([ym,p])=>[new Date(ym+"-01").getTime(),p]).filter(([ts])=>ts < liveStart);
           setLiveHistory([...seedOld, ...j.prices]);
+          histDay = new Date().getUTCDate();
         }
       } catch(_){ /* fall back to seed */ }
     }
     fetchPrice();
     fetchHistory();
     const nxt = () => msOpen(new Date()) ? 60000 : 300000;
-    const run = () => { if(!on) return; fetchPrice(); id = setTimeout(run, nxt()); };
+    // a page left open rolls its clock every poll and refetches the daily history on a new UTC day (the monthly close lands there) and when it comes back into view
+    const roll = () => { setToday(new Date()); if (new Date().getUTCDate() !== histDay) fetchHistory(); };
+    const run = () => { if(!on) return; fetchPrice(); roll(); id = setTimeout(run, nxt()); };
+    const onVis = () => { if (on && document.visibilityState === "visible") { fetchPrice(); roll(); } };
+    document.addEventListener("visibilitychange", onVis);
     id = setTimeout(run, nxt());
-    return () => { on = false; if(id) clearTimeout(id); };
+    return () => { on = false; if(id) clearTimeout(id); document.removeEventListener("visibilitychange", onVis); };
   },[]);
 
   const price = parseFloat(priceStr.replace(/[^0-9.]/g,""))||0;
   const fv    = fairValueAt(todayTs, modelA, modelB);
   const q     = priceToQuantile(price, todayTs, modelA, modelB);
-  const {tier, idx: tierIdx} = getTier(q);
+  // the band follows the monthly close; the live quantile is a touch until the next one
+  const mc    = monthlyClose(liveHistory, todayTs);
+  const qM    = mc ? priceToQuantile(mc.price, mc.ts, modelA, modelB) : q;
+  const {tier, idx: tierIdx} = getTier(qM);
+  const liveTier = getTier(q);
   const strikes = tierStrikes(tier, todayTs, modelA, modelB);
-  const rotateUp   = tierIdx > 0 ? { t: LADDER[tierIdx-1], q: tier.qMax + HYST } : null;
-  const rotateDown = tierIdx < LADDER.length-1 ? { t: LADDER[tierIdx+1], q: tier.qMin - HYST } : null;
-  const inBuffer = (q > tier.qMin && q < tier.qMin + HYST) || (q < tier.qMax && q > tier.qMax - HYST && tier.qMax <= 100);
+  const rotateUp   = tierIdx > 0 ? { t: LADDER[tierIdx-1], q: tier.qMax } : null;
+  const rotateDown = tierIdx < LADDER.length-1 ? { t: LADDER[tierIdx+1], q: tier.qMin } : null;
   const displayName = (name) => name;
 
   const [lightMode,  setLightMode]  = useState(false);
@@ -2469,11 +2548,14 @@ function BTCPowerLaw() {
                       {" · "}<span style={{color:"#d0dde8"}}>{fmt(quantileToPrice(rotateDown.q, todayTs, modelA, modelB))}</span>
                     </span>
                   )}
-                  {inBuffer && (
-                    <span style={{fontSize:"12px",color:"#eab308"}}>
-                      ±{HYST.toFixed(0)}q buffer
-                    </span>
-                  )}
+                </div>
+                <div style={{fontSize:"12px",color:"#8aaac8",marginTop:"8px",lineHeight:1.5}}>
+                  {mc ? (<>
+                    Band set by the <span style={{color:"#d0dde8",fontWeight:600}}>{fmtMonth(mc.ts)}</span> monthly close, {fmt(mc.price)} at {qM.toFixed(1)}q.
+                    {liveTier.idx !== tierIdx
+                      ? <span style={{color:"#eab308"}}> Live {q.toFixed(1)}q is in {liveTier.tier.name.split(" ")[0]} on a touch. No rotation until the next monthly close.</span>
+                      : <> Live {q.toFixed(1)}q. Rotate only when a monthly close crosses a line.</>}
+                  </>) : (<>Band read on the live price. The monthly-close read needs the price history, which did not load.</>)}
                 </div>
               </div>
               </div>
@@ -2521,21 +2603,28 @@ function BTCPowerLaw() {
               <div style={{fontSize:"12px",color:"#7ab8d8",textTransform:"uppercase",
                 letterSpacing:"0.1em",fontWeight:600,marginBottom:"10px"}}>Structure</div>
               {[
-                { leg:"LONG",  s:strikes.long,  sub:`band floor · ~${strikes.long.mo} mo` },
-                { leg:"SHORT", s:strikes.short, sub:`band ceiling · ~${strikes.short.mo} mo · rotation trigger` },
-              ].map(({leg,s,sub})=>(
+                { leg:"LONG",  s:strikes.long,  qLab:"0.75 delta", px:"the chain's 0.75-delta strike, under the price",
+                  sub:`long leg · ${strikes.long.mo} mo · deep enough to move like the stock` },
+                { leg:"SHORT", s:strikes.short, qLab:`${strikes.short.q}q`, px:`≈ ${fmtFull(strikes.short.price)} BTC`,
+                  sub:`band ceiling · ${strikes.short.days} d · rotation trigger · roll at expiry` },
+              ].map(({leg,s,qLab,px,sub})=>(
                 <div key={leg} style={{display:"flex",alignItems:"baseline",gap:"12px",flexWrap:"wrap",
                   padding:"7px 0",borderTop:leg==="SHORT"?"1px solid #ffffff10":"none"}}>
                   <span style={{fontSize:"11px",fontWeight:700,letterSpacing:"0.1em",color:tier.color,
                     width:"46px"}}>{leg}</span>
-                  <span style={{fontSize:"15px",fontWeight:700,color:"#f1f5f9"}}>{s.q}q</span>
+                  <span style={{fontSize:"15px",fontWeight:700,color:"#f1f5f9"}}>{qLab}</span>
                   <span style={{fontSize:"13px",color:"#a0b8cc"}}>{fmtMonth(s.ts)}
                     <span style={{fontSize:"11px",color:"#5a7fa0",marginLeft:"6px"}}>{Math.round((s.ts-todayTs)/86400000)}d</span>
                   </span>
-                  <span style={{fontSize:"15px",fontWeight:700,color:tier.color}}>≈ {fmtFull(s.price)}</span>
+                  <span style={{fontSize:"15px",fontWeight:700,color:tier.color}}>{px}</span>
                   <span style={{fontSize:"10px",color:"#5a7fa0",letterSpacing:"0.05em",textTransform:"uppercase"}}>{sub}</span>
                 </div>
               ))}
+              {tier.name.indexOf("IBIT") < 0 && (
+                <div style={{fontSize:"11px",color:"#7a9ab8",marginTop:"8px"}}>
+                  Type the short's BTC price into the WHAT IF box on the MSTX tab for the {tier.name.split(" ")[0]} strike.
+                </div>
+              )}
             </div>
           )}
           {tier.kind === "margin" && (() => {
@@ -2566,6 +2655,7 @@ function BTCPowerLaw() {
               </div>
             );
           })()}
+          <LadderRules tier={tier}/>
       </div>
 
           {/* FORWARD PROJECTION TABLE */}
@@ -2582,7 +2672,7 @@ function BTCPowerLaw() {
 
       <div style={{marginTop:"24px",paddingTop:"16px",borderTop:"1px solid #0a1628"}}>
         <div style={{fontSize:"10px",color:"#3a5a78",textAlign:"center",letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:500}}>
-          Kaim Power Law Model  ·  A=5.82  ·  B=−17.029  ·  v2 — quantile-anchored PMCC ladder
+          Kaim Power Law Model  ·  A=5.82  ·  B=−17.029  ·  v3 · bands on the monthly close · 12-month long, 3-month short  ·  build Sep 17 2026
         </div>
       </div>
       </>)}

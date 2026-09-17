@@ -1,0 +1,36 @@
+{
+ "as_of": "2026-09-17",
+ "note": "The ladder rules agreed the morning of 9/17. The Ladder tab renders this file; the monitor's pushes carry the same plays. Edit here, not in index.html.",
+ "rules": [
+  {"k": "gate", "rule": "BTC daily close vs its 50-day. Above: long structures allowed. Below: no new money; open positions run their own exits."},
+  {"k": "band", "rule": "Ladder quantile on the monthly close. Under 15 MSTX, 15 to 50 MSTR, 50 to 85 IBIT, 85 and up is the sell zone. Rotate when a monthly close crosses a line, never on a touch."},
+  {"k": "time", "rule": "Long leg 12 months. Short leg 90 days, rolled."},
+  {"k": "strikes", "rule": "Long at 0.75 delta. Short at the band ceiling carried to the short's expiry (the 15 line in the MSTX band). Type that BTC price into the WHAT IF box on the MSTX tab for the strike."},
+  {"k": "entry", "rule": "Gap at or under zero. Cheap is the add. Never open a primary while Rich is on."},
+  {"k": "size", "rule": "The primary takes 80% of the sleeve on 9/17, 70% on 9/26, 60% at the LEAPS and after. The rest is the two 10% gap sleeves and a cash floor that grows with each phase."},
+  {"k": "exit", "rule": "The band crossing on the monthly close; the short strike is the trigger. Gate flips down: roll the short call down and closer (30 to 45 days), keep the long. At the 85 line: sell the BTC beta into it and rotate down."}
+ ],
+ "sizing": [
+  {"when": "2026-09-17", "primary_pct": 80},
+  {"when": "2026-09-26", "primary_pct": 70},
+  {"when": "2026-12-19", "primary_pct": 60}
+ ],
+ "phase_note": "Phase 2 (Jan long / Dec 18 short, decided 9/15) stays as written at 70%. The time and strike rules bind from Phase 3, the LEAPS, on.",
+ "history": {
+  "note": "monthly closes since 2013 on the ladder's own bands",
+  "bands": [
+   {"band": "MSTX, under 15", "visits": 8, "median_months": 2, "longest_months": 4, "note": "the current visit began 2026-03 and is 6.5 months in, the longest on record. With the bounces into the 15 to 50 band counted, the 2015-16 and 2022-23 bottoms ran 13 to 16 months. That is the case for the 12-month long."},
+   {"band": "MSTR, 15 to 50", "visits": 17, "median_months": 3, "longest_months": 8},
+   {"band": "IBIT, 50 to 85", "visits": 13, "median_months": 3, "longest_months": 6},
+   {"band": "85 and up", "visits": 5, "median_months": 10, "longest_months": 16, "note": "the three bull peaks ran 10, 11 and 16 months, plus two pokes of 1 and 3; last monthly close above 85: 2022-03"}
+  ],
+  "tops": [
+   {"cycle": "2013-14", "peak_q": 122},
+   {"cycle": "2017-18", "peak_q": 112},
+   {"cycle": "2021 spring", "peak_q": 111},
+   {"cycle": "2021 fall", "peak_q": 105},
+   {"cycle": "2024-25", "peak_q": 81}
+  ],
+  "tops_note": "The peaks step down and the 2024 top at $97.5k never reached the 85 line. The 85 line is where the BTC beta gets sold, not a place to sit. If 2024 is the shape, the upper half of the cycle plays out in the IBIT band and Rich readings there are the sell."
+ }
+}

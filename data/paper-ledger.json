@@ -3,9 +3,9 @@
   "phases": [
    {
     "id": 1,
-    "dates": "to Thu Sep 17 (switch) or Fri Sep 18 (settlement)",
+    "dates": "2026-09-15 to 2026-09-25",
     "structure": "407 x Sep 18 12/12.50 call verticals at 0.29 ($11,803), plus 60 x Sep 18 15/16 at 0.10 (near zero)",
-    "next_action": "Thursday 9/17, MSTX 13.40 after hours: sell the 407 verticals at 0.42 or better (post 0.44 at the open, work it 15 minutes, never under 0.40), then one order, 250 x Oct 2 14 / Sep 25 15.50 at 0.69 (your fills: 1.15 and 0.46). If it is quoted 0.75 or more, take the 14/15 at 0.62 instead. Then nothing until the 25th.",
+    "next_action": "Thursday 9/17, MSTX 13.40 after hours: sell the 407 verticals at 0.42 or better (post 0.44 at the open, work it 15 minutes, never under 0.40), then one order, 205 x Oct 2 14 / Sep 25 15.50 at 0.69, 80% of the sleeve (your fills: 1.15 and 0.46); about $3,700 stays out for the lag and swing sleeves. If it is quoted 0.75 or more, take the 14/15 at 0.62 instead. Then nothing until the 25th.",
     "roll_rules": "none",
     "status": "on",
     "panel_title": "PHASE 1 · WHAT IS ON · SETTLES FRI SEP 18",
@@ -99,16 +99,17 @@
     "units_note": "Friday settlement: the vertical pays $20,350 at any close of 12.50 or higher and nothing at 12, so the LEAPS count only moves with the unit price. If Thursday's switch happens, the 25th becomes the settlement and these rows are replaced.",
     "next_action_steps": [
      "1. Sell 407 verticals at 0.42+. Post 0.44, work 15 min, floor 0.40.",
-     "2. Buy 250 × Oct 2 14 / Sep 25 15.50 at 0.69. One order.",
+     "2. Buy 205 × Oct 2 14 / Sep 25 15.50 at 0.69, 80% of the sleeve. One order. About $3,700 stays out for the lag and swing sleeves.",
      "3. Nothing until the 25th."
     ],
-    "next_action_detail": "If the 14/15.50 quotes 0.75+, take the 14/15 at 0.62. Your fills were 1.15 and 0.46."
+    "next_action_detail": "If the 14/15.50 quotes 0.75+, take the 14/15 at 0.62. Your fills were 1.15 and 0.46.",
+    "dates_note": "Thursday 9/17 is the switch into the two-week diagonal; the phase runs to the 25th, Phase 2 opens 9/26."
    },
    {
     "id": 2,
     "dates": "2026-09-26 to 2026-12-18",
-    "structure": "January 2027 call long against Dec 18 call short, all in; long one strike above the 9/25 close, short about 1.67x the close ($15 close: Jan 16 / Dec 25)",
-    "next_action": "Phase 1 proceeds into the Jan long / Dec 18 short off the strike map (long one strike above the close, short about 1.67x), all in, on the settlement day: Friday 9/18 from the vertical ($20,350 buys about 105 to 120), or 9/25 if Thursday's switch happens. Re-quote on the broker first.",
+    "structure": "January 2027 call long against Dec 18 call short, 70% of the sleeve; long one strike above the 9/25 close, short about 1.67x the close ($15 close: Jan 16 / Dec 25)",
+    "next_action": "Phase 1 proceeds into the Jan long / Dec 18 short off the strike map (long one strike above the close, short about 1.67x), 70% of the sleeve, on the settlement day: Friday 9/18 from the vertical (70% of $20,350 is $14,245, about 75 to 85 contracts), or 9/25 if Thursday's switch happens. Re-quote on the broker first.",
     "roll_rules": "none; sold as one ticket on 12/18 or 12/19 into Phase 3",
     "strike_map": {
      "12": "Jan 13 / Dec 20",
@@ -123,17 +124,23 @@
      "20": "Jan 21 / Dec 33"
     },
     "next_action_steps": [
-     "On settlement day, all in: Jan long one strike above the close, Dec 18 short at about 1.67x.",
-     "Fri 9/18 from the vertical, $20,350 buys 105 to 120. Or 9/25 if Thursday's switch happens."
+     "On settlement day, 70% of the sleeve: Jan long one strike above the close, Dec 18 short at about 1.67x.",
+     "Fri 9/18 from the vertical, 70% of $20,350 buys about 75 to 85. Or 9/25 if Thursday's switch happens."
     ],
     "next_action_detail": "Re-quote on the broker first."
    },
    {
     "id": 3,
     "dates": "from 2026-12-19",
-    "structure": "The LEAPS leg. Ticker and strikes come from the ladder.",
-    "next_action": "Open with whatever is there.",
-    "roll_rules": "Follow doctrine section 15."
+    "structure": "The LEAPS leg, the ladder's structure from here on: ticker from the band on the monthly close, long 12 months at 0.75 delta, short 90 days at the band ceiling, rolled.",
+    "next_action": "Open with 60% of the sleeve. Gate on (BTC above its 50-day), gap at or under zero, never while Rich is on.",
+    "roll_rules": "Follow doctrine section 15.",
+    "next_action_steps": [
+     "1. The band on the monthly close picks the ticker (Ladder tab).",
+     "2. 60% of the sleeve: long 12 months at 0.75 delta, short 90 days at the band ceiling.",
+     "3. 10% lag sleeve, 10% swing sleeve, the rest is the cash floor.",
+     "4. Gate flips down: roll the short down and closer, keep the long."
+    ]
    }
   ],
   "objective": "LEAPS units, not dollars: the count of MSTX Dec 2028 33 / Jan 2028 60 units the account can buy after the trade settles, at that day's unit price, about 2.25 at MSTX 14 plus 0.25 per 1.00 of MSTX",

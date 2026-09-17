@@ -4,105 +4,105 @@
    {
     "id": 1,
     "dates": "2026-09-15 to 2026-09-25",
-    "structure": "407 x Sep 18 12/12.50 call verticals at 0.29 ($11,803), plus 60 x Sep 18 15/16 at 0.10 (near zero)",
-    "next_action": "Thursday 9/17, MSTX 13.40 after hours: sell the 407 verticals at 0.42 or better (post 0.44 at the open, work it 15 minutes, never under 0.40), then one order, 205 x Oct 2 14 / Sep 25 15.50 at 0.69, 80% of the sleeve (your fills: 1.15 and 0.46); about $3,700 stays out for the lag and swing sleeves. If it is quoted 0.75 or more, take the 14/15 at 0.62 instead. Then nothing until the 25th.",
+    "structure": "200 x long Oct 2 $14 call / short Sep 25 $15.50 call diagonal at 0.77 ($15,400), plus 69 x Sep 25 $16/$17 call vertical at 0.12 ($828). Opened 9/17 from the vertical's proceeds. The 60 x Sep 18 $15/$16 expires Friday at zero.",
+    "next_action": "Nothing until Friday 9/25. No adjustments, no rolls, no hedges. On the 25th close the diagonal as a spread in the afternoon; the vertical settles itself.",
     "roll_rules": "none",
-    "status": "on",
+    "status": "FILLED 9/17. The Sep 18 vertical is closed; the position now runs to Fri Sep 25.",
     "panel_title": "PHASE 1 · WHAT IS ON · SETTLES FRI SEP 18",
     "spreads": [
      {
-      "key": "12/12.50",
-      "legs": "407 × Sep 18 12/12.50 call vertical",
-      "debit": 0.29,
-      "hurdle": 12.29,
-      "odds_short": 0.6
+      "key": "Oct 2 14 / Sep 25 15.50 diagonal",
+      "legs": "long Oct 2 $14 call, short Sep 25 $15.50 call",
+      "debit": 0.77,
+      "contracts": 200,
+      "cost": 15400
      },
      {
-      "key": "15/16",
-      "legs": "60 × Sep 18 15/16 call debit spread",
-      "debit": 0.1,
-      "hurdle": 15.1,
-      "odds_short": 0.02
+      "key": "Sep 25 16/17 vertical",
+      "legs": "long Sep 25 $16 call, short Sep 25 $17 call",
+      "debit": 0.12,
+      "contracts": 69,
+      "cost": 828
      }
     ],
     "note": "Bought 9/16 with MSTX near 12.70 after the FOMC dip. Max $20,350 at any Friday close of 12.50 or higher (+72%), zero at 12 or lower, break-even 12.29. From the 12.93 close the chain puts 12.50-or-better near 60% and under-12 near 28%. Odds here are the chain's for the short strike finishing in the money.",
-    "positions": [
-     {
-      "text": "407 × Sep 18 12/12.50 call vertical, 0.29 ($11,803)"
-     },
-     {
-      "text": "60 × Sep 18 15/16 call debit spread, 0.10 (near zero)"
-     }
-    ],
+    "positions": "Closed 9/17: 407 x Sep 18 $12/$12.50 vertical sold at 0.40, $16,280 in against $11,803 paid, +$4,477 (+38%). Deployed $16,228 of it, leaving $52. Break-even on the new position at the 9/25 close is MSTX 13.89 (MODEL).",
     "units_by_price": [
      {
+      "mstx": 11,
+      "dollars": 1006,
+      "unit": 1.5,
+      "leaps": 7
+     },
+     {
       "mstx": 12,
-      "dollars": 0,
+      "dollars": 3420,
       "unit": 1.75,
-      "leaps": 0
-     },
-     {
-      "mstx": 12.25,
-      "dollars": 10175,
-      "unit": 1.812,
-      "leaps": 56
-     },
-     {
-      "mstx": 12.5,
-      "dollars": 20350,
-      "unit": 1.875,
-      "leaps": 108
+      "leaps": 20
      },
      {
       "mstx": 13,
-      "dollars": 20350,
+      "dollars": 8627,
       "unit": 2.0,
-      "leaps": 101
+      "leaps": 43
+     },
+     {
+      "mstx": 13.35,
+      "dollars": 11278,
+      "unit": 2.09,
+      "leaps": 54
      },
      {
       "mstx": 14,
-      "dollars": 20350,
+      "dollars": 17420,
       "unit": 2.25,
-      "leaps": 90
+      "leaps": 77
      },
      {
       "mstx": 15,
-      "dollars": 20350,
+      "dollars": 29815,
       "unit": 2.5,
-      "leaps": 81
+      "leaps": 119
+     },
+     {
+      "mstx": 15.5,
+      "dollars": 37179,
+      "unit": 2.62,
+      "leaps": 142
      },
      {
       "mstx": 16,
-      "dollars": 20350,
+      "dollars": 35173,
       "unit": 2.75,
-      "leaps": 74
+      "leaps": 128
      },
      {
       "mstx": 17,
-      "dollars": 20350,
+      "dollars": 39501,
       "unit": 3.0,
-      "leaps": 67
+      "leaps": 132
      },
      {
       "mstx": 18,
-      "dollars": 20350,
+      "dollars": 38193,
       "unit": 3.25,
-      "leaps": 62
+      "leaps": 118
      },
      {
       "mstx": 20,
-      "dollars": 20350,
+      "dollars": 37303,
       "unit": 3.75,
-      "leaps": 54
+      "leaps": 99
      }
     ],
-    "units_note": "Friday settlement: the vertical pays $20,350 at any close of 12.50 or higher and nothing at 12, so the LEAPS count only moves with the unit price. If Thursday's switch happens, the 25th becomes the settlement and these rows are replaced.",
+    "units_note": "At the Sep 25 close, at Alex's own fills. The short $15.50 settles intrinsic; the long Oct 2 $14 is marked MODEL with 7 days left at 112% flat vol, which is the vol his own 0.77 diagonal fill implies (the same surface marks his 16/17 vertical at 0.108 against the 0.12 he paid). LEAPS unit = 2.25 + 0.25 x (S - 14). Value peaks at the 15.50 short strike.",
     "next_action_steps": [
-     "1. Sell 407 verticals at 0.42+. Post 0.44, work 15 min, floor 0.40.",
-     "2. Buy 205 × Oct 2 14 / Sep 25 15.50 at 0.69, 80% of the sleeve. One order. About $3,700 stays out for the lag and swing sleeves.",
-     "3. Nothing until the 25th."
+     "Hold. The next decision is Friday 9/25.",
+     "On 9/25 close the 200 diagonals as one spread order in the afternoon; the 69 verticals settle at expiry.",
+     "9/26: Phase 2 off the strike map, 70% of the sleeve.",
+     "The lag and swing sleeves are empty ($52 left). They refill from the 9/25 proceeds, not from the primary mid-week."
     ],
-    "next_action_detail": "If the 14/15.50 quotes 0.75+, take the 14/15 at 0.62. Your fills were 1.15 and 0.46.",
+    "next_action_detail": "BTC daily close under 75k moves everything to Phase 2 at the next open.",
     "dates_note": "Thursday 9/17 is the switch into the two-week diagonal; the phase runs to the 25th, Phase 2 opens 9/26."
    },
    {
@@ -288,6 +288,21 @@
    "implied_p": null,
    "implied_p_note": "Score against the implied odds at entry. N(d2) of the short strike at Dec 18 and of the long strike at March expiry, from the chain that morning.",
    "result": "scheduled"
+  },
+  {
+   "date": "2026-09-17",
+   "mode": "live",
+   "ticker": "MSTX",
+   "rule": "Phase 1 switch, the ladder rules' entry test (gap at or under zero, not Rich)",
+   "structure": "Sold 407 x Sep 18 12/12.50 at 0.40. Bought 200 x Oct 2 14 / Sep 25 15.50 at 0.77 and 69 x Sep 25 16/17 at 0.12.",
+   "debit_fill": {
+    "14/15.50": 0.77,
+    "16/17": 0.12
+   },
+   "proceeds": 16280,
+   "cost": 16228,
+   "result": "filled",
+   "note": "MSTX 13.75 pre-market, 13.35 by 9:44. The plan asked for 205 at 80% of the sleeve; the actual is 99.7% deployed."
   }
  ],
  "paper_calls": [

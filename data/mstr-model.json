@@ -3266,64 +3266,45 @@
 "note": "Headline cells were run at the sheet's 0.025 slope; the slope sweep shows the same trade at 0.0125, which is what the cards and chart use."
 },
 "regime": {
-"note": "Cheap by 4%+ vs projection, split by BTC's state. 285 days.",
+"note": "MSTR cheap by 4 percent or more (8 percent on MSTX) at the sheet's 0.025 slope, split by BTC's state that day; STRC period, 285 days",
 "rows": [
 {
-"state": "BTC above its 50-day \u00c2\u00b7 measured slope",
-"short": "Above 50-day \u00c2\u00b7 measured",
-"days": 19,
+"state": "BTC above its 50-day average",
+"days": 16,
 "episodes": 2,
-"mstr_5d": 5.4,
-"btc_5d": 1.9,
-"mstr_10d": 9.6,
-"btc_10d": 4.4
+"mstr_5d": 5.9,
+"btc_5d": 1.4,
+"mstr_10d": 4.2,
+"btc_10d": -0.8
 },
 {
-"state": "BTC below its 50-day \u00c2\u00b7 measured slope",
-"short": "Below 50-day \u00c2\u00b7 measured",
-"days": 52,
-"episodes": 3,
-"mstr_5d": 1.1,
-"btc_5d": 0.6,
-"mstr_10d": 1.7,
-"btc_10d": -0.0
+"state": "BTC below its 50-day average",
+"days": 46,
+"episodes": 4,
+"mstr_5d": -4.3,
+"btc_5d": -3.0,
+"mstr_10d": -7.0,
+"btc_10d": -5.1
 },
 {
-"state": "BTC above its 50-day \u00c2\u00b7 sheet slope",
-"short": "Above 50-day \u00c2\u00b7 sheet",
-"days": null,
-"episodes": null,
-"mstr_5d": 2.6,
-"btc_5d": null,
-"mstr_10d": null,
-"btc_10d": null
+"state": "since July 2026",
+"days": 14,
+"episodes": 2,
+"mstr_5d": 9.2,
+"btc_5d": 3.4,
+"mstr_10d": 10.5,
+"btc_10d": 3.0
 },
 {
-"state": "BTC below its 50-day \u00c2\u00b7 sheet slope",
-"short": "Below 50-day \u00c2\u00b7 sheet",
-"days": null,
-"episodes": null,
-"mstr_5d": -4.2,
-"btc_5d": null,
-"mstr_10d": null,
-"btc_10d": null
-},
-{
-"state": "since July 2026 \u00c2\u00b7 measured slope",
-"short": "Since Jul 2026",
-"days": 41,
-"episodes": 1,
-"mstr_5d": 4.9,
-"btc_5d": 3.1,
-"mstr_10d": 9.7,
-"btc_10d": 5.9
+"state": "all",
+"days": 62,
+"episodes": 4,
+"mstr_5d": -1.6,
+"btc_5d": -1.9,
+"mstr_10d": -4.3,
+"btc_10d": -4.0
 }
 ],
-"read": "Two episodes at the measured slope, both positive. Four at the sheet's steeper slope, where below-50-day went negative. Too few to call.",
-"sample_note": "The sheet-slope rows carry the 5-day read only; 56 days over 4 episodes in total.",
-"read_lines": [
-"Measured slope: two episodes, both positive.",
-"Sheet slope: four, and below-50-day went negative. Too few to call."
-]
+"read": "Cheap with BTC above its 50-day closed with MSTR rising. Cheap with BTC below it closed by BTC falling. Four episodes, so a rule to trade by, not a proof; the monitor's log is the live test."
 }
 }

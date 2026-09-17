@@ -1392,12 +1392,20 @@ function MstrTab({ btcPrice, priceStr, livePrice }) {
   const [slope, setSlope] = useState(0.0125);
   const [seed, setSeed] = useState(false);
   const [hov, setHov] = useState(null);
+  const [cfg, setCfg] = useState(null);
   useEffect(() => {
     let on = true;
     fetch("data/mstr-model.json?t=" + Date.now(), {cache:"no-store"})
       .then(r => { if (!r.ok) throw 0; return r.json(); })
       .then(j => { if (!on) return; if (isObj(j)) setDat(j); else setBad(true); })
       .catch(() => { if (on) setBad(true); });
+    fetch("data/mstr-config.json?t=" + Date.now(), {cache:"no-store"})
+      .then(r => { if (!r.ok) throw 0; return r.json(); })
+      .then(c => { if (!on || !isObj(c)) return;
+        setF(v => ({...v, held: c.btc_held != null ? String(c.btc_held) : v.held, sh: c.shares_m != null ? String(c.shares_m) : v.sh}));
+        if (c.btc_slope_per_2500 != null) setSlope(Number(c.btc_slope_per_2500));
+        setCfg(c); })
+      .catch(() => {});
     return () => { on = false; };
   }, []);
   const ser = rowsOf(dat && dat.series);
@@ -1542,7 +1550,7 @@ function MstrTab({ btcPrice, priceStr, livePrice }) {
         </div>
         <div style={{fontSize:11,color:"#b0c4d8",lineHeight:1.5,marginTop:12}}>
           MSTX and MSTR quotes are the last regular-session trade; after hours BTC keeps moving
-          and the gap here is not real until the next print.</div>
+          and the gap here is not real until the next print.{" "}Holdings, shares and slope come from data/mstr-config.json{cfg && cfg.updated ? " (updated " + cfg.updated + ")" : ""}, the same file the gap monitor reads. <a href="https://github.com/Kaim222/btc-quantile-ladder/edit/main/data/mstr-config.json" target="_blank" rel="noopener" style={{color:"inherit"}}>Edit it on GitHub</a> and both update.</div>
         <div style={FT}>{"Target rule: " + ((dat.model && dat.model.target_rule) || UNK)
           + (dat.model && dat.model.btc_per_share_note
             ? " Share count: " + dat.model.btc_per_share_note + "." : "")}</div>

@@ -4,103 +4,90 @@
    {
     "id": 1,
     "dates": "2026-09-15 to 2026-09-25",
-    "structure": "200 x long Oct 2 $14 call / short Sep 25 $15.50 call diagonal at 0.77 ($15,400), plus 69 x Sep 25 $16/$17 call vertical at 0.12 ($828). Opened 9/17 from the vertical's proceeds. The 60 x Sep 18 $15/$16 expires Friday at zero.",
-    "next_action": "Nothing until Friday 9/25. No adjustments, no rolls, no hedges. On the 25th close the diagonal as a spread in the afternoon; the vertical settles itself.",
+    "structure": "225 x long Oct 2 $14 call / short Sep 25 $15 call. Built in three steps on 9/17: 200 at 0.77 against a $15.50 short, the short rolled down to $15 for a credit, the 69 Sep 25 $16/$17 verticals sold, then 25 more added at 0.71 on the dip to 13.24. Average 0.669, $15,055 in, $1,225 cash.",
+    "next_action": "Hold to Friday 9/25. The sleeves are short: $1,225 cash against the ~$3,200 the 10 plus 10 rule wants.",
     "roll_rules": "none",
-    "status": "FILLED 9/17. The Sep 18 vertical is closed; the position now runs to Fri Sep 25.",
+    "status": "LIVE 9/17, rebuilt intraday. 225 x Oct 2 $14 / Sep 25 $15 at 0.669 average, $15,055 in, plus $1,225 cash.",
     "panel_title": "PHASE 1 · WHAT IS ON · SETTLES FRI SEP 18",
     "spreads": [
      {
-      "key": "Oct 2 14 / Sep 25 15.50 diagonal",
-      "legs": "long Oct 2 $14 call, short Sep 25 $15.50 call",
-      "debit": 0.77,
-      "contracts": 200,
-      "cost": 15400
-     },
-     {
-      "key": "Sep 25 16/17 vertical",
-      "legs": "long Sep 25 $16 call, short Sep 25 $17 call",
-      "debit": 0.12,
-      "contracts": 69,
-      "cost": 828
+      "key": "Oct 2 14 / Sep 25 15 diagonal",
+      "legs": "long Oct 2 $14 call, short Sep 25 $15 call",
+      "debit": 0.669,
+      "contracts": 225,
+      "cost": 15055
      }
     ],
     "note": "Bought 9/16 with MSTX near 12.70 after the FOMC dip. Max $20,350 at any Friday close of 12.50 or higher (+72%), zero at 12 or lower, break-even 12.29. From the 12.93 close the chain puts 12.50-or-better near 60% and under-12 near 28%. Odds here are the chain's for the short strike finishing in the money.",
-    "positions": "Closed 9/17: 407 x Sep 18 $12/$12.50 vertical sold at 0.40, $16,280 in against $11,803 paid, +$4,477 (+38%). Deployed $16,228 of it, leaving $52. Break-even on the new position at the 9/25 close is MSTX 13.89 (MODEL).",
+    "positions": "Day's path: 407 Sep 18 12/12.50 verticals sold at 0.40 ($16,280 against $11,803, +$4,477); 200 x 14/15.50 at 0.77 and 69 x 16/17 at 0.12 opened; the short rolled 15.50 to 15 and the verticals sold, $2,948 back; 25 more diagonals at 0.71. Mark is not one number: mid to mid 0.99, liquidation 0.67 on markets 26 to 38 cents wide. MSTX ranged 13.24 to 14.34; chain IV went from about 116% to 148% through the morning.",
     "units_by_price": [
      {
-      "mstx": 11,
-      "dollars": 1006,
-      "unit": 1.5,
-      "leaps": 7
-     },
-     {
       "mstx": 12,
-      "dollars": 3420,
-      "unit": 1.75,
-      "leaps": 20
+      "dollars": 5465,
+      "unit": 1.5,
+      "leaps": 31
      },
      {
       "mstx": 13,
-      "dollars": 8627,
+      "dollars": 11519,
       "unit": 2.0,
-      "leaps": 43
+      "leaps": 58
      },
      {
-      "mstx": 13.35,
-      "dollars": 11278,
-      "unit": 2.09,
-      "leaps": 54
+      "mstx": 13.77,
+      "dollars": 18847,
+      "unit": 2.19,
+      "leaps": 86
      },
      {
       "mstx": 14,
-      "dollars": 17420,
+      "dollars": 21504,
       "unit": 2.25,
-      "leaps": 77
+      "leaps": 96
      },
      {
       "mstx": 15,
-      "dollars": 29815,
+      "dollars": 35407,
       "unit": 2.5,
-      "leaps": 119
-     },
-     {
-      "mstx": 15.5,
-      "dollars": 37179,
-      "unit": 2.62,
       "leaps": 142
      },
      {
+      "mstx": 15.5,
+      "dollars": 32381,
+      "unit": 2.62,
+      "leaps": 123
+     },
+     {
       "mstx": 16,
-      "dollars": 35173,
+      "dollars": 30052,
       "unit": 2.75,
-      "leaps": 128
+      "leaps": 109
      },
      {
       "mstx": 17,
-      "dollars": 39501,
+      "dollars": 27002,
       "unit": 3.0,
-      "leaps": 132
+      "leaps": 90
      },
      {
       "mstx": 18,
-      "dollars": 38193,
+      "dollars": 25396,
       "unit": 3.25,
-      "leaps": 118
+      "leaps": 78
      },
      {
       "mstx": 20,
-      "dollars": 37303,
+      "dollars": 24240,
       "unit": 3.75,
-      "leaps": 99
+      "leaps": 65
      }
     ],
-    "units_note": "At the Sep 25 close, at Alex's own fills. The short $15.50 settles intrinsic; the long Oct 2 $14 is marked MODEL with 7 days left at 112% flat vol, which is the vol his own 0.77 diagonal fill implies (the same surface marks his 16/17 vertical at 0.108 against the 0.12 he paid). LEAPS unit = 2.25 + 0.25 x (S - 14). Value peaks at the 15.50 short strike.",
+    "units_note": "At the Sep 25 close, low-vol column (116%, the morning's market anchor off the Oct 2 $14 mid). At the chain's current 148% every row is 15 to 25 units higher. Cash included. The short $15 settles intrinsic; the Oct 2 $14 long is marked with 7 days left. LEAPS unit = 2.25 + 0.25 x (S - 14).",
     "next_action_steps": [
-     "Hold. The next decision is Friday 9/25.",
-     "On 9/25 close the 200 diagonals as one spread order in the afternoon; the 69 verticals settle at expiry.",
+     "Hold. Three adjustments already went through the no-adjustments window today.",
+     "On 9/25 close the 225 diagonals as one spread order in the afternoon. Work the price; these markets are 26 to 38 cents wide.",
      "9/26: Phase 2 off the strike map, 70% of the sleeve.",
-     "The lag and swing sleeves are empty ($52 left). They refill from the 9/25 proceeds, not from the primary mid-week."
+     "Sleeves refill from the 9/25 proceeds to 10% lag and 10% swing."
     ],
     "next_action_detail": "BTC daily close under 75k moves everything to Phase 2 at the next open.",
     "dates_note": "Thursday 9/17 is the switch into the two-week diagonal; the phase runs to the 25th, Phase 2 opens 9/26."
@@ -303,6 +290,15 @@
    "cost": 16228,
    "result": "filled",
    "note": "MSTX 13.75 pre-market, 13.35 by 9:44. The plan asked for 205 at 80% of the sleeve; the actual is 99.7% deployed."
+  },
+  {
+   "date": "2026-09-17",
+   "mode": "live",
+   "ticker": "MSTX",
+   "rule": "intraday rebuild, outside the plan's no-adjustments window",
+   "structure": "Rolled the Sep 25 15.50 shorts down to 15, sold the 69 Sep 25 16/17 verticals (+$2,948), then added 25 x Oct 2 14 / Sep 25 15 at 0.71 on the dip to 13.24.",
+   "result": "filled",
+   "note": "Final: 225 x Oct 2 14 / Sep 25 15 at 0.669 average, $1,225 cash. The 0.71 add was at or inside fair; the morning's 0.40 vertical sale was the day's real cost."
   }
  ],
  "paper_calls": [

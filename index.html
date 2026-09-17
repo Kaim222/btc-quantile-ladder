@@ -307,7 +307,60 @@ function fmtFull(n) { return "$" + Math.round(n).toLocaleString(); }
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-function ForwardTable({ todayTs, modelA=JV_A, modelB=JV_B }) {
+// ── BTC | MSTR for the ladder's two tables. The conversion is the MSTR tab's own rule,
+// held at today's inputs: MSTR = BTC x BTC-per-share x target, target = the STRC base plus
+// the config slope. Helpers (msStrc, msQuote, msOpen) live with the MSTR tab below. ──
+// most of the MSTR ladder lands between $100 and $10,000, where fmt's "$1K" hides the number
+const msFmt = v => (v >= 1000 && v < 1e6) ? "$" + Math.round(v).toLocaleString("en-US") : fmt(v);
+const UnitPick = ({units, setUnits}) => (
+  <span style={{display:"flex",alignItems:"center",gap:"6px"}}>
+    {[["btc","BTC"],["mstr","MSTR"]].map(([k, lab]) => (
+      <button key={k} onClick={() => setUnits(k)} style={{
+        fontSize:"10px",fontFamily:"inherit",fontWeight:700,letterSpacing:"0.06em",
+        textTransform:"uppercase",padding:"3px 9px",borderRadius:"4px",cursor:"pointer",
+        background:units === k ? "#0c2040" : "transparent",
+        border:"1px solid " + (units === k ? "#1e5f8a" : "#0f2133"),
+        color:units === k ? "#7dd3fc" : "#334155"}}>{lab}</button>))}
+  </span>);
+
+function useMstrUnits() {
+  const [u, setU] = useState({bps:null, strc:null, slope:0.0125, now:null});
+  useEffect(() => {
+    let on = true;
+    const num = x => (x != null && x !== "" && x !== "auto" && isFinite(Number(x))) ? Number(x) : null;
+    const jf = url => fetch(url, {cache:"no-store"})
+      .then(r => { if (!r.ok) throw 0; return r.json(); }).catch(() => null);
+    const quote = k => msQuote({price: Number(k.price), ts: k.timeStamp,
+      ext: k.extendedSession || null}, msOpen(new Date()));
+    jf("data/mstr-config.json?t=" + Date.now()).then(c => {
+      if (!on) return;
+      const cfg = isObj(c) ? c : {};
+      const sl = num(cfg.btc_slope_per_2500), h = num(cfg.btc_held), sh = num(cfg.shares_m);
+      if (sl != null) setU(v => ({...v, slope: sl}));
+      if (h && sh) { setU(v => ({...v, bps: h / (sh * 1e6)})); return; }  // the file overrides
+      jf("https://api.strategy.com/btc/bitcoinKpis").then(j => {
+        if (!on) return; const k = j && j.results; if (!isObj(k)) return;
+        const held = Number(String(k.btcHoldings).replace(/,/g, "")), sps = Number(k.satsPerShare);
+        if (!(held > 100000) || !(sps > 0)) return;
+        const shM = held / (sps / 1e8) / 1e6;
+        setU(v => ({...v, bps: (h || held) / ((sh || shM) * 1e6)})); });
+    });
+    jf("https://api.strategy.com/btc/strcKpiData").then(j => { if (!on) return;
+      const k = Array.isArray(j) ? j[0] : j; if (!isObj(k)) return;
+      const q = quote(k); if (q) setU(v => ({...v, strc: q.px})); });
+    jf("https://api.strategy.com/btc/mstrKpiData").then(j => { if (!on) return;
+      const k = Array.isArray(j) ? j[0] : j; if (!isObj(k)) return;
+      const q = quote(k); if (q) setU(v => ({...v, now: q.px})); });
+    return () => { on = false; };
+  }, []);
+  const ready = u.bps != null && u.strc != null;
+  // the slope term rides the row's own BTC price, exactly as the sheet rule is written
+  const conv = b => (!ready || !(b > 0)) ? null
+    : b * u.bps * Math.min(2.0, msStrc(u.strc) + u.slope * (b - 75000) / 2500);   // target mNAV capped at 2.0 for far-out BTC prices
+  return {...u, ready, conv};
+}
+
+function ForwardTable({ todayTs, units, setUnits, mu, modelA=JV_A, modelB=JV_B }) {
   // Safe date offset: always derive from todayTs, never mutate
   const offsetTs = (months=0, years=0) => {
     const d = new Date(todayTs);
@@ -333,8 +386,12 @@ function ForwardTable({ todayTs, modelA=JV_A, modelB=JV_B }) {
 
   return (
     <div style={{background:"#040c1a",border:"1px solid #0a1628",borderRadius:"6px",padding:"14px 16px"}}>
-      <div style={{fontSize:"11px",color:"#5a8fc0",textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:"12px",fontWeight:600}}>
-        Forward Price Projections
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"10px",
+        flexWrap:"wrap",marginBottom:"12px"}}>
+        <div style={{fontSize:"11px",color:"#5a8fc0",textTransform:"uppercase",letterSpacing:"0.12em",fontWeight:600}}>
+          Forward Price Projections
+        </div>
+        <UnitPick units={units} setUnits={setUnits}/>
       </div>
       <div style={{overflowX:"auto"}}>
         <div style={{display:"grid",
@@ -359,6 +416,7 @@ function ForwardTable({ todayTs, modelA=JV_A, modelB=JV_B }) {
                 color:rowColor,fontWeight:700,fontSize:"11px"}}>{band.label}</div>,
               ...cols.map(c=>{
                 const p = bandPriceAt(c.ts, band, modelA, modelB);
+                const shown = units === "mstr" ? mu.conv(p) : p;
                 const isPast = c.label==="1yr ago"||c.label==="6mo ago";
                 return (
                   <div key={q+c.label} style={{padding:"5px 6px",borderBottom:"1px solid #070f1f",
@@ -366,7 +424,7 @@ function ForwardTable({ todayTs, modelA=JV_A, modelB=JV_B }) {
                     color: isPast?"#3a5a70" : isFV?"#38bdf8":"#7a9ab8",
                     background: isFV&&!isPast?"#061628":"transparent",
                     fontWeight: isFV&&!isPast?600:400}}>
-                    {fmt(p)}
+                    {shown == null ? "\u2014" : units === "mstr" ? msFmt(shown) : fmt(shown)}
                   </div>
                 );
               })
@@ -374,6 +432,10 @@ function ForwardTable({ todayTs, modelA=JV_A, modelB=JV_B }) {
           })}
         </div>
       </div>
+      {units === "mstr" && <div style={{fontSize:"10px",color:"#5a7fa0",letterSpacing:"0.04em",
+        marginTop:"9px"}}>{mu.ready
+          ? "MSTR at today's holdings, share count, STRC and slope, target mNAV capped at 2.0. Dilution and mNAV drift are not modeled."
+          : "MSTR inputs are not live yet."}</div>}
     </div>
   );
 }
@@ -427,7 +489,8 @@ function lookupDefaultDate() {
   return tsToDateStr(nextOpex(Date.now(), 1));
 }
 
-function PriceLookup({ btcPrice, liveHistory, dateStr, setDateStr, modelA=JV_A, modelB=JV_B }) {
+function PriceLookup({ btcPrice, liveHistory, dateStr, setDateStr, units, setUnits, mu,
+  modelA=JV_A, modelB=JV_B }) {
   useEffect(() => {
     try { localStorage.setItem("lookupDate", dateStr); } catch(_) {}
   }, [dateStr]);
@@ -458,10 +521,11 @@ function PriceLookup({ btcPrice, liveHistory, dateStr, setDateStr, modelA=JV_A, 
   return (
     <div style={{background:"#040c1a",border:"1px solid #0a1628",borderRadius:"6px",padding:"14px 16px",marginTop:"12px"}}>
       <div style={{display:"flex",alignItems:"center",gap:"12px",flexWrap:"wrap",justifyContent:"space-between"}}>
-        <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:"12px",flexWrap:"wrap",rowGap:"8px"}}>
           <div style={{fontSize:"11px",color:"#5a8fc0",textTransform:"uppercase",letterSpacing:"0.12em",fontWeight:600}}>
             Price Lookup
           </div>
+          <UnitPick units={units} setUnits={setUnits}/>
           <button onClick={()=>stepOpex(-1)} title="Previous monthly expiration"
             style={{...inputStyle, color:"#7dd3fc", cursor:"pointer", padding:"6px 9px", fontSize:"12px"}}>◀</button>
           <input type="date" value={dateStr} onChange={e=>setDateStr(e.target.value)}
@@ -496,12 +560,15 @@ function PriceLookup({ btcPrice, liveHistory, dateStr, setDateStr, modelA=JV_A, 
       {results && (
         <div style={{display:"grid",gridTemplateColumns:"repeat(6, 1fr)",gap:"6px",marginTop:"12px"}}>
           {results.bands.map(r => {
-            const aboveBelow = btcPrice > 0 ? ((btcPrice / r.price - 1) * 100) : null;
+            const shown = units === "mstr" ? mu.conv(r.price) : r.price;
+            const ref = units === "mstr" ? mu.now : btcPrice;
+            const aboveBelow = (ref > 0 && shown > 0) ? ((ref / shown - 1) * 100) : null;
             return (
               <div key={r.label} style={{background:"#070f1f",border:`1px solid ${r.color}22`,
                 borderRadius:"5px",padding:"8px 10px",textAlign:"center"}}>
                 <div style={{fontSize:"11px",color:r.color,fontWeight:700,letterSpacing:"0.06em",marginBottom:"4px"}}>{r.label}</div>
-                <div style={{fontSize:"14px",color:"#d0dde8",fontWeight:600}}>{fmtFull(r.price)}</div>
+                <div style={{fontSize:"14px",color:"#d0dde8",fontWeight:600}}>
+                  {shown == null ? "\u2014" : fmtFull(shown)}</div>
                 {aboveBelow !== null && (
                   <div style={{fontSize:"10px",marginTop:"3px",
                     color:aboveBelow > 0 ? "#22c55e" : "#ef4444"}}>
@@ -518,14 +585,17 @@ function PriceLookup({ btcPrice, liveHistory, dateStr, setDateStr, modelA=JV_A, 
         const hp = quantileToPrice(tq, results.ts, modelA, modelB);
         if (!(hp > 0)) return null;
         const {tier: tt} = getTier(tq);
-        const chg = (hp / btcPrice - 1) * 100;
+        const shown = units === "mstr" ? mu.conv(hp) : hp;
+        const ref = units === "mstr" ? mu.now : btcPrice;
+        if (!(shown > 0) || !(ref > 0)) return null;
+        const chg = (shown / ref - 1) * 100;
         return (
           <div title="Today's quantile carried to the selected date"
             style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:"10px",flexWrap:"wrap",
             marginTop:"8px",background:"#070f1f",border:`1px solid ${tt.color}33`,borderRadius:"5px",padding:"8px 10px"}}>
             <span style={{fontSize:"11px",color:tt.color,fontWeight:700,letterSpacing:"0.06em"}}>
               {"TODAY'S " + tq.toFixed(1) + "q HELD TO THIS DATE"}</span>
-            <span style={{fontSize:"14px",color:"#d0dde8",fontWeight:600}}>{fmtFull(hp)}</span>
+            <span style={{fontSize:"14px",color:"#d0dde8",fontWeight:600}}>{fmtFull(shown)}</span>
             <span style={{fontSize:"10px",color:chg >= 0 ? "#22c55e" : "#ef4444"}}>
               {(chg >= 0 ? "+" : "") + chg.toFixed(1) + "% from today's price"}</span>
           </div>);
@@ -1775,6 +1845,9 @@ function BTCPowerLaw() {
   const [liveUpdatedAt, setLiveUpdatedAt] = useState(null);
   const [liveHistory, setLiveHistory] = useState(null);
   const [lookupDate, setLookupDate] = useState(lookupDefaultDate);
+  // BTC or MSTR for the forward table and the lookup, remembered
+  const [units, setUnits] = useLocal("bql_units", "btc", v => v === "mstr" ? "mstr" : "btc");
+  const mu = useMstrUnits();
 
   // EMA model: halfLifeYears=0 means Kaim fixed model
   const [halfLifeYears, setHalfLifeYears] = useState(0);
@@ -2282,10 +2355,13 @@ function BTCPowerLaw() {
       </div>
 
           {/* FORWARD PROJECTION TABLE */}
-      <ForwardTable todayTs={todayTs} modelA={modelA} modelB={modelB}/>
+      <ForwardTable todayTs={todayTs} units={units} setUnits={setUnits} mu={mu}
+        modelA={modelA} modelB={modelB}/>
 
       {/* PRICE LOOKUP */}
-      <PriceLookup btcPrice={price} liveHistory={liveHistory} dateStr={lookupDate} setDateStr={setLookupDate} modelA={modelA} modelB={modelB}/>
+      <PriceLookup btcPrice={price} liveHistory={liveHistory} dateStr={lookupDate}
+        setDateStr={setLookupDate} units={units} setUnits={setUnits} mu={mu}
+        modelA={modelA} modelB={modelB}/>
 
       {/* POWER LAW CHART */}
       <PowerLawChart btcPrice={price} todayTs={todayTs} liveHistory={liveHistory} lookupTs={lookupDate ? Date.parse(lookupDate + "T00:00:00Z") : null} modelA={modelA} modelB={modelB}/>

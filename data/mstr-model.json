@@ -3231,54 +3231,45 @@
 "note": "Headline cells were run at the sheet's 0.025 slope; the slope sweep shows the same trade at 0.0125, which is what the cards and chart use."
 },
 "regime": {
-"note": "MSTR cheap by 4% or more on the sheet's target, split by BTC's state that day; STRC period, 285 days",
+"note": "MSTR cheap by 4 percent or more at the measured slope, split by BTC's state that day; STRC period, 285 days",
 "rows": [
 {
 "state": "BTC above its 50-day average",
-"days": 12,
+"days": 19,
 "episodes": 2,
-"mstr_5d": 2.6,
-"btc_5d": -1.4,
-"mstr_10d": 1.5,
-"btc_10d": -3.4
+"mstr_5d": 5.4,
+"btc_5d": 1.9,
+"mstr_10d": 9.6,
+"btc_10d": 4.4
 },
 {
 "state": "BTC below its 50-day average",
-"days": 44,
-"episodes": 4,
-"mstr_5d": -4.2,
-"btc_5d": -2.9,
-"mstr_10d": -7.1,
-"btc_10d": -5.1
-},
-{
-"state": "BTC down 8%+ over 20 days (selling)",
-"days": 14,
-"episodes": 2,
-"mstr_5d": -7.2,
-"btc_5d": -4.8,
-"mstr_10d": -12.3,
-"btc_10d": -5.6
+"days": 52,
+"episodes": 3,
+"mstr_5d": 1.1,
+"btc_5d": 0.6,
+"mstr_10d": 1.7,
+"btc_10d": -0.0
 },
 {
 "state": "since July 2026",
-"days": 9,
-"episodes": 2,
-"mstr_5d": 6.7,
-"btc_5d": 1.0,
-"mstr_10d": 10.8,
-"btc_10d": 1.7
+"days": 41,
+"episodes": 1,
+"mstr_5d": 4.9,
+"btc_5d": 3.1,
+"mstr_10d": 9.7,
+"btc_10d": 5.9
 },
 {
 "state": "all",
-"days": 56,
-"episodes": 4,
-"mstr_5d": -2.8,
-"btc_5d": -2.6,
-"mstr_10d": -5.4,
-"btc_10d": -4.8
+"days": 71,
+"episodes": 2,
+"mstr_5d": 2.3,
+"btc_5d": 0.9,
+"mstr_10d": 3.7,
+"btc_10d": 1.1
 }
 ],
-"read": "Buy the gap when BTC is trending up or sideways. Don't buy it when BTC is breaking down, because then the gap closes by BTC falling."
+"read": "At the measured slope both states read positive, on two episodes. At the sheet's steeper slope, four episodes, the below-50-day state read negative and the gap closed by BTC falling. Too few episodes to call it; the monitor's log is the live test."
 }
 }

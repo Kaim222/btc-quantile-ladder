@@ -1425,32 +1425,53 @@ function MstrTab({ btcPrice, priceStr, livePrice, liveHistory }) {
   const led = rowsOf(mon.led).slice().sort((a, b) => msTs(b.time) - msTs(a.time));
   const hot = t => { const x = msTs(t); if (!x) return false;
     const a = (nowTs - x) / 60000; return a >= -5 && a <= 60; };
-  const stHot = Boolean(mon.st && mon.st.fired && hot(mon.st.last_run)
-    && (mon.st.fired === true || /lag/i.test(String(mon.st.fired))));
-  const ledHot = led.find(r => String(r.kind) === "lag" && hot(r.time)) || null;
-  const lagHot = stHot || Boolean(ledHot);
-  const lagV = stHot ? nm(mon.st.lag) : ledHot ? nm(ledHot.lag) : null;
   const pctT = v => Math.abs(v).toFixed(1) + "%";
+  const x2p = v => v == null ? UNK : msSgn(2 * v) + "%";     // the MSTX leg, twice MSTR's move
   const side = vGap == null ? "" : vGap < 0 ? "under" : "over";
-  const vd = lagHot
-    ? {w:"BUY (LAG)", c:GRN, why:"MSTR dropped " + (lagV == null ? "hard" : pctT(lagV))
-        + " vs projection in an hour, BTC held. Window: the next hour."}
-    : vGap == null
-    ? {w:"NO READ", c:NEU, why:"A live quote is missing, so there is no gap to trade."}
-    : (vGap <= -chT && up === true)
-    ? {w:"BUY", c:GRN, why:"Cheap by " + pctT(vGap)
-        + " and BTC is trending up. The gap closes with MSTR up."}
-    : (vGap <= -chT && up === false)
-    ? {w:"WAIT", c:AMB, why:"Cheap by " + pctT(vGap)
-        + " but BTC is under its 50-day. Usually closes by BTC falling."}
-    : vGap <= -chT
-    ? {w:"WAIT", c:AMB, why:"Cheap by " + pctT(vGap)
-        + ", but BTC's 50-day is unknown. Direction unclear."}
-    : vGap >= riT
-    ? {w:"SELL", c:RD, why:"Rich by " + pctT(vGap)
-        + ". Rich readings faded about 2% vs BTC over five days."}
-    : {w:"NO TRADE", c:AMB, why:"MSTR is " + pctT(vGap) + " " + side + " projection, inside the "
-        + bandTxt + "% band."};
+
+  // ROW 1. The minute lag, straight off the monitor. This is the trade Alex takes.
+  const st = isObj(mon.st) ? mon.st : null;
+  const stLag = st ? nm(st.lag) : null;
+  const barTs = st ? msTs(st.last_bar || st.last_run) : 0;
+  const barAge = barTs ? (nowTs - barTs) / 60000 : null;     // minutes since the monitor's bar
+  const fired = !st ? [] : Array.isArray(st.fired) ? st.fired.map(x => String(x).toLowerCase())
+    : st.fired ? [String(st.fired).toLowerCase()] : [];
+  const ledHot = led.find(r => String(r.kind) === "lag" && hot(r.time)) || null;
+  const lagFire = Boolean(ledHot)
+    || (fired.indexOf("lag") >= 0 && barAge != null && barAge >= -5 && barAge <= 60);
+  const lagV = ledHot ? nm(ledHot.lag) : stLag;
+  const lagT = thr("lag_threshold", 1.5);
+  const barTxt = barTs ? msWhen(barTs) : UNK;
+  const dv = lagFire
+    ? {w:"BUY", c:GRN, why:"MSTR lagged " + (lagV == null ? UNK : pctT(lagV))
+        + " vs its last hour with BTC holding (" + (lagV == null ? UNK : pctT(2 * lagV))
+        + " on MSTX). Window: the next hour. Take profit near +0.75% on MSTR."}
+    : (barAge != null && barAge >= -5 && barAge <= 10)
+    ? {w:"NO LAG", c:NEU, why:"Lag " + msPct(lagV) + " vs the last hour (" + x2p(lagV)
+        + " on MSTX). Fires at \u2212" + String(+lagT.toFixed(2)) + "%."}
+    : !st
+    ? {w:mktOpen === false ? "OFF HOURS" : "STALE", c:NEU,
+       why:"The monitor's state file is not reachable, so there is no lag reading."}
+    : (lagV == null || !barTs)
+    ? {w:mktOpen === false ? "OFF HOURS" : "STALE", c:NEU,
+       why:"The monitor has not written a lag reading yet. The lag needs minute bars; it reads "
+         + "them every 5 minutes while the market is open."}
+    : {w:mktOpen === false ? "OFF HOURS" : "STALE", c:NEU,
+       why:"Last reading " + msPct(lagV) + " at " + barTxt + ". The lag needs minute bars; the "
+         + "monitor reads them every 5 minutes while the market is open."};
+  const dayC = [
+    ["LAG NOW", lagV == null ? "\u2014" : msPct(lagV),
+      lagV == null ? "no reading yet" : x2p(lagV) + " MSTX", lagFire ? GRN : NEU],
+    ["MSTR", msUsd(vMstr), qM ? qM.lab : "no quote", AMB],
+    ["MSTX", msUsd(mstxImp), "implied, 2x MSTR", AMB],
+    ["MONITOR", barTs ? msClock(barTxt) : "\u2014", "checks every 5 min", NEU]];
+
+  // ROW 2. The day-level gap, the slow read.
+  const vd = vGap == null
+    ? {w:"NO READ", c:NEU, why:"A live quote is missing, so there is no level to read."}
+    : {w:vGap <= -chT ? "CHEAP" : vGap >= riT ? "RICH" : "FAIR", c:gcOf(vGap),
+       why:"MSTR is " + pctT(vGap) + " " + side + " projection (" + pctT(2 * vGap)
+         + " on MSTX); the swing band is \u00b1" + bandTxt + "%."};
   // after the close the gap marks a stale MSTR print against live BTC, and says so
   const shut = mktOpen === false;
   const bLast = last ? nm(last.btc) : null;
@@ -1468,8 +1489,6 @@ function MstrTab({ btcPrice, priceStr, livePrice, liveHistory }) {
   ].filter(x => x[0]);
   const gc = gcOf(vGap);
   const nowC = [
-    ["MSTR", msUsd(vMstr), qM ? qM.lab : "no quote", AMB],
-    ["MSTX", msUsd(mstxImp), "implied, 2x MSTR", AMB],
     ["PROJECTED", msUsd(vProj), "fair value now", gc],
     ["GAP", msPct(vGap), gapCap(vGap), gc],
     ["mNAV", msNum(vMnav, 3), "target " + msNum(vTgt, 3), gc],
@@ -1571,31 +1590,50 @@ function MstrTab({ btcPrice, priceStr, livePrice, liveHistory }) {
 
   return (
     <div>
-      {/* MSTR NOW \u00b7 THE VERDICT */}
-      <div style={{background:"#070f1f",border:"1px solid #0f2035",borderLeft:"5px solid " + vd.c,
+      {/* MSTR NOW \u00b7 THE MINUTE LAG OVER THE DAY-LEVEL GAP */}
+      <div style={{background:"#070f1f",border:"1px solid #0f2035",borderLeft:"5px solid " + dv.c,
         borderRadius:"6px",padding:"18px 22px"}}>
         <div style={{...ROW,justifyContent:"space-between",marginBottom:4}}>
           <span style={HD}>MSTR NOW</span>
-          <span style={{fontSize:10,color:GRY,letterSpacing:"0.06em"}}>SHORT-TERM GAP TRADE</span></div>
+          <span style={{fontSize:10,color:GRY,letterSpacing:"0.06em"}}>
+            {"DAY TRADE \u00b7 LAG (MINUTES)"}</span></div>
         <div style={{fontSize:"clamp(40px,6vw,56px)",fontWeight:800,letterSpacing:"0.01em",
-          lineHeight:1.05,color:vd.c,margin:"7px 0 0",whiteSpace:"nowrap"}}>{vd.w}</div>
+          lineHeight:1.05,color:dv.c,margin:"7px 0 0",whiteSpace:"nowrap"}}>{dv.w}</div>
         <div style={{fontSize:14,color:"#e2e8f0",lineHeight:1.55,marginTop:9,maxWidth:"780px"}}>
-          {vd.why}</div>
+          {dv.why}</div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(124px,1fr))",
           gap:"10px",marginTop:14}}>
-          {nowC.map(([h, v, sub, c]) => (
+          {dayC.map(([h, v, sub, c]) => (
             <div key={h} style={SC}>
               <div style={{...LAB,marginBottom:6}}>{h}</div>
               <div style={{...SV,color:c}}>{v}</div>
               <div style={SH}>{sub}</div>
             </div>))}
         </div>
+
+        <div style={{borderTop:SEP,marginTop:18,paddingTop:14}}>
+          <span style={{fontSize:10,color:GRY,letterSpacing:"0.06em"}}>
+            {"SWING \u00b7 LEVEL (DAYS)"}</span>
+          <div style={{fontSize:"clamp(24px,3.4vw,32px)",fontWeight:800,letterSpacing:"0.01em",
+            lineHeight:1.1,color:vd.c,margin:"6px 0 0",whiteSpace:"nowrap"}}>{vd.w}</div>
+          <div style={{fontSize:13,color:"#b0c4d8",lineHeight:1.55,marginTop:7,
+            maxWidth:"780px"}}>{vd.why}</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(124px,1fr))",
+            gap:"10px",marginTop:12}}>
+            {nowC.map(([h, v, sub, c]) => (
+              <div key={h} style={SC}>
+                <div style={{...LAB,marginBottom:6}}>{h}</div>
+                <div style={{...SV,color:c}}>{v}</div>
+                <div style={SH}>{sub}</div>
+              </div>))}
+          </div>
         {closedLine && <div style={{fontSize:11,color:"#b0c4d8",lineHeight:1.5,marginTop:11,
           maxWidth:"780px"}}>{closedLine}</div>}
         <div style={FT}>{"As of: "}
           {asOfP.map(([t, nw], i) => (
             <React.Fragment key={i}>{i ? " \u00b7 " : ""}
               <span style={nw ? {whiteSpace:"nowrap"} : null}>{t}</span></React.Fragment>))}{"."}</div>
+        </div>
       </div>
 
       {/* THIS WEEK */}

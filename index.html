@@ -833,7 +833,6 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
   }, []);
   const inp = (pb && isObj(pb.inputs)) ? pb.inputs : {};
   const [tip, setTip] = useState(null), [hb, setHb] = useState(null);
-  const [ovr] = useLocal("bql_pb_overrides", {}, v => isObj(v) ? v : {});
   const [uSl, setUSl] = useLocal("bql_pb_mstx", 16.4, v => nm(v) == null ? 16.4 : nm(v));
   const trigRef = useRef(null);
   const d0 = new Date().toISOString().slice(0,10);
@@ -856,8 +855,7 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
   const tier = q != null ? getTier(q).tier : null, tkr = tier ? tier.name.split(" ")[0] : null;
   const AC = tier ? tier.color : "#8aaac8";
 
-  const eff = id => { const o = ovr[id], r = inp[id];
-    return o === "pass" ? true : o === "fail" ? false : (r && typeof r.pass === "boolean") ? r.pass : null; };
+  const eff = id => { const r = inp[id]; return (r && typeof r.pass === "boolean") ? r.pass : null; };
   const hist = eff(HIST), cross = eff(CROSS);
   // above 85 both weekly inputs can pass and the word reads HOLD, never ENTRY
   const trig = (hist == null || cross == null) ? "UNKNOWN"
@@ -873,7 +871,7 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
   const iv3n = nm(r3.n_days) != null ? nm(r3.n_days) : nm(ivR.n_days);
   // events are counted from today, and one that has passed is not an event
   const evs = rowsOf(pb && pb.events_upcoming).map(e => ({e, d:days(d0, e.date)}))
-    .filter(x => x.d != null && x.d >= 0);
+    .filter(x => x.d != null && x.d >= 0).sort((a, b) => a.d - b.d);
   const nxt = evs.length ? evs[0] : null;
   const ev3 = evs.slice(0,3).map(x => (md(x.e.date) || x.e.date) + " "
     + String(x.e.type||"").replace(/_/g," ") + " in " + x.d + " days").join(" \u00b7 ");

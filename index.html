@@ -334,7 +334,7 @@ const UnitPick = ({units, setUnits}) => (
   </span>);
 
 function useMstrUnits() {
-  const [u, setU] = useState({bps:null, strc:null, slope:0.0125, now:null});
+  const [u, setU] = useState({bps:null, strc:null, slope:null, now:null});
   useEffect(() => {
     let on = true;
     const num = x => (x != null && x !== "" && x !== "auto" && isFinite(Number(x))) ? Number(x) : null;
@@ -363,7 +363,7 @@ function useMstrUnits() {
       const q = quote(k); if (q) setU(v => ({...v, now: q.px})); });
     return () => { on = false; };
   }, []);
-  const ready = u.bps != null && u.strc != null;
+  const ready = u.bps != null && u.strc != null && u.slope != null;
   // the slope term rides the row's own BTC price, exactly as the sheet rule is written
   const conv = b => (!ready || !(b > 0)) ? null
     : b * u.bps * Math.min(2.0, msStrc(u.strc) + u.slope * (b - 75000) / 2500);   // target mNAV capped at 2.0 for far-out BTC prices
@@ -1354,13 +1354,13 @@ const msClock = t => { const m = String(t || "").match(/(\d{1,2}):(\d{2})\s*([AP
 const msWhen = t => { const x = typeof t === "number" ? t : msTs(t); return !x ? String(t || UNK)
   : new Date(x).toLocaleString("en-US", {month:"numeric", day:"numeric",
       hour:"numeric", minute:"2-digit"}); };
-const MS_KIND = {lag:["#1c1700","#facc15"], cheap:["#052e16","#22c55e"], rich:["#1c0505","#ef4444"]};
+const MS_KIND = {lag:["#1c1700","#facc15"], cheap:["#052e16","#22c55e"], rich:["#1c0505","#ef4444"], watch:["#0c2040","#8aaac8"]};
 
 function MstrTab({ btcPrice, priceStr, livePrice, liveHistory, liveUpdatedAt }) {
   const [dat, setDat] = useState(null), [bad, setBad] = useState(false);
   const [f, setF] = useState({btc:"", mstr:"", mstx:"", strc:"", held:"", sh:""});
-  const [slope, setSlope] = useState(0.0125);        // the what-if toggle, and nothing else
-  const [cfgSlope, setCfgSlope] = useState(0.0125);  // what the verdict runs on
+  const [slope, setSlope] = useState(null);        // the what-if toggle, and nothing else
+  const [cfgSlope, setCfgSlope] = useState(null);  // what the verdict runs on
   const [hov, setHov] = useState(null);
   const [cfg, setCfg] = useState(null);
   const [live, setLive] = useState(null);
@@ -1490,18 +1490,22 @@ function MstrTab({ btcPrice, priceStr, livePrice, liveHistory, liveUpdatedAt }) 
       {bad ? "data/mstr-model.json did not load. The tab needs that file."
         : "Loading the MSTR model."}</div></div>);
 
+  if (!cfg || cfgSlope == null || ["cheap_threshold", "rich_threshold", "lag_threshold",
+      "lag_watch", "lag_slope", "btc_hour_move_floor"].some(k => nm(cfg[k]) == null)
+      || typeof cfg.lag_at_low !== "boolean" || typeof cfg.regime_gate !== "boolean") return (
+    <div style={TBL}><div style={BODY}>Waiting for a complete data/mstr-config.json.</div></div>);
+
   // the cheap and rich lines, from the config, used everywhere a threshold appears
-  const thr = (k, d) => { const v = cfg == null ? null : nm(cfg[k]);
-    return v == null ? d : Math.abs(v) <= 1 ? Math.abs(v) * 100 : Math.abs(v); };
-  const chT = thr("cheap_threshold", 3), riT = thr("rich_threshold", 4);
-  const lagT = thr("lag_threshold", 1.5);
+  const thr = k => Math.abs(nm(cfg[k])) * 100;
+  const chT = thr("cheap_threshold"), riT = thr("rich_threshold");
+  const lagT = thr("lag_threshold"), watchT = thr("lag_watch");
   const nTxt = v => String(+v.toFixed(2));
   const gapCap = v => v == null ? UNK : v <= -chT ? "past the cheap line"
     : v >= riT ? "past the rich line" : "inside the band";
   const gcOf = v => msGapCol(v, chT, riT);
-  // the what-if slope buttons: the measured slope, the sheet's, and the config's own
-  const slOpts = [[0.0125, "0.0125 · measured"], [0.025, "0.025 · your sheet"],
-    [cfgSlope, String(cfgSlope) + " · config"]]
+  // compare the lag's slope with the configured projection slope
+  const slOpts = [[cfgSlope, String(cfgSlope) + " \u00b7 projection config"],
+    [nm(cfg.lag_slope), String(cfg.lag_slope) + " \u00b7 lag config"]]
     .filter((o, i, a) => a.findIndex(x => x[0] === o[0]) === i);
   // EVIDENCE. What the backtest measured, straight from the model file.
   const ev = isObj(dat.evidence) ? dat.evidence : {};
@@ -1559,7 +1563,7 @@ function MstrTab({ btcPrice, priceStr, livePrice, liveHistory, liveUpdatedAt }) 
   const barAge = barTs ? (nowTs - barTs) / 60000 : null;     // minutes since the monitor's bar
   const fired = !st ? [] : Array.isArray(st.fired) ? st.fired.map(x => String(x).toLowerCase())
     : st.fired ? [String(st.fired).toLowerCase()] : [];
-  const ledHot = led.find(r => String(r.kind) === "lag" && hot(r.time)) || null;
+  const ledHot = led.find(r => String(r.kind) === "lag" && r.muted !== true && hot(r.time)) || null;
   const lagFire = Boolean(ledHot)
     || (fired.indexOf("lag") >= 0 && barAge != null && barAge >= -5 && barAge <= 60);
   const lagV = ledHot ? nm(ledHot.lag) : stLag;
@@ -1587,8 +1591,8 @@ function MstrTab({ btcPrice, priceStr, livePrice, liveHistory, liveUpdatedAt }) 
   const stRun = mon.st ? (mon.st.last_run
     || (isObj(mon.st.strategy_last) ? mon.st.strategy_last.fetched : null)) : null;
   const dayC = [
-    ["MSTX VS LAST HOUR", lagV == null ? "\u2014" : msPct(lagV),
-      lagV == null ? "no reading yet" : x2p(lagV) + " MSTX", lagFire ? GRN : NEU],
+    ["MSTX VS LAST HOUR", lagV == null ? "\u2014" : msPct(2 * lagV),
+      lagV == null ? "no reading yet" : msPct(lagV) + " MSTR", lagFire ? GRN : NEU],
     ["MSTR", msUsd(vMstr), qM ? qM.lab : "no quote", AMB],
     ["MSTX", msUsd(mstxImp), mStale ? "model file is stale" : "implied, 2x MSTR", AMB],
     ["MONITOR", stRun ? msClock(msWhen(stRun)) : barTs ? msClock(barTxt) : "\u2014",
@@ -1641,16 +1645,17 @@ function MstrTab({ btcPrice, priceStr, livePrice, liveHistory, liveUpdatedAt }) 
     + (ledAll.length > led.length ? " \u00b7 showing the most recent " + led.length + "." : "");
   const monLine = mon.st
     ? (join([stRun ? "AT " + msWhen(stRun) : null,
-        nm(mon.st.gap) == null ? null : "GAP " + x2p(nm(mon.st.gap)) + " MSTX",
+        nm(mon.st.gap_mstx) == null ? null : "GAP " + msPct(nm(mon.st.gap_mstx)) + " MSTX",
         nm(mon.st.lag) == null ? null : "LAG " + x2p(nm(mon.st.lag)) + " MSTX"])
       || "MONITOR HAS NOT LOGGED A RUN YET")
     : mon.done ? "MONITOR STATE NOT REACHABLE" : "";
   const logEmpty = !mon.done ? "Loading the log."
     : mon.ledOff ? "Log not reachable."
-    : "No alerts yet. Each one lands as a Pushover and a row here, scored at 30 and 60 minutes.";
+    : "No rows yet. Alerts and watch readings appear here; watch rows do not send a push.";
   const fires = [
     ["lag", "\u2212" + nTxt(lagT) + "% MSTR \u00b7 \u2212" + nTxt(2 * lagT) + "% MSTX",
-      "the cross, then once an hour"],
+      "qualifying bars since the last run, then once an hour"],
+    ["watch", "\u2212" + nTxt(2 * watchT) + "% MSTX", "logged only, no push"],
     ["cheap", "\u2212" + nTxt(chT) + "% MSTR \u00b7 \u2212" + nTxt(2 * chT) + "% MSTX",
       "cross, each point further, hourly"],
     ["rich", "+" + nTxt(riT) + "% MSTR \u00b7 +" + nTxt(2 * riT) + "% MSTX",
@@ -1658,7 +1663,10 @@ function MstrTab({ btcPrice, priceStr, livePrice, liveHistory, liveUpdatedAt }) 
   const gateOn = Boolean(cfg && cfg.regime_gate);
   const tvLine = (gateOn
       ? "Lag and Cheap are muted unless BTC is above its 50-day, Rich unless below. " : "")
-    + "TradingView marks at \u22122.5% MSTX off the bar's low, so it fires first.";
+    + "Lag line: \u2212" + (2 * lagT).toFixed(1) + "% MSTX at MSTR's bar "
+    + (cfg.lag_at_low ? "low" : "close") + ". Lag slope " + cfg.lag_slope
+    + "; projection slope " + cfgSlope + ". BTC hour move must be at least "
+    + msPct(nm(cfg.btc_hour_move_floor) * 100) + ". Watch rows send no push.";
   const out = (a, b, r) => (r && r.scored === true && nm(a) != null && nm(b) != null)
     ? msSgn(nm(a)) + "% vs " + msSgn(nm(b)) + "%" : "";
 
@@ -1835,18 +1843,22 @@ function MstrTab({ btcPrice, priceStr, livePrice, liveHistory, liveUpdatedAt }) 
         <div style={{height:11}}/>
         {led.length > 0 ? (<>
           <div style={{overflowX:"auto"}}><div style={{display:"grid",
-            gridTemplateColumns:"116px 66px 62px 62px minmax(118px,1fr) minmax(118px,1fr)",
-            minWidth:"560px"}}>
-            {hdr(["WHEN","KIND","GAP MSTX","LAG MSTX","30 MIN \u00b7 MSTR VS BTC",
+            gridTemplateColumns:"116px 100px repeat(6,minmax(76px,1fr)) repeat(2,minmax(118px,1fr))",
+            minWidth:"920px"}}>
+            {hdr(["WHEN","KIND","MSTX","PROJ MSTX","GAP MSTX","LAG MSTX",
+              "30 MIN MSTX","60 MIN MSTX","30 MIN \u00b7 MSTR VS BTC",
               "60 MIN \u00b7 MSTR VS BTC"])}
             {led.map((r, k) => { const kc = MS_KIND[String(r.kind)] || ["#0c2040","#8aaac8"];
               return [msWhen(r.time),
-                <span style={{...CHIP,background:kc[0],color:kc[1]}}>{String(r.kind || "?")}</span>,
-                x2p(nm(r.gap)), nm(r.lag) == null ? "\u2014" : x2p(nm(r.lag)),
+                <span style={{...CHIP,background:kc[0],color:kc[1]}}>{String(r.kind || "?") + (r.muted === true ? " (muted)" : "")}</span>,
+                msUsd(nm(r.mstx)), msUsd(nm(r.proj_mstx)),
+                msPct(nm(r.gap_mstx)), nm(r.lag) == null ? UNK : x2p(nm(r.lag)),
+                msPct(nm(r.mstx_30m)), msPct(nm(r.mstx_60m)),
                 out(r.mstr_30m, r.btc_30m, r), out(r.mstr_60m, r.btc_60m, r)]
                 .map((v, i) => cel(v, i, k,
-                  i === 2 ? gcOf(nm(r.gap)) : i === 4 ? msRet(nm(r.rel_30m))
-                    : i === 5 ? msRet(nm(r.rel_60m)) : null)); })}
+                  i === 4 ? msGapCol(nm(r.gap_mstx), 2 * chT, 2 * riT)
+                    : i === 6 ? msRet(nm(r.mstx_30m)) : i === 7 ? msRet(nm(r.mstx_60m))
+                    : i === 8 ? msRet(nm(r.rel_30m)) : i === 9 ? msRet(nm(r.rel_60m)) : null)); })}
           </div></div>
           <div style={FT}>{tally}</div>
         </>) : (

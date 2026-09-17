@@ -1367,7 +1367,7 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
 
 // ── MSTR. Fair value off the STRC-linked mNAV rule, the projection against the tape,
 // the cheap episodes, and what the backtest says. Numbers live in data/mstr-model.json. ──
-const MS_SL = [[0.0125, "measured: 0.0125 per $2,500"], [0.025, "sheet: 0.025 per $2,500"]];
+const MS_SL = [[0.0125, "0.0125 · measured"], [0.025, "0.025"]];
 const MS_MO = ["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const MS_FLD = [["btc","BTC PRICE"],["mstr","MSTR"],["mstx","MSTX"],["strc","STRC"],
   ["held","BTC HELD"],["sh","SHARES (M)"]];
@@ -1378,23 +1378,79 @@ const msStrc = s => s >= 97.5 ? 0.90
   : s >= 87.5 ? 0.825 + (s - 87.5) * 0.005
   : s >= 82.5 ? 0.80 + (s - 82.5) * 0.005
   : Math.max(0.775, 0.775 + (s - 77.5) * 0.005);
-const msCol = g => g == null ? "#8aaac8" : g < -4 ? GRN : g > 4 ? RD : "#8aaac8";
+const AMB = "#facc15", NEU = "#8aaac8", SUB = "#7a9ab8";
+// cheap is green, rich is red, in between is neutral, at whatever thresholds are configured
+const msGapCol = (g, c, r) => g == null ? NEU : g <= -c ? GRN : g >= r ? RD : NEU;
+// STRC sits in one of the rule's tiers, and the tier sets the target's base.
+// The middle tier stays the subtitle grey, since amber is the input's own colour.
+const msStrcCol = v => v == null ? SUB : v >= 97.5 ? GRN : v < 95 ? RD : SUB;
 const msRet = v => v == null ? "#8aaac8" : v > 0 ? GRN : v < 0 ? RD : "#8aaac8";
 const msPct = (v, d) => v == null ? UNK : (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(d == null ? 1 : d) + "%";
 const msUsd = (v, d) => v == null ? UNK : "$" + v.toFixed(d == null ? 2 : d);
 const msNum = (v, d) => v == null ? UNK : v.toFixed(d == null ? 2 : d);
 const msMon = s => { const p = String(s||"").split("-");
   return p.length < 2 ? String(s||"") : MS_MO[+p[1]] + " " + String(p[0]).slice(2); };
+const MS_RAW = "https://raw.githubusercontent.com/Kaim222/btc-monitor/main/";
+const msTs = t => { const x = Date.parse(String(t||"")); return isFinite(x) ? x : 0; };
+const msSgn = (v, d) => v == null ? UNK : (v >= 0 ? "+" : "\u2212") + Math.abs(v).toFixed(d == null ? 1 : d);
+// "09/16/2026 07:59 PM" is not a format Date.parse can be trusted with, so read it here
+const msStamp = t => { const m = String(t || "").match(
+    /(\d{1,2})\/(\d{1,2})\/(\d{4})[\s,]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AP]M)?/i);
+  if (!m) return msTs(t);
+  let h = +m[4]; const ap = (m[7] || "").toUpperCase();
+  if (ap === "PM" && h < 12) h += 12;
+  if (ap === "AM" && h === 12) h = 0;
+  return new Date(+m[3], +m[1] - 1, +m[2], h, +m[5], +(m[6] || 0)).getTime(); };
+// the live trade while the market is open; once it closes, whichever print is newer,
+// so a stale pre-market quote can never beat the close
+const msQuote = (o, open) => { if (!isObj(o)) return null;
+  const p = Number(o.price), e = isObj(o.ext) ? o.ext : null, ep = e ? Number(e.price) : NaN;
+  const reg = (isFinite(p) && p > 0) ? {px:p, ts:o.ts, lab:"regular session", reg:true} : null;
+  const ext = (e && isFinite(ep) && ep > 0) ? {px:ep, ts:e.ts || e.timeStamp,
+    lab:String(e.sessionType || "extended session").toLowerCase(), reg:false} : null;
+  if (open === false && reg && ext) return msStamp(ext.ts) > msStamp(reg.ts) ? ext : reg;
+  return (open === false && ext) ? ext : (reg || ext); };
+// New York clock, no library: is the regular session open right now
+const msOpen = d => { try {
+    const p = new Intl.DateTimeFormat("en-US", {timeZone:"America/New_York", hour12:false,
+      weekday:"short", hour:"2-digit", minute:"2-digit"}).formatToParts(d);
+    const o = {}; for (const x of p) o[x.type] = x.value;
+    const m = (+o.hour % 24) * 60 + (+o.minute);
+    return o.weekday !== "Sat" && o.weekday !== "Sun" && m >= 570 && m < 960;
+  } catch(_) { return null; } };
+// the Monday the next holdings 8-K lands on; today, if today is Monday
+const msMonday = d => { const x = new Date(d.getTime());
+  x.setDate(x.getDate() + ((1 - x.getDay() + 7) % 7));
+  return x.toLocaleDateString("en-US", {month:"short", day:"numeric"}); };
+const msClock = t => { const m = String(t || "").match(/(\d{1,2}):(\d{2})\s*([AP]M)/i);
+  return m ? (+m[1]) + ":" + m[2] + " " + m[3].toUpperCase() : String(t || ""); };
+const msWhen = t => { const x = typeof t === "number" ? t : msTs(t); return !x ? String(t || UNK)
+  : new Date(x).toLocaleString("en-US", {month:"numeric", day:"numeric",
+      hour:"numeric", minute:"2-digit"}); };
+const MS_KIND = {lag:["#1c1700","#facc15"], cheap:["#052e16","#22c55e"], rich:["#1c0505","#ef4444"]};
 
-function MstrTab({ btcPrice, priceStr, livePrice }) {
+function MstrTab({ btcPrice, priceStr, livePrice, liveHistory }) {
   const [dat, setDat] = useState(null), [bad, setBad] = useState(false);
   const [f, setF] = useState({btc:"", mstr:"", mstx:"", strc:"", held:"845050", sh:"450.112"});
-  const [slope, setSlope] = useState(0.0125);
-  const [seed, setSeed] = useState(false);
+  const [slope, setSlope] = useState(0.0125);        // the what-if toggle, and nothing else
+  const [cfgSlope, setCfgSlope] = useState(0.0125);  // what the verdict runs on
   const [hov, setHov] = useState(null);
   const [cfg, setCfg] = useState(null);
   const [live, setLive] = useState(null);
   const [post, setPost] = useState(null);
+  const [strcQ, setStrcQ] = useState(null);
+  const [hs, setHS] = useState({held:845050, sh:450.112, src:"the built-in default"});
+  const [mon, setMon] = useState({led:[], st:null, ledOff:false, stOff:false, done:false});
+  const [det, setDet] = useLocal("bql_mstr_details", false, v => v === true);
+  const [tick, setTick] = useState(-1);
+  const [nowTs, setNowTs] = useState(() => Date.now());
+  const touched = useRef({});
+  // a refresh never overwrites a box that has been typed in
+  const seedF = o => setF(v => { const n = {...v};
+    for (const k in o) if (!touched.current[k] && o[k] != null && o[k] !== "") n[k] = String(o[k]);
+    return n; });
+
+  // the model and the config load once
   useEffect(() => {
     let on = true;
     fetch("data/mstr-model.json?t=" + Date.now(), {cache:"no-store"})
@@ -1404,43 +1460,100 @@ function MstrTab({ btcPrice, priceStr, livePrice }) {
     fetch("data/mstr-config.json?t=" + Date.now(), {cache:"no-store"})
       .then(r => { if (!r.ok) throw 0; return r.json(); })
       .then(c => { if (!on || !isObj(c)) return;
-        const num = x => (x != null && x !== "" && x !== "auto" && isFinite(Number(x))) ? String(x) : null;
-        setF(v => ({...v, held: num(c.btc_held) || v.held, sh: num(c.shares_m) || v.sh}));
-        if (c.btc_slope_per_2500 != null) setSlope(Number(c.btc_slope_per_2500));
-        setCfg(c);
-        if (num(c.btc_held) && num(c.shares_m)) return;   // manual override in the file wins
-        fetch("https://api.strategy.com/btc/bitcoinKpis", {cache:"no-store"})
-          .then(r => { if (!r.ok) throw 0; return r.json(); })
-          .then(j => { if (!on) return; const k = j && j.results; if (!isObj(k)) return;
-            const held = Number(String(k.btcHoldings).replace(/,/g, "")), sps = Number(k.satsPerShare);
-            if (!(held > 100000) || !(sps > 0)) return;
-            const sh = held / (sps / 1e8) / 1e6;
-            setF(v => ({...v, held: num(c.btc_held) || String(held), sh: num(c.shares_m) || sh.toFixed(3)}));
-            setLive({held, sh, mnavEV: k.mNav, ts: k.msTimestamp, post: k.extendedSession || null}); })
-          .catch(() => {});
-        fetch("https://api.strategy.com/btc/mstrKpiData", {cache:"no-store"})
-          .then(r => { if (!r.ok) throw 0; return r.json(); })
-          .then(j => { if (!on) return; const k = Array.isArray(j) ? j[0] : j; if (!isObj(k)) return;
-            setPost({price: Number(k.price), ts: k.timeStamp, ext: k.extendedSession || null}); })
-          .catch(() => {}); })
-      .catch(() => {});
+        const sl = nm(c.btc_slope_per_2500);
+        if (sl != null) { setCfgSlope(sl); setSlope(sl); }
+        setCfg(c); })
+      .catch(() => {})
+      .then(() => { if (on) setTick(0); });   // the feeds wait for the config, then poll
     return () => { on = false; };
   }, []);
+
+  // the live feeds, on a timer: every minute while New York trades, every five otherwise
+  useEffect(() => {
+    if (tick < 0) return;
+    let on = true;
+    const num = x => (x != null && x !== "" && x !== "auto" && isFinite(Number(x))) ? Number(x) : null;
+    const cHeld = num(cfg && cfg.btc_held), cSh = num(cfg && cfg.shares_m);
+    fetch("https://api.strategy.com/btc/mstrKpiData", {cache:"no-store"})
+      .then(r => { if (!r.ok) throw 0; return r.json(); })
+      .then(j => { if (!on) return; const k = Array.isArray(j) ? j[0] : j; if (!isObj(k)) return;
+        setPost({price: Number(k.price), ts: k.timeStamp, ext: k.extendedSession || null}); })
+      .catch(() => {});
+    fetch("https://api.strategy.com/btc/strcKpiData", {cache:"no-store"})
+      .then(r => { if (!r.ok) throw 0; return r.json(); })
+      .then(j => { if (!on) return; const k = Array.isArray(j) ? j[0] : j; if (!isObj(k)) return;
+        setStrcQ({price: Number(k.price), ts: k.timeStamp, ext: k.extendedSession || null}); })
+      .catch(() => {});
+    if (cHeld && cSh) setHS({held:cHeld, sh:cSh, src:"data/mstr-config.json"});
+    else fetch("https://api.strategy.com/btc/bitcoinKpis", {cache:"no-store"})
+      .then(r => { if (!r.ok) throw 0; return r.json(); })
+      .then(j => { if (!on) return; const k = j && j.results; if (!isObj(k)) return;
+        const held = Number(String(k.btcHoldings).replace(/,/g, "")), sps = Number(k.satsPerShare);
+        if (!(held > 100000) || !(sps > 0)) return;
+        const sh = held / (sps / 1e8) / 1e6;
+        setLive({held, sh, mnavEV: k.mNav, ts: k.msTimestamp});
+        setHS({held: cHeld || held, sh: cSh || sh, src: "strategy.com"}); })
+      .catch(() => {});
+    // the monitor's log and its last run
+    Promise.all(["mstr_ledger.json", "mstr_state.json"].map(x =>
+      fetch(MS_RAW + x + "?t=" + Date.now(), {cache:"no-store"})
+        .then(r => { if (!r.ok) throw 0; return r.json(); }).catch(() => null)))
+      .then(([a, b]) => { if (!on) return;
+        setMon({led: Array.isArray(a) ? rowsOf(a) : rowsOf(isObj(a) ? a.entries : null),
+          st: isObj(b) ? b : null, ledOff: a == null, stOff: b == null, done: true}); });
+    return () => { on = false; };
+  }, [tick, cfg]);
+
+  // one timer drives both the refresh and the session clock
+  useEffect(() => {
+    let on = true, id = null;
+    const wait = () => msOpen(new Date()) ? 60000 : 300000;
+    const run = () => { if (!on) return;
+      setNowTs(Date.now()); setTick(t => t + 1);
+      id = setTimeout(run, wait()); };
+    id = setTimeout(run, wait());
+    return () => { on = false; if (id) clearTimeout(id); };
+  }, []);
+
   const ser = rowsOf(dat && dat.series);
   const last = ser.length ? ser[ser.length - 1] : null;
+
+  // The quotes the tab reads. MSTX has no feed on this API, so it carries 2x MSTR's move today.
+  const mktOpen = msOpen(new Date(nowTs));
+  const qM = msQuote(post, mktOpen), qS = msQuote(strcQ, mktOpen);
+  const mLast = last ? nm(last.mstr) : null, mxLast = last ? nm(last.mstx) : null;
+  const mstxImp = (qM == null || !mLast || mxLast == null) ? null
+    : mxLast * (1 + 2.0 * (qM.px / mLast - 1));
+  // the ladder's render seed, 85000, is never a price
+  const own = String(priceStr||"").trim() !== "85000" && typeof btcPrice === "number" && btcPrice > 0;
+  const liveBtc = (typeof livePrice === "number" && livePrice > 0) ? livePrice : own ? btcPrice : null;
+
+  // the what-if box seeds off the same live numbers the verdict uses, so the two agree
   useEffect(() => {
-    if (seed || !last) return;
-    const s = v => v == null ? "" : String(v);
-    setF(v => ({...v, btc:s(last.btc), mstr:s(last.mstr), mstx:s(last.mstx), strc:s(last.strc)}));
-    setSeed(true);
-  }, [seed, last]);
+    seedF({btc: liveBtc != null ? Math.round(liveBtc) : (last ? last.btc : null),
+      mstr: qM ? qM.px.toFixed(2) : (last ? last.mstr : null),
+      mstx: mstxImp != null ? mstxImp.toFixed(2) : (last ? last.mstx : null),
+      strc: qS ? qS.px.toFixed(2) : (last ? last.strc : null),
+      held: hs.held == null ? null : Math.round(hs.held),
+      sh: hs.sh == null ? null : hs.sh.toFixed(3)});
+  }, [last, liveBtc, qM && qM.px, qS && qS.px, mstxImp, hs.held, hs.sh]);
 
   if (!dat) return (
     <div style={TBL}><div style={BODY}>
       {bad ? "data/mstr-model.json did not load. The tab needs that file."
         : "Loading the MSTR model."}</div></div>);
 
-  // FAIR VALUE NOW
+  // the cheap and rich lines, from the config, used everywhere a threshold appears
+  const thr = (k, d) => { const v = cfg == null ? null : nm(cfg[k]);
+    return v == null ? d : Math.abs(v) <= 1 ? Math.abs(v) * 100 : Math.abs(v); };
+  const chT = thr("cheap_threshold", 4), riT = thr("rich_threshold", 4);
+  const nTxt = v => String(+v.toFixed(2));
+  const bandTxt = chT === riT ? nTxt(chT) : nTxt(chT) + " to " + nTxt(riT);
+  const gapCap = v => v == null ? UNK : v <= -chT ? "past the cheap line"
+    : v >= riT ? "past the rich line" : "inside the " + bandTxt + "% band";
+  const gcOf = v => msGapCol(v, chT, riT);
+
+  // WHAT IF. Runs on whatever is in the boxes, with the what-if slope.
   const g = k => nm(f[k]);
   const held = g("held"), shM = g("sh"), btcI = g("btc"), mstrI = g("mstr");
   const mstxI = g("mstx"), strcI = g("strc");
@@ -1450,10 +1563,110 @@ function MstrTab({ btcPrice, priceStr, livePrice }) {
   const proj = (bps == null || btcI == null || tgt == null) ? null : bps * btcI * tgt;
   const gapN = (!proj || mstrI == null) ? null : (mstrI / proj - 1) * 100;
   const pMstx = (mstxI == null || proj == null || !mstrI) ? null : mstxI * (1 + 2.0 * (proj / mstrI - 1));
-  const gapW = gapN == null ? UNK : gapN < -4 ? "cheap" : gapN > 4 ? "rich" : "in line";
-  // the ladder's render seed, 85000, is never a price
-  const own = String(priceStr||"").trim() !== "85000" && typeof btcPrice === "number" && btcPrice > 0;
-  const liveBtc = (typeof livePrice === "number" && livePrice > 0) ? livePrice : own ? btcPrice : null;
+
+  // MSTR NOW. The verdict runs on live quotes and the config slope, never on the boxes.
+  const vMstr = qM ? qM.px : null;
+  const vStrc = qS ? qS.px : (last ? nm(last.strc) : null);
+  const vBtc = liveBtc != null ? liveBtc : (last ? nm(last.btc) : null);
+  const vBps = (hs.held == null || !hs.sh) ? null : hs.held / (hs.sh * 1e6);
+  const vTgt = (vStrc == null || vBtc == null) ? null
+    : msStrc(vStrc) + cfgSlope * (vBtc - 75000) / 2500;
+  const vMnav = (vBps == null || !vBtc || vMstr == null) ? null : vMstr / (vBtc * vBps);
+  const vProj = (vBps == null || vBtc == null || vTgt == null) ? null : vBps * vBtc * vTgt;
+  const vGap = (!vProj || vMstr == null) ? null : (vMstr / vProj - 1) * 100;
+  // BTC's regime. Fifty valid daily closes or no read: the app's own history first,
+  // the daily model file second, the monitor's word third.
+  const avg = a => a.length >= 50 ? a.reduce((x, y) => x + y, 0) / a.length : null;
+  const maL = avg((Array.isArray(liveHistory) ? liveHistory.slice(-50) : [])
+    .map(p => Array.isArray(p) ? Number(p[1]) : NaN).filter(v => isFinite(v) && v > 0));
+  const maS = avg(ser.slice(-50).map(r => nm(r.btc)).filter(v => v != null && v > 0));
+  const ma50 = maL != null ? maL : maS;
+  const maSrc = maL != null ? "live daily history" : maS != null ? "the daily model file" : null;
+  const mReg = (mon.st && typeof mon.st.regime === "string") ? mon.st.regime : null;
+  const up = (ma50 != null && vBtc != null) ? vBtc >= ma50 : mReg ? /above/i.test(mReg) : null;
+  const regTxt = up == null ? "regime unavailable" : up ? "above its 50-day" : "below its 50-day";
+  // the monitor's log, newest first, and whether a lag alert fired inside the hour
+  const led = rowsOf(mon.led).slice().sort((a, b) => msTs(b.time) - msTs(a.time));
+  const hot = t => { const x = msTs(t); if (!x) return false;
+    const a = (nowTs - x) / 60000; return a >= -5 && a <= 60; };
+  const stHot = Boolean(mon.st && mon.st.fired && hot(mon.st.last_run)
+    && (mon.st.fired === true || /lag/i.test(String(mon.st.fired))));
+  const ledHot = led.find(r => String(r.kind) === "lag" && hot(r.time)) || null;
+  const lagHot = stHot || Boolean(ledHot);
+  const lagV = stHot ? nm(mon.st.lag) : ledHot ? nm(ledHot.lag) : null;
+  const pctT = v => Math.abs(v).toFixed(1) + "%";
+  const side = vGap == null ? "" : vGap < 0 ? "under" : "over";
+  const vd = lagHot
+    ? {w:"BUY (LAG)", c:GRN, why:"MSTR dropped " + (lagV == null ? "hard" : pctT(lagV))
+        + " vs projection in an hour, BTC held. Window: the next hour."}
+    : vGap == null
+    ? {w:"NO READ", c:NEU, why:"A live quote is missing, so there is no gap to trade."}
+    : (vGap <= -chT && up === true)
+    ? {w:"BUY", c:GRN, why:"Cheap by " + pctT(vGap)
+        + " and BTC is trending up. The gap closes with MSTR up."}
+    : (vGap <= -chT && up === false)
+    ? {w:"WAIT", c:AMB, why:"Cheap by " + pctT(vGap)
+        + " but BTC is under its 50-day. Usually closes by BTC falling."}
+    : vGap <= -chT
+    ? {w:"WAIT", c:AMB, why:"Cheap by " + pctT(vGap)
+        + ", but BTC's 50-day is unknown. Direction unclear."}
+    : vGap >= riT
+    ? {w:"SELL / DON'T ADD", c:RD, why:"Rich by " + pctT(vGap)
+        + ". Rich readings faded about 2% vs BTC over five days."}
+    : {w:"NO TRADE", c:AMB, why:"MSTR is " + pctT(vGap) + " " + side + " projection, inside the "
+        + bandTxt + "% band."};
+  // after the close the gap marks a stale MSTR print against live BTC, and says so
+  const shut = mktOpen === false;
+  const bLast = last ? nm(last.btc) : null;
+  const btcSince = (shut && liveBtc != null && bLast) ? (liveBtc / bLast - 1) * 100 : null;
+  const closedLine = btcSince == null ? null
+    : "BTC has moved " + msSgn(btcSince) + "% since MSTR's " + md(last.d)
+      + " close. Every $1,000 of BTC is worth about 1.9% of the gap.";
+  // each clause holds together on one line; the long closed-market clause may wrap
+  const asOfP = [
+    [qM ? "MSTR " + qM.lab + " " + msClock(qM.ts) : "MSTR quote not live", true],
+    [qS ? "STRC " + qS.lab + " " + msClock(qS.ts)
+      : "STRC not live, using the " + (last ? md(last.d) : "model file") + " close", Boolean(qS)],
+    [liveBtc != null ? "BTC live" : "BTC from the " + (last ? md(last.d) : "model file") + " close", true],
+    [shut ? "market closed, so the gap marks MSTR's last print against live BTC" : null, false]
+  ].filter(x => x[0]);
+  const gc = gcOf(vGap);
+  const nowC = [
+    ["MSTR", msUsd(vMstr), qM ? qM.lab : "no quote", AMB],
+    ["MSTX", msUsd(mstxImp), "implied, 2x MSTR", AMB],
+    ["PROJECTED", msUsd(vProj), "fair value now", gc],
+    ["GAP", msPct(vGap), gapCap(vGap), gc],
+    ["mNAV", msNum(vMnav, 3), "target " + msNum(vTgt, 3), gc],
+    ["BTC", vBtc == null ? UNK : fmtFull(vBtc), regTxt, up == null ? NEU : up ? GRN : RD]];
+  // THIS WEEK
+  const five = ser.slice(-5);
+  const btcTxt = vBtc == null ? UNK : fmtFull(vBtc);
+  const wkReg = ma50 != null
+    ? ["BTC " + btcTxt + ", " + (up ? "above" : "below") + " its 50-day average of ", fmtFull(ma50)]
+    : [up == null ? "BTC " + btcTxt + ", and its 50-day average is not available right now"
+       : "BTC " + btcTxt + ", " + (up ? "above" : "below") + " its 50-day, per the monitor", null];
+  // SHORT-TERM LOG
+  const scored = led.filter(r => String(r.kind) === "lag" && r.scored === true
+    && nm(r.rel_60m) != null);
+  const wins = scored.filter(r => nm(r.rel_60m) > 0).length;
+  const relM = scored.length ? scored.reduce((x, r) => x + nm(r.rel_60m), 0) / scored.length : null;
+  const tally = scored.length
+    ? scored.length + " lag alerts scored \u00b7 " + Math.round(wins / scored.length * 100)
+      + "% beat BTC at 60 minutes \u00b7 mean " + msPct(relM, 2)
+    : "No lag alerts scored yet.";
+  const stRun = mon.st ? (mon.st.last_run
+    || (isObj(mon.st.strategy_last) ? mon.st.strategy_last.fetched : null)) : null;
+  const monLine = mon.st
+    ? (join([stRun ? "MONITOR LAST RAN " + msWhen(stRun) : null,
+        nm(mon.st.gap) == null ? null : "GAP " + msPct(nm(mon.st.gap)),
+        nm(mon.st.lag) == null ? null : "LAG " + msPct(nm(mon.st.lag))])
+      || "MONITOR HAS NOT LOGGED A RUN YET")
+    : mon.done ? "MONITOR STATE NOT REACHABLE" : "";
+  const logEmpty = !mon.done ? "Loading the log."
+    : mon.stOff ? "Log not reachable."
+    : "No alerts logged yet. The monitor is running but has not written a ledger.";
+  const out = (a, b, r) => (r && r.scored === true && nm(a) != null && nm(b) != null)
+    ? msSgn(nm(a)) + "% vs " + msSgn(nm(b)) + "%" : "";
 
   // CHART: MSTR against the projection, the gap under it
   const W = 880, PH = 252, GH = 128, P = {t:16, r:14, b:24, l:48};
@@ -1518,41 +1731,119 @@ function MstrTab({ btcPrice, priceStr, livePrice }) {
   const SV = {fontSize:22,fontWeight:700,letterSpacing:"-0.01em"};
   const SH = {fontSize:10,color:"#7a9ab8",marginTop:3};
   const FT = {fontSize:10,color:GRY,letterSpacing:"0.04em",marginTop:9};
-  const cards = [["BTC PER SHARE", msNum(bps, 6), "held over shares", "#facc15"],
-    ["mNAV", msNum(mnav, 4), "MSTR over BTC per share", "#22d3ee"],
-    ["TARGET mNAV", msNum(tgt, 4), "STRC rule plus BTC slope", "#22d3ee"],
-    ["PROJECTED MSTR", msUsd(proj), "fair value at these inputs", "#facc15"],
-    ["GAP", msPct(gapN), gapW, msCol(gapN)],
-    ["PROJECTED MSTX", msUsd(pMstx), "same-day, 2x", msCol(gapN)]];
+  const cc = gcOf(gapN);
+  const cards = [["BTC PER SHARE", msNum(bps, 6), "holdings / shares", AMB],
+    ["mNAV", msNum(mnav, 4), "price vs that BTC", cc],
+    ["TARGET mNAV", msNum(tgt, 4), "STRC base + BTC slope", "#22d3ee"],
+    ["PROJECTED MSTR", msUsd(proj), "at these inputs", cc],
+    ["GAP", msPct(gapN), gapCap(gapN), cc],
+    ["PROJECTED MSTX", msUsd(pMstx), "if the gap closes", cc]];
 
   return (
     <div>
-      {/* FAIR VALUE NOW */}
+      {/* MSTR NOW \u00b7 THE VERDICT */}
+      <div style={{background:"#070f1f",border:"1px solid #0f2035",borderLeft:"5px solid " + vd.c,
+        borderRadius:"6px",padding:"18px 22px"}}>
+        <div style={{...ROW,justifyContent:"space-between",marginBottom:4}}>
+          <span style={HD}>MSTR NOW</span>
+          <span style={{fontSize:10,color:GRY,letterSpacing:"0.06em"}}>SHORT-TERM GAP TRADE</span></div>
+        <div style={{fontSize:"clamp(34px,9vw,52px)",fontWeight:800,letterSpacing:"-0.02em",
+          lineHeight:1.05,color:vd.c,margin:"7px 0 0"}}>{vd.w}</div>
+        <div style={{fontSize:14,color:"#e2e8f0",lineHeight:1.55,marginTop:9,maxWidth:"780px"}}>
+          {vd.why}</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(124px,1fr))",
+          gap:"10px",marginTop:14}}>
+          {nowC.map(([h, v, sub, c]) => (
+            <div key={h} style={SC}>
+              <div style={{...LAB,marginBottom:6}}>{h}</div>
+              <div style={{...SV,color:c}}>{v}</div>
+              <div style={SH}>{sub}</div>
+            </div>))}
+        </div>
+        {closedLine && <div style={{fontSize:11,color:"#b0c4d8",lineHeight:1.5,marginTop:11,
+          maxWidth:"780px"}}>{closedLine}</div>}
+        <div style={FT}>{"As of: "}
+          {asOfP.map(([t, nw], i) => (
+            <React.Fragment key={i}>{i ? " \u00b7 " : ""}
+              <span style={nw ? {whiteSpace:"nowrap"} : null}>{t}</span></React.Fragment>))}{"."}</div>
+      </div>
+
+      {/* THIS WEEK */}
+      <div style={TBL}>
+        <div style={{...HD,marginBottom:9}}>THIS WEEK</div>
+        <div style={{fontSize:13,color:"#b0c4d8",lineHeight:1.6}}>{wkReg[0]}
+          {wkReg[1] && <><span style={{whiteSpace:"nowrap",color:up ? GRN : RD,
+            fontWeight:700}}>{wkReg[1]}</span>{"."}</>}</div>
+        <div style={{...ROW,gap:8,marginTop:7,marginBottom:7}}>
+          <span style={LAB}>GAP BY CLOSE</span>
+          {five.map((r, i) => (
+            <span key={r.d} style={{fontSize:12,color:"#8aaac8",whiteSpace:"nowrap"}}>
+              {md(r.d) + " "}
+              <b style={{color:gcOf(nm(r.gap)),fontWeight:700}}>{msSgn(nm(r.gap))}</b>
+              {i < five.length - 1 && <span style={{color:"#2a4560"}}>{" \u00b7"}</span>}</span>))}
+        </div>
+        <div style={{fontSize:13,color:"#b0c4d8",lineHeight:1.6}}>
+          {"Next holdings update: the Monday 8-K, if they bought last week, "}
+          <span style={{whiteSpace:"nowrap"}}>{msMonday(new Date(nowTs)) + "."}</span></div>
+        {maSrc && <div style={FT}>{"50-day average off " + maSrc + "."}</div>}
+      </div>
+
+      {/* SHORT-TERM LOG */}
+      <div style={TBL}>
+        <div style={{...ROW,justifyContent:"space-between",marginBottom:9}}>
+          <span style={HD}>SHORT-TERM LOG</span>
+          <span style={{fontSize:10,color:GRY,letterSpacing:"0.06em"}}>{monLine}</span></div>
+        {led.length > 0 ? (<>
+          <div style={{overflowX:"auto"}}><div style={{display:"grid",
+            gridTemplateColumns:"116px 66px 62px 62px minmax(118px,1fr) minmax(118px,1fr)",
+            minWidth:"560px"}}>
+            {hdr(["WHEN","KIND","GAP","LAG","30 MIN \u00b7 MSTR VS BTC","60 MIN \u00b7 MSTR VS BTC"])}
+            {led.map((r, k) => { const kc = MS_KIND[String(r.kind)] || ["#0c2040","#8aaac8"];
+              return [msWhen(r.time),
+                <span style={{...CHIP,background:kc[0],color:kc[1]}}>{String(r.kind || "?")}</span>,
+                msPct(nm(r.gap)), nm(r.lag) == null ? "\u2014" : msPct(nm(r.lag)),
+                out(r.mstr_30m, r.btc_30m, r), out(r.mstr_60m, r.btc_60m, r)]
+                .map((v, i) => cel(v, i, k,
+                  i === 2 ? gcOf(nm(r.gap)) : i === 4 ? msRet(nm(r.rel_30m))
+                    : i === 5 ? msRet(nm(r.rel_60m)) : null)); })}
+          </div></div>
+          <div style={FT}>{tally}</div>
+        </>) : (
+          <div style={BODY}>{logEmpty}</div>)}
+      </div>
+
+      {/* WHAT IF \u00b7 THE CALCULATOR, SEEDED FROM THE SAME LIVE PRICES */}
       <div style={{background:"#070f1f",border:"1px solid #0f2035",borderLeft:"4px solid #facc15",
-        borderRadius:"6px",padding:"16px 20px"}}>
+        borderRadius:"6px",padding:"16px 20px",marginTop:11}}>
         <div style={{...ROW,justifyContent:"space-between",marginBottom:10}}>
-          <span style={HD}>FAIR VALUE NOW</span>
+          <span style={HD}>WHAT IF</span>
           <span style={{fontSize:10,color:GRY,letterSpacing:"0.06em"}}>
-            {"MODEL AS OF " + (dat.as_of || UNK)}</span></div>
+            SEEDED WITH LIVE PRICES</span></div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(122px,1fr))",gap:"10px"}}>
           {MS_FLD.map(([k, lab]) => (
             <div key={k}>
               <div style={{...LAB,marginBottom:4}}>{lab}</div>
               <input value={f[k]} inputMode="decimal" placeholder={lab.toLowerCase()}
-                onChange={e => setF(v => ({...v, [k]:e.target.value.replace(/[^0-9.\-]/g,"")}))}
-                style={{...INP,width:"100%",flex:"1 1 auto",fontSize:13,padding:"6px 8px"}}/>
+                onChange={e => { touched.current[k] = true;
+                  setF(v => ({...v, [k]:e.target.value.replace(/[^0-9.\-]/g,"")})); }}
+                style={{...INP,width:"100%",flex:"1 1 auto",fontSize:13,padding:"6px 8px",
+                  color:k === "strc" ? msStrcCol(strcI) : INP.color}}/>
+              {k === "strc" && strcI != null &&
+                <div style={{...SH,marginTop:5}}>{"base " + msStrc(strcI).toFixed(4)}</div>}
               {k === "btc" && liveBtc != null &&
                 <button style={{...GST,marginTop:5}}
                   onClick={() => setF(v => ({...v, btc:String(Math.round(liveBtc))}))}>
                   {"use live " + fmt(liveBtc)}</button>}
-              {k === "mstr" && post && post.ext && post.ext.price &&
+              {k === "mstr" && qM &&
                 <button style={{...GST,marginTop:5}}
-                  onClick={() => setF(v => ({...v, mstr:Number(post.ext.price).toFixed(2)}))}>
-                  {"use " + String(post.ext.sessionType).toLowerCase() + " $" + Number(post.ext.price).toFixed(2)}</button>}
+                  onClick={() => setF(v => ({...v, mstr:qM.px.toFixed(2)}))}>
+                  {"use $" + qM.px.toFixed(2)}</button>}
+              {k === "mstx" && mstxImp != null &&
+                <div style={{...SH,marginTop:5}}>implied, 2x MSTR</div>}
             </div>))}
         </div>
         <div style={{...ROW,gap:8,marginTop:14}}>
-          <span style={{...LAB,whiteSpace:"nowrap"}}>BTC SLOPE</span>
+          <span style={{...LAB,whiteSpace:"nowrap"}}>WHAT-IF SLOPE PER $2,500 OF BTC</span>
           {MS_SL.map(([v, lab]) => (
             <button key={v} onClick={() => setSlope(v)} style={{...GST,
               textTransform:"none",letterSpacing:"0.02em",
@@ -1571,13 +1862,27 @@ function MstrTab({ btcPrice, priceStr, livePrice }) {
             </div>))}
         </div>
         <div style={{fontSize:11,color:"#b0c4d8",lineHeight:1.5,marginTop:12}}>
-          MSTX and MSTR quotes are the last regular-session trade; after hours BTC keeps moving
-          and the gap here is not real until the next print.{" "}{live ? "Holdings " + live.held.toLocaleString() + " BTC and " + live.sh.toFixed(3) + "M assumed diluted shares are live from strategy.com" + (live.ts ? " (" + new Date(live.ts).toLocaleString() + ")" : "") + ". " : "Holdings and shares come from strategy.com when it answers, else from the config file. "}{post && post.ext && post.ext.price ? "MSTR " + post.ext.sessionType + " $" + Number(post.ext.price).toFixed(2) + " at " + post.ext.timeStamp + " (" + (post.ext.priceVarPerc ? (post.ext.negative ? "-" : "+") + post.ext.priceVarPerc + "%" : "") + " vs the close). " : ""}Slope and thresholds come from data/mstr-config.json{cfg && cfg.updated ? " (updated " + cfg.updated + ")" : ""}, the same file the gap monitor reads. <a href="https://github.com/Kaim222/btc-quantile-ladder/edit/main/data/mstr-config.json" target="_blank" rel="noopener" style={{color:"inherit"}}>Edit it on GitHub</a> and both update.</div>
-        <div style={FT}>{"Target rule: " + ((dat.model && dat.model.target_rule) || UNK)
-          + (dat.model && dat.model.btc_per_share_note
-            ? " Share count: " + dat.model.btc_per_share_note + "." : "")}</div>
+          {live ? "Holdings " + Math.round(live.held).toLocaleString() + " BTC over "
+            + live.sh.toFixed(3) + "M assumed diluted shares, live from strategy.com ("
+            + msWhen(live.ts) + "). "
+            : "Holdings and shares come from strategy.com when it answers, else from the config file. "}
+          Slope and thresholds come from data/mstr-config.json, which the gap monitor reads too.{" "}
+          <a href="https://github.com/Kaim222/btc-quantile-ladder/edit/main/data/mstr-config.json"
+            target="_blank" rel="noopener" style={{color:"inherit"}}>Edit it on GitHub</a> and both
+          update.</div>
+        <div style={FT}>{"Target rule: STRC-linked base, 0.90 at STRC 97.5 and up, sliding down, "
+          + "plus " + cfgSlope + " per $2,500 of BTC over $75,000. The 0.0125 is the measured "
+          + "mNAV beta to BTC; the sweep is in Details."}</div>
       </div>
 
+      {/* DETAILS \u00b7 THE LONG SECTIONS, COLLAPSED BY DEFAULT */}
+      <div style={{...TBL,padding:"10px 16px"}}>
+        <button onClick={() => setDet(v => !v)} style={{...GST,border:"none",padding:"2px 0",
+          color:"#7ab8d8",fontSize:11,letterSpacing:"0.1em",width:"100%",textAlign:"left"}}>
+          {(det ? "\u25be " : "\u25b8 ")
+            + "DETAILS \u00b7 CHART, EPISODES, BACKTEST"}</button>
+      </div>
+      {det && (<>
       {/* PROJECTED VS ACTUAL */}
       <div style={TBL}>
         <div style={{...ROW,justifyContent:"space-between",marginBottom:4}}>
@@ -1619,12 +1924,12 @@ function MstrTab({ btcPrice, priceStr, livePrice }) {
             <rect x={P.l} y={P.t} width={cw} height={hG} fill="#070f1f" rx="2"/>
             {shade.map(s => <rect key={s.k} x={s.x} y={P.t} width={s.w} height={hG}
               fill="#22c55e" opacity="0.09"/>)}
-            {[[4, RD],[-4, GRN]].map(([v, c]) => (
+            {[[riT, RD],[-chT, GRN]].map(([v, c]) => (
               <g key={v}>
                 <line x1={P.l} x2={P.l+cw} y1={gAt(v)} y2={gAt(v)} stroke={c} strokeWidth="0.7"
                   strokeDasharray="3,3" opacity="0.5"/>
                 <text x={P.l-6} y={gAt(v)+3.5} fill={c} fontSize="9" textAnchor="end"
-                  opacity="0.8">{(v > 0 ? "+" : "−") + "4%"}</text>
+                  opacity="0.8">{(v > 0 ? "+" : "−") + nTxt(Math.abs(v)) + "%"}</text>
               </g>))}
             <line x1={P.l} x2={P.l+cw} y1={gAt(0)} y2={gAt(0)} stroke="#5a7fa0" strokeWidth="0.7"/>
             <text x={P.l-6} y={gAt(0)+3.5} fill="#7aa5c8" fontSize="9" textAnchor="end">0</text>
@@ -1635,21 +1940,22 @@ function MstrTab({ btcPrice, priceStr, livePrice }) {
               <g>
                 <line x1={xAt(hov)} x2={xAt(hov)} y1={P.t} y2={P.t+hG} stroke="#7dd3fc"
                   strokeWidth="0.7" strokeDasharray="3,3" opacity="0.6"/>
-                <circle cx={xAt(hov)} cy={gAt(cGap)} r="3.2" fill={msCol(cGap)}
+                <circle cx={xAt(hov)} cy={gAt(cGap)} r="3.2" fill={gcOf(cGap)}
                   stroke="#020817" strokeWidth="1.5"/>
               </g>)}
             <text x={P.l} y={P.t+hG+16} fill="#5a7fa0" fontSize="9">
               {"GAP, PERCENT · GREEN BANDS ARE THE CHEAP EPISODES"}</text>
           </svg>
         </div>
-        <div style={FT}>{n + " daily rows from " + (ser.length ? ser[0].d : UNK) + " to "
-          + (last ? last.d : UNK) + ". Hover or tap the chart for a day. The gap axis is square-root "
-          + "scaled, so the 4% lines stay apart next to a 40% gap."}</div>
+        <div style={FT}>{n + " daily rows, " + (ser.length ? ser[0].d : UNK) + " to "
+          + (last ? last.d : UNK) + ". Hover for a day. The gap axis is square-root scaled, so the "
+          + "band lines stay apart."}</div>
       </div>
 
       {/* CHEAP EPISODES */}
       <div style={TBL}>
-        <div style={{...HD,marginBottom:10}}>CHEAP EPISODES · GAP UNDER −4%</div>
+        <div style={{...HD,marginBottom:10}}>{"CHEAP EPISODES · GAP UNDER −"
+          + nTxt(chT) + "%"}</div>
         <div style={{overflowX:"auto"}}><div style={{display:"grid",
           gridTemplateColumns:"196px repeat(10,minmax(58px,1fr))",minWidth:"812px"}}>
           {hdr(["EPISODE","WORST","GAP","MSTR","PROJ","5D MSTR","5D BTC","5D GAP",
@@ -1659,7 +1965,7 @@ function MstrTab({ btcPrice, priceStr, livePrice }) {
             msPct(nm(e.mstr_5d)), msPct(nm(e.btc_5d)), msPct(nm(e.gap_5d)),
             msPct(nm(e.mstr_10d)), msPct(nm(e.btc_10d)), msPct(nm(e.gap_10d))]
             .map((v, i) => cel(v, i, r,
-              i === 2 ? msCol(nm(e.worst_gap)) : i === 5 ? msRet(nm(e.mstr_5d))
+              i === 2 ? gcOf(nm(e.worst_gap)) : i === 5 ? msRet(nm(e.mstr_5d))
                 : i === 8 ? msRet(nm(e.mstr_10d)) : null)))}
         </div></div>
         {!eps.length && <div style={{...BODY,paddingTop:7}}>No episodes in the file.</div>}
@@ -1670,28 +1976,29 @@ function MstrTab({ btcPrice, priceStr, livePrice }) {
       {/* WHAT MOVES mNAV */}
       <div style={{...TBL,display:"flex",gap:"14px",flexWrap:"wrap"}}>
         <div style={{flex:"1 1 260px",minWidth:0}}>
-          <div style={{...HD,marginBottom:10}}>WHAT MOVES mNAV · BETA</div>
+          <div style={{...HD,marginBottom:10}}>WHAT MOVES mNAV</div>
           <div style={{overflowX:"auto"}}><div style={{display:"grid",
             gridTemplateColumns:"1fr 62px 62px 62px",minWidth:"260px"}}>
             {hdr(["","2Y","6M","3M"])}
-            {[["Beta to BTC", bB],["Beta to QQQ", bQ]].map(([lab, o], r) =>
+            {[["Per 1% BTC move", bB],["Per 1% QQQ move", bQ]].map(([lab, o], r) =>
               [lab, msNum(nm(o["2y"])), msNum(nm(o["6m"])), msNum(nm(o["3m"]))]
                 .map((v, i) => cel(v, i, r, i ? "#22d3ee" : null)))}
           </div></div>
-          <div style={FT}>Daily mNAV change against the daily move in each, over each window.</div>
+          <div style={FT}>mNAV's move for a 1% move in each, same day.</div>
         </div>
         <div style={{flex:"1 1 300px",minWidth:0}}>
-          <div style={{...HD,marginBottom:10}}>QQQ DAYS · LAST 6 MONTHS</div>
+          <div style={{...HD,marginBottom:10}}>QQQ DAYS</div>
           <div style={{overflowX:"auto"}}><div style={{display:"grid",
-            gridTemplateColumns:"1fr 58px 96px 88px",minWidth:"300px"}}>
-            {hdr(["QQQ DAY","DAYS","MEAN mNAV","SHARE UP"])}
+            gridTemplateColumns:"1fr 48px 142px 118px",minWidth:"400px"}}>
+            {hdr(["QQQ DAY","DAYS","AVERAGE mNAV MOVE","DAYS mNAV ROSE"])}
             {["red","flat","green"].map((k, r) => { const o = isObj(qd[k]) ? qd[k] : {};
-              return [k, nm(o.n) == null ? UNK : String(nm(o.n)), msPct(nm(o.mean), 2),
+              return [k[0].toUpperCase() + k.slice(1),
+                nm(o.n) == null ? UNK : String(nm(o.n)), msPct(nm(o.mean), 2),
                 nm(o.up_share) == null ? UNK : nm(o.up_share).toFixed(0) + "%"]
                 .map((v, i) => cel(v, i, r,
                   i === 2 ? (nm(o.mean) == null ? null : nm(o.mean) >= 0 ? GRN : RD) : null)); })}
           </div></div>
-          <div style={FT}>mNAV follows the tape, not only BTC. Red QQQ days take mNAV down.</div>
+          <div style={FT}>Six months of days. Red is QQQ down over 0.5%, green up over 0.5%.</div>
         </div>
       </div>
 
@@ -1702,7 +2009,8 @@ function MstrTab({ btcPrice, priceStr, livePrice }) {
           {"Window: " + (bt.window || UNK) + "."}</div>
         <div style={{overflowX:"auto",marginTop:10}}><div style={{display:"grid",
           gridTemplateColumns:"1fr repeat(5,minmax(62px,1fr))",minWidth:"430px"}}>
-          {hdr(["CHEAP BY 4%","EPISODES","1D","3D","5D","5D HIT"])}
+          {hdr(["DAYS CHEAP BY " + nTxt(chT) + "%","EPISODES","1 DAY","3 DAYS","5 DAYS",
+            "5-DAY UP RATE"])}
           {[[(nm(cp.days) == null ? UNK : nm(cp.days) + " days"),
             nm(cp.episodes) == null ? UNK : String(nm(cp.episodes)),
             msPct(nm(cp.h1), 2), msPct(nm(cp.h3), 2), msPct(nm(cp.h5), 2),
@@ -1711,16 +2019,18 @@ function MstrTab({ btcPrice, priceStr, livePrice }) {
               i === 2 ? msRet(nm(cp.h1)) : i === 3 ? msRet(nm(cp.h3))
                 : i === 4 ? msRet(nm(cp.h5)) : null)))}
         </div></div>
+        <div style={FT}>{"Average MSTR return after a close " + nTxt(chT) + "% or more under "
+          + "projection. Up rate is the share higher five days on."}</div>
         <div style={{overflowX:"auto",marginTop:12}}><div style={{display:"grid",
           gridTemplateColumns:"1fr 120px",minWidth:"260px"}}>
-          {hdr(["BTC SLOPE","5-DAY RETURN"])}
+          {hdr(["TARGET mNAV PER $2,500 OF BTC","MSTR 5-DAY"])}
           {["0","0.0125","0.025","0.05"].map((k, r) =>
-            [k + (k === "0.025" ? " · sheet" : k === "0.0125" ? " · measured" : ""),
+            [k + (k === "0.025" ? " · your sheet" : k === "0.0125" ? " · measured" : ""),
               msPct(nm(sw[k]), 2)]
               .map((v, i) => cel(v, i, r, i ? msRet(nm(sw[k])) : null)))}
         </div></div>
         {regR.length > 0 && <>
-          <div style={{...HD,marginTop:16,marginBottom:8}}>BY BTC'S STATE WHEN THE SIGNAL FIRED</div>
+          <div style={{...HD,marginTop:16,marginBottom:8}}>WHAT HAPPENED NEXT, BY BTC'S STATE</div>
           <div style={{overflowX:"auto"}}><div style={{display:"grid",
             gridTemplateColumns:"1fr repeat(5,minmax(66px,1fr))",minWidth:"520px"}}>
             {hdr(["STATE","SAMPLE","MSTR 5D","BTC 5D","MSTR 10D","BTC 10D"])}
@@ -1740,16 +2050,19 @@ function MstrTab({ btcPrice, priceStr, livePrice }) {
           {"MSTX: " + (bt.mstx || UNK) + "."}</div>
         <div style={{fontSize:13,color:"#e2e8f0",lineHeight:1.5,marginTop:6}}>
           {"Verdict: " + (bt.verdict || UNK) + "."}</div>
+        {bt.note && <div style={FT}>{String(bt.note).replace(/\.?$/, ".")}</div>}
         <div style={{fontSize:12,color:"#8aaac8",lineHeight:1.6,marginTop:12,borderTop:SEP,
           paddingTop:10}}>
           With today's calibration the projection only tracks MSTR from about July 2026. Before that
           the fair mNAV level was higher, so the model is a fair-value anchor for the current
-          structure, not a proven signal. Two cheap episodes since July both closed with MSTR up
-          9% and 20% in ten days. Over the whole window the gap closed more through BTC moving
-          than through MSTR moving. Hourly bars (1,978 since STRC listed) show the same gaps as
+          structure, not a proven signal. {eps.length ? "The " + eps.length + " cheap episodes in "
+            + "the file recovered " + eps.map(e => msPct(nm(e.mstr_10d))).join(" and ")
+            + " in MSTR over ten days. " : ""}Over the whole window the gap closed more through BTC
+          moving than through MSTR moving. Hourly bars (1,978 since STRC listed) show the same gaps as
           the daily closes and nothing that closes within the day: the intraday view gives a
           better entry on a signal the daily data already had, and the hold is days, not hours.</div>
       </div>
+      </>)}
     </div>
   );
 }
@@ -1762,7 +2075,7 @@ function BTCPowerLaw() {
   const todayTs = today.getTime();
 
 
-  // LADDER | PLAYBOOK | MSTR tab, persisted
+  // LADDER | MSTR | PLAYBOOK tab, persisted
   const [tab, setTab] = useState(() => {
     try { const s = localStorage.getItem("bql_tab");
       return (s === "playbook" || s === "mstr") ? s : "ladder"; } catch(_) { return "ladder"; } });
@@ -2065,7 +2378,7 @@ function BTCPowerLaw() {
 
       {/* TAB NAV */}
       <div style={{display:"flex",alignItems:"center",gap:"18px",marginBottom:"16px",borderBottom:"1px solid #0a1628"}}>
-        {[["ladder","Ladder"],["playbook","Playbook"],["mstr","MSTR"]].map(([k,lab])=>(
+        {[["ladder","Ladder"],["mstr","MSTR"],["playbook","Playbook"]].map(([k,lab])=>(
           <button key={k} onClick={()=>setTab(k)} style={{background:"transparent",border:"none",cursor:"pointer",
             padding:"0 0 7px 0",marginBottom:"-1px",fontSize:"11px",fontFamily:"inherit",fontWeight:700,
             letterSpacing:"0.14em",textTransform:"uppercase",color:tab===k?"#facc15":"#5a7fa0",
@@ -2299,7 +2612,8 @@ function BTCPowerLaw() {
       {tab === "playbook" && <PlaybookTab todayTs={todayTs} btcPrice={price} priceStr={priceStr}
         livePrice={livePrice} modelA={modelA} modelB={modelB}/>}
 
-      {tab === "mstr" && <MstrTab btcPrice={price} priceStr={priceStr} livePrice={livePrice}/>}
+      {tab === "mstr" && <MstrTab btcPrice={price} priceStr={priceStr} livePrice={livePrice}
+        liveHistory={liveHistory}/>}
     </div>
   );
 }

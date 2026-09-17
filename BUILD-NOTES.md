@@ -3,7 +3,11 @@
 ## v2 (Aug 2026) — 4-tier PMCC ladder
 
 **Live:** https://kaim222.github.io/btc-quantile-ladder/ (passcode 4241)
-**Monitor:** github.com/Kaim222/btc-monitor (private) — GitHub Actions, every 15 min
+**Monitor:** github.com/Kaim222/btc-monitor (private) — GitHub Actions, every 5 min (cron `*/5`, 13:00-21:59 UTC weekdays; the script keeps itself to 9:35-16:00 New York)
+
+### Where the thresholds live
+
+`data/mstr-config.json` in this repo is the single source of truth for the alert lines and the slope: `lag_threshold` -0.015 (-3% MSTX), `cheap_threshold` -0.03 (-6% MSTX), `rich_threshold` 0.04 (+8% MSTX), `btc_slope_per_2500` 0.0125, `regime_gate` false. The monitor fetches that file raw from GitHub on every run and falls back to its own `mstr_config.json` only if the fetch fails, so the two files must agree. Holdings and the assumed diluted share count come live from api.strategy.com and are never edited by hand; `btc_held` and `shares_m` stay `"auto"` unless you deliberately override.
 
 ### Ladder
 

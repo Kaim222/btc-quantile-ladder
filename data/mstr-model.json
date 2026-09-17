@@ -3266,7 +3266,7 @@
 "note": "Headline cells were run at the sheet's 0.025 slope; the slope sweep shows the same trade at 0.0125, which is what the cards and chart use."
 },
 "regime": {
-"note": "MSTR cheap by 4 percent or more (8 percent on MSTX) at the sheet's 0.025 slope, split by BTC's state that day; STRC period, 285 days",
+"note": "MSTR cheap by 4 percent or more (8 percent on MSTX) at the 0.025 slope, split by BTC's state that day; STRC period, 285 days",
 "rows": [
 {
 "state": "BTC above its 50-day average",
@@ -3305,6 +3305,79 @@
 "btc_10d": -4.0
 }
 ],
-"read": "Cheap with BTC above its 50-day closed with MSTR rising. Cheap with BTC below it closed by BTC falling. Four episodes, so a rule to trade by, not a proof; the monitor's log is the live test."
+"read": "Cheap with BTC above its 50-day closed with MSTR rising. Cheap with BTC below it closed by BTC falling. Four episodes: a rule to trade by, not a proof; the monitor's log is the live test.",
+"read_lines": [
+"Above the 50-day, cheap closed with MSTR rising. Below it, BTC fell instead.",
+"Four episodes: a rule to trade by, not a proof."
+]
+},
+"evidence": {
+"lag": {
+"note": "5-minute bars, 60 days since 2026-07-20. MSTR drops this far vs the trailing hour while BTC holds. Returns are MSTR minus BTC.",
+"rows": [
+{
+"mstr": -0.5,
+"mstx": -1.0,
+"n": 109,
+"m30": -0.04,
+"m60": -0.14
+},
+{
+"mstr": -1.0,
+"mstx": -2.0,
+"n": 21,
+"m30": 0.05,
+"m60": 0.15
+},
+{
+"mstr": -1.5,
+"mstx": -3.0,
+"n": 6,
+"m30": 0.83,
+"m60": 0.82
+},
+{
+"mstr": -2.0,
+"mstx": -4.0,
+"n": 3,
+"m30": 0.91,
+"m60": 1.06
+}
+]
+},
+"level": {
+"note": "Daily closes, 285 days since STRC listed. Cheap by 4% MSTR, 8% MSTX.",
+"sheet_slope": {
+"slope": 0.025,
+"days": 62,
+"episodes": 4,
+"above_50d_mstr_5d": 5.9,
+"below_50d_mstr_5d": -4.3
+},
+"measured_slope": {
+"slope": 0.0125,
+"episodes": 2,
+"read": "both states positive"
+},
+"rich": {
+"bars": "hourly",
+"cut_mstr": 3.0,
+"cut_mstx": 6.0,
+"episodes": 12,
+"mstr_vs_btc_5d": -1.9,
+"read": "Rich by 3%+ MSTR (6% MSTX), hourly bars: 12 episodes, −1.9% vs BTC over 5 days."
+}
+},
+"verdict": "One threshold has data behind it: -1.5% MSTR lag (-3% MSTX), six events in two months that came back 0.8% in half an hour. The rest are levels that depend on BTC's trend, or knobs. The monitor's log is the live test.",
+"verdict_lines": [
+"The −3% MSTX lag is the one line with data.",
+"Six events in two months, back +0.83% vs BTC in half an hour, about twice that on MSTX.",
+"The rest are levels that ride BTC's trend, or knobs.",
+"The monitor's log is the live test."
+]
+},
+"episodes_meta": {
+"cut_mstr": 4,
+"slope": 0.025
 }
 }

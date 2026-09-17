@@ -3,107 +3,88 @@
   "phases": [
    {
     "id": 1,
-    "dates": "2026-09-15 to 2026-09-25",
-    "structure": "225 x long Oct 2 $14 / short Sep 25 $15 at 0.669 average ($15,055) and 26 x long Oct 2 $16 / short Sep 25 $17 at 0.49 ($1,274). Both longs on Oct 2. Built over five fills on 9/17 out of the $16,280 the Sep 18 vertical returned.",
-    "next_action": "Hold to Friday 9/25. Fully deployed, no gap sleeves until then.",
+    "dates": "2026-09-15 to 2026-10-02",
+    "structure": "275 x long Oct 9 $15 call / short Oct 2 $16 call at 0.61 ($16,775), plus $1,200 cash. Rolled out and up from the 225 x Oct 2 14 / Sep 25 15 and 26 x Oct 2 16 / Sep 25 17 held earlier the same day, which came from the 407 Sep 18 12/12.50 verticals sold at 0.40.",
+    "next_action": "Hold to Friday 10/2. Cash is $1,200, about 7% against the 20% the two gap sleeves want.",
     "roll_rules": "none",
-    "status": "LIVE 9/17. 225 x Oct 2 $14 / Sep 25 $15 at 0.669 plus 26 x Oct 2 $16 / Sep 25 $17 at 0.49. $16,329 in, no cash.",
+    "status": "LIVE 9/17 after a full-day rebuild. 275 x long Oct 9 $15 / short Oct 2 $16 at 0.61, $16,775, plus $1,200 cash.",
     "panel_title": "PHASE 1 · WHAT IS ON · SETTLES FRI SEP 18",
     "spreads": [
      {
-      "key": "Oct 2 14 / Sep 25 15 diagonal",
-      "legs": "long Oct 2 $14 call, short Sep 25 $15 call",
-      "debit": 0.669,
-      "contracts": 225,
-      "cost": 15055
-     },
-     {
-      "key": "Oct 2 16 / Sep 25 17 diagonal",
-      "legs": "long Oct 2 $16 call, short Sep 25 $17 call",
-      "debit": 0.49,
-      "contracts": 26,
-      "cost": 1274
+      "key": "Oct 9 15 / Oct 2 16 diagonal",
+      "legs": "long Oct 9 $15 call, short Oct 2 $16 call",
+      "debit": 0.61,
+      "contracts": 275,
+      "cost": 16775
      }
     ],
     "note": "Bought 9/16 with MSTX near 12.70 after the FOMC dip. Max $20,350 at any Friday close of 12.50 or higher (+72%), zero at 12 or lower, break-even 12.29. From the 12.93 close the chain puts 12.50-or-better near 60% and under-12 near 28%. Odds here are the chain's for the short strike finishing in the money.",
-    "positions": "The 9/14 morning pair's two shapes, rebuilt cheaper: 0.669 against 0.74 on the 14/15 and 0.49 against 0.85 on the 16/17, both longs on Oct 2 rather than Oct 9, split 92/8 by dollars rather than 50/50. Marks are far apart on these books: liquidation $14,808, mid to mid $18,911, $16,329 in.",
+    "positions": "Fill quality on 9/17 at MSTX 14.25: mid to mid 0.56, crossing both spreads 1.04, liquidation 0.08. He paid 0.61, five cents over mid on books 45 and 51 cents wide. A good fill by the only standard that matters on this chain. Break-even at the Oct 2 close is MSTX 14.22 and the stock is 14.25, so the position starts at roughly flat. Value peaks at the 16 short strike.",
     "units_by_price": [
      {
       "mstx": 12,
-      "dollars": 4325,
+      "dollars": 2375,
       "unit": 1.5,
-      "leaps": 25
+      "leaps": 14
      },
      {
       "mstx": 13,
-      "dollars": 10575,
+      "dollars": 5406,
       "unit": 2.0,
-      "leaps": 53
-     },
-     {
-      "mstx": 13.76,
-      "dollars": 18094,
-      "unit": 2.19,
-      "leaps": 83
+      "leaps": 27
      },
      {
       "mstx": 14,
-      "dollars": 20994,
+      "dollars": 12245,
       "unit": 2.25,
-      "leaps": 93
+      "leaps": 54
+     },
+     {
+      "mstx": 14.25,
+      "dollars": 13690,
+      "unit": 2.31,
+      "leaps": 60
      },
      {
       "mstx": 15,
-      "dollars": 35677,
+      "dollars": 24145,
       "unit": 2.5,
-      "leaps": 143
-     },
-     {
-      "mstx": 15.5,
-      "dollars": 33191,
-      "unit": 2.62,
-      "leaps": 126
+      "leaps": 97
      },
      {
       "mstx": 16,
-      "dollars": 31505,
+      "dollars": 41215,
       "unit": 2.75,
-      "leaps": 115
+      "leaps": 150
      },
      {
       "mstx": 17,
-      "dollars": 30035,
+      "dollars": 35026,
       "unit": 3.0,
-      "leaps": 100
+      "leaps": 117
      },
      {
       "mstx": 18,
-      "dollars": 27750,
+      "dollars": 31739,
       "unit": 3.25,
-      "leaps": 85
+      "leaps": 98
      },
      {
       "mstx": 20,
-      "dollars": 25924,
+      "dollars": 29465,
       "unit": 3.75,
-      "leaps": 69
-     },
-     {
-      "mstx": 22,
-      "dollars": 25487,
-      "unit": 4.25,
-      "leaps": 60
+      "leaps": 79
      }
     ],
-    "units_note": "At the Sep 25 close on the 116% morning anchor; at the chain's current 148% every row is 15 to 25 units higher. Break-even $13.60 low vol, $13.05 high vol. The 26 x 16/17 costs 3 to 7 units below $14 and adds 6 to 10 from $16 to $18.",
+    "units_note": "At the Oct 2 close, low-vol column (118% from the Oct 9 $15 mid, times 0.85). The short $16 settles intrinsic; the Oct 9 long is marked with 7 days left. Cash included. Peak is at the 16 strike. Break-even MSTX 14.22.",
     "next_action_steps": [
-     "Hold. Five fills went through the plan's no-adjustments window today.",
-     "On 9/25 close both diagonals as spread orders in the afternoon, separately, worked. The books are 15 to 35 cents wide.",
-     "9/26: Phase 2 off the strike map, 70% of the sleeve.",
-     "Refill the 10% lag and 10% swing sleeves from the 9/25 proceeds before anything else."
+     "Hold. The decision date is now Friday 10/2, a week later than the original plan.",
+     "On 10/2 close the 275 diagonals as one spread order in the afternoon. Work it: the books are 45 to 51 cents wide.",
+     "10/5: Phase 2 off the strike map, 70% of the sleeve.",
+     "Refill the lag and swing sleeves to 10% each from the 10/2 proceeds before anything else."
     ],
     "next_action_detail": "BTC daily close under 75k moves everything to Phase 2 at the next open.",
-    "dates_note": "Thursday 9/17 is the switch into the two-week diagonal; the phase runs to the 25th, Phase 2 opens 9/26."
+    "dates_note": "Rolled out on 9/17. The short is now Oct 2, so the decision date moved from 9/25 to 10/2 and Phase 2 slides a week."
    },
    {
     "id": 2,
@@ -321,6 +302,15 @@
    "structure": "Added 25 x Oct 2 14 / Sep 25 15 at 0.71 on the dip to 13.24, then 26 x Oct 2 16 / Sep 25 17 at 0.49.",
    "result": "filled",
    "note": "Both adds were at or inside the mid. Final 225 + 26, $16,329 deployed, no cash. The morning pair's shapes at 0.669 and 0.49 against its own 0.74 and 0.85."
+  },
+  {
+   "date": "2026-09-17",
+   "mode": "live",
+   "ticker": "MSTX",
+   "rule": "Phase 1 rolled out and up",
+   "structure": "Closed the 225 x Oct 2 14 / Sep 25 15 and 26 x Oct 2 16 / Sep 25 17. Opened 275 x long Oct 9 15 / short Oct 2 16 at 0.61.",
+   "result": "filled",
+   "note": "Capital went from $16,329 to $17,975 including $1,200 cash, so the day's move from 13.34 to 14.25 paid for the roll. Fill 5 cents over a 0.56 mid on books 45 and 51 cents wide. Peak moved from the 15 strike to the 16; break-even from 13.60 to 14.22; decision date from 9/25 to 10/2."
   }
  ],
  "paper_calls": [

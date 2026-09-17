@@ -1365,6 +1365,365 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
   );
 }
 
+// ── MSTR. Fair value off the STRC-linked mNAV rule, the projection against the tape,
+// the cheap episodes, and what the backtest says. Numbers live in data/mstr-model.json. ──
+const MS_SL = [[0.0125, "measured: 0.0125 per $2,500"], [0.025, "sheet: 0.025 per $2,500"]];
+const MS_MO = ["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MS_FLD = [["btc","BTC PRICE"],["mstr","MSTR"],["mstx","MSTX"],["strc","STRC"],
+  ["held","BTC HELD"],["sh","SHARES (M)"]];
+// the STRC-linked base, a step down for every 2.5 of STRC
+const msStrc = s => s >= 97.5 ? 0.90
+  : s >= 95 ? 0.875 + (s - 95) * 0.01
+  : s >= 92.5 ? 0.85 + (s - 92.5) * 0.01
+  : s >= 87.5 ? 0.825 + (s - 87.5) * 0.005
+  : s >= 82.5 ? 0.80 + (s - 82.5) * 0.005
+  : Math.max(0.775, 0.775 + (s - 77.5) * 0.005);
+const msCol = g => g == null ? "#8aaac8" : g < -4 ? GRN : g > 4 ? RD : "#8aaac8";
+const msRet = v => v == null ? "#8aaac8" : v > 0 ? GRN : v < 0 ? RD : "#8aaac8";
+const msPct = (v, d) => v == null ? UNK : (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(d == null ? 1 : d) + "%";
+const msUsd = (v, d) => v == null ? UNK : "$" + v.toFixed(d == null ? 2 : d);
+const msNum = (v, d) => v == null ? UNK : v.toFixed(d == null ? 2 : d);
+const msMon = s => { const p = String(s||"").split("-");
+  return p.length < 2 ? String(s||"") : MS_MO[+p[1]] + " " + String(p[0]).slice(2); };
+
+function MstrTab({ btcPrice, priceStr, livePrice }) {
+  const [dat, setDat] = useState(null), [bad, setBad] = useState(false);
+  const [f, setF] = useState({btc:"", mstr:"", mstx:"", strc:"", held:"845050", sh:"450.112"});
+  const [slope, setSlope] = useState(0.0125);
+  const [seed, setSeed] = useState(false);
+  const [hov, setHov] = useState(null);
+  useEffect(() => {
+    let on = true;
+    fetch("data/mstr-model.json?t=" + Date.now(), {cache:"no-store"})
+      .then(r => { if (!r.ok) throw 0; return r.json(); })
+      .then(j => { if (!on) return; if (isObj(j)) setDat(j); else setBad(true); })
+      .catch(() => { if (on) setBad(true); });
+    return () => { on = false; };
+  }, []);
+  const ser = rowsOf(dat && dat.series);
+  const last = ser.length ? ser[ser.length - 1] : null;
+  useEffect(() => {
+    if (seed || !last) return;
+    const s = v => v == null ? "" : String(v);
+    setF(v => ({...v, btc:s(last.btc), mstr:s(last.mstr), mstx:s(last.mstx), strc:s(last.strc)}));
+    setSeed(true);
+  }, [seed, last]);
+
+  if (!dat) return (
+    <div style={TBL}><div style={BODY}>
+      {bad ? "data/mstr-model.json did not load. The tab needs that file."
+        : "Loading the MSTR model."}</div></div>);
+
+  // FAIR VALUE NOW
+  const g = k => nm(f[k]);
+  const held = g("held"), shM = g("sh"), btcI = g("btc"), mstrI = g("mstr");
+  const mstxI = g("mstx"), strcI = g("strc");
+  const bps = (held == null || !shM) ? null : held / (shM * 1e6);
+  const mnav = (bps == null || !btcI || !mstrI) ? null : mstrI / (btcI * bps);
+  const tgt = (strcI == null || btcI == null) ? null : msStrc(strcI) + slope * (btcI - 75000) / 2500;
+  const proj = (bps == null || btcI == null || tgt == null) ? null : bps * btcI * tgt;
+  const gapN = (!proj || mstrI == null) ? null : (mstrI / proj - 1) * 100;
+  const pMstx = (mstxI == null || proj == null || !mstrI) ? null : mstxI * (1 + 2.0 * (proj / mstrI - 1));
+  const gapW = gapN == null ? UNK : gapN < -4 ? "cheap" : gapN > 4 ? "rich" : "in line";
+  // the ladder's render seed, 85000, is never a price
+  const own = String(priceStr||"").trim() !== "85000" && typeof btcPrice === "number" && btcPrice > 0;
+  const liveBtc = (typeof livePrice === "number" && livePrice > 0) ? livePrice : own ? btcPrice : null;
+
+  // CHART: MSTR against the projection, the gap under it
+  const W = 880, PH = 252, GH = 128, P = {t:16, r:14, b:24, l:48};
+  const cw = W - P.l - P.r, hP = PH - P.t - P.b, hG = GH - P.t - P.b;
+  const n = ser.length;
+  const xAt = i => P.l + (n < 2 ? cw/2 : cw * i / (n - 1));
+  const pv = [];
+  for (const r of ser) { const a = nm(r.mstr), b = nm(r.proj);
+    if (a != null) pv.push(a); if (b != null) pv.push(b); }
+  const lo = pv.length ? Math.min(...pv) : 0, hiV = pv.length ? Math.max(...pv) : 1;
+  const padY = (hiV - lo) * 0.08 || 1;
+  const y0 = Math.max(0, lo - padY), y1 = hiV + padY;
+  const yAt = v => P.t + hP * (1 - (v - y0) / ((y1 - y0) || 1));
+  const gvs = ser.map(r => nm(r.gap)).filter(v => v != null);
+  const gA = gvs.length ? Math.max(8, Math.ceil(Math.max(...gvs.map(v => Math.abs(v))) / 5) * 5) : 8;
+  // square root on the gap axis, sign kept, so the ±4% band stays readable next to a 40% gap
+  const gAt = v => { const c = Math.max(-gA, Math.min(gA, v));
+    return P.t + hG * (1 - (Math.sign(c) * Math.sqrt(Math.abs(c) / gA) + 1) / 2); };
+  const line = (k, fy) => { let d = "";
+    for (let i = 0; i < n; i++) { const v = nm(ser[i][k]);
+      if (v == null) continue;
+      d += (d ? "L" : "M") + xAt(i).toFixed(1) + "," + fy(v).toFixed(1); }
+    return d; };
+  const ix = {}; ser.forEach((r, i) => { ix[r.d] = i; });
+  const eps = rowsOf(dat.episodes);
+  const shade = eps.map(e => { const a = ix[e.start], b = ix[e.end];
+    return (a == null || b == null) ? null
+      : {k:String(e.start), x:xAt(a), w:Math.max(2, xAt(b) - xAt(a))}; }).filter(Boolean);
+  const xT = []; for (let k = 0; k < 6; k++) xT.push(n < 2 ? 0 : Math.round(k * (n - 1) / 5));
+  const yT = [0,1,2,3,4].map(k => y0 + k * (y1 - y0) / 4);
+  const onMove = e => { const r = e.currentTarget.getBoundingClientRect();
+    const t = e.touches && e.touches[0];
+    const cx = t ? t.clientX : e.clientX;
+    if (!r.width || cx == null || n < 1) return;
+    const i = Math.round(((cx - r.left) / r.width * W - P.l) / (cw || 1) * (n - 1));
+    setHov(Math.min(n - 1, Math.max(0, i))); };
+  const hitP = {onMouseMove:onMove, onMouseLeave:() => setHov(null),
+    onTouchStart:onMove, onTouchMove:onMove, style:{width:"100%",maxWidth:W+"px",height:"auto",
+      display:"block",cursor:"crosshair",touchAction:"pan-y"}};
+  const cur = ser[hov == null ? n - 1 : hov] || {};
+  const cGap = nm(cur.gap);
+  const read = !cur.d ? UNK : cur.d + " · MSTR " + msUsd(nm(cur.mstr))
+    + " · projected " + msUsd(nm(cur.proj)) + " · gap " + msPct(cGap);
+
+  // TABLES
+  const fac = isObj(dat.factors) ? dat.factors : {};
+  const bB = isObj(fac.mnav_beta_btc) ? fac.mnav_beta_btc : {};
+  const bQ = isObj(fac.mnav_beta_qqq) ? fac.mnav_beta_qqq : {};
+  const qd = isObj(fac.qqq_days_6m) ? fac.qqq_days_6m : {};
+  const bt = isObj(dat.backtest) ? dat.backtest : {};
+  const cp = isObj(bt.cheap_4pct) ? bt.cheap_4pct : {};
+  const sw = isObj(bt.slope_sweep_h5) ? bt.slope_sweep_h5 : {};
+  const reg = isObj(dat.regime) ? dat.regime : {};
+  const regR = rowsOf(reg.rows);
+  const hdr = hs => hs.map((h, i) =>
+    <div key={h} style={{...LAB,padding:"4px 6px",textAlign:i?"right":"left"}}>{h}</div>);
+  const cel = (v, i, r, c) => <div key={r + "-" + i} style={{padding:"5px 6px",fontSize:12,
+    borderBottom:"1px solid #070f1f",textAlign:i?"right":"left",whiteSpace:"nowrap",
+    background:r%2?"transparent":"#050d1c",color:c||(i?"#d0dde8":"#8aaac8"),
+    fontWeight:i?600:400}}>{v}</div>;
+  const SC = {background:"#070f1f",border:"1px solid #0f2035",borderRadius:"6px",padding:"12px 14px"};
+  const SV = {fontSize:22,fontWeight:700,letterSpacing:"-0.01em"};
+  const SH = {fontSize:10,color:"#7a9ab8",marginTop:3};
+  const FT = {fontSize:10,color:GRY,letterSpacing:"0.04em",marginTop:9};
+  const cards = [["BTC PER SHARE", msNum(bps, 6), "held over shares", "#facc15"],
+    ["mNAV", msNum(mnav, 4), "MSTR over BTC per share", "#22d3ee"],
+    ["TARGET mNAV", msNum(tgt, 4), "STRC rule plus BTC slope", "#22d3ee"],
+    ["PROJECTED MSTR", msUsd(proj), "fair value at these inputs", "#facc15"],
+    ["GAP", msPct(gapN), gapW, msCol(gapN)],
+    ["PROJECTED MSTX", msUsd(pMstx), "same-day, 2x", msCol(gapN)]];
+
+  return (
+    <div>
+      {/* FAIR VALUE NOW */}
+      <div style={{background:"#070f1f",border:"1px solid #0f2035",borderLeft:"4px solid #facc15",
+        borderRadius:"6px",padding:"16px 20px"}}>
+        <div style={{...ROW,justifyContent:"space-between",marginBottom:10}}>
+          <span style={HD}>FAIR VALUE NOW</span>
+          <span style={{fontSize:10,color:GRY,letterSpacing:"0.06em"}}>
+            {"MODEL AS OF " + (dat.as_of || UNK)}</span></div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(122px,1fr))",gap:"10px"}}>
+          {MS_FLD.map(([k, lab]) => (
+            <div key={k}>
+              <div style={{...LAB,marginBottom:4}}>{lab}</div>
+              <input value={f[k]} inputMode="decimal" placeholder={lab.toLowerCase()}
+                onChange={e => setF(v => ({...v, [k]:e.target.value.replace(/[^0-9.\-]/g,"")}))}
+                style={{...INP,width:"100%",flex:"1 1 auto",fontSize:13,padding:"6px 8px"}}/>
+              {k === "btc" && liveBtc != null &&
+                <button style={{...GST,marginTop:5}}
+                  onClick={() => setF(v => ({...v, btc:String(Math.round(liveBtc))}))}>
+                  {"use live " + fmt(liveBtc)}</button>}
+            </div>))}
+        </div>
+        <div style={{...ROW,gap:8,marginTop:14}}>
+          <span style={{...LAB,whiteSpace:"nowrap"}}>BTC SLOPE</span>
+          {MS_SL.map(([v, lab]) => (
+            <button key={v} onClick={() => setSlope(v)} style={{...GST,
+              textTransform:"none",letterSpacing:"0.02em",
+              background:slope === v ? "#0c2040" : "transparent",
+              border:"1px solid " + (slope === v ? "#1e5f8a" : "#162840"),
+              color:slope === v ? "#7dd3fc" : "#4a7a9b"}}>
+              {lab + (v === 0.025 ? " · your sheet" : "")}</button>))}
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(132px,1fr))",
+          gap:"10px",marginTop:14}}>
+          {cards.map(([h, v, sub, c]) => (
+            <div key={h} style={SC}>
+              <div style={{...LAB,marginBottom:6}}>{h}</div>
+              <div style={{...SV,color:c}}>{v}</div>
+              <div style={SH}>{sub}</div>
+            </div>))}
+        </div>
+        <div style={{fontSize:11,color:"#b0c4d8",lineHeight:1.5,marginTop:12}}>
+          MSTX and MSTR quotes are the last regular-session trade; after hours BTC keeps moving
+          and the gap here is not real until the next print.</div>
+        <div style={FT}>{"Target rule: " + ((dat.model && dat.model.target_rule) || UNK)
+          + (dat.model && dat.model.btc_per_share_note
+            ? " Share count: " + dat.model.btc_per_share_note + "." : "")}</div>
+      </div>
+
+      {/* PROJECTED VS ACTUAL */}
+      <div style={TBL}>
+        <div style={{...ROW,justifyContent:"space-between",marginBottom:4}}>
+          <span style={HD}>PROJECTED VS ACTUAL</span>
+          <span style={{...ROW,gap:10}}>
+            <span style={{...ROW,gap:5}}>
+              <span style={{width:14,height:2.5,background:"#facc15",borderRadius:1}}/>
+              <span style={{fontSize:11,color:"#facc15",fontWeight:700}}>MSTR</span></span>
+            <span style={{...ROW,gap:5}}>
+              <span style={{width:14,height:0,borderTop:"2px dashed #22d3ee"}}/>
+              <span style={{fontSize:11,color:"#22d3ee",fontWeight:700}}>PROJECTED</span></span>
+          </span></div>
+        <div style={{fontSize:11,color:"#b0c4d8",marginBottom:8,minHeight:"16px"}}>{read}</div>
+        <div style={{overflowX:"auto"}}>
+          <svg viewBox={"0 0 " + W + " " + PH} {...hitP}>
+            <rect x={P.l} y={P.t} width={cw} height={hP} fill="#070f1f" rx="2"/>
+            {shade.map(s => <rect key={s.k} x={s.x} y={P.t} width={s.w} height={hP}
+              fill="#22c55e" opacity="0.09"/>)}
+            {yT.map(v => <line key={v} x1={P.l} x2={P.l+cw} y1={yAt(v)} y2={yAt(v)}
+              stroke="#0d1e30" strokeWidth="0.5"/>)}
+            <path d={line("proj", yAt)} fill="none" stroke="#22d3ee" strokeWidth="1.4"
+              strokeDasharray="4,3" opacity="0.85"/>
+            <path d={line("mstr", yAt)} fill="none" stroke="#facc15" strokeWidth="1.4" opacity="0.95"/>
+            {hov != null && nm(cur.mstr) != null && (
+              <g>
+                <line x1={xAt(hov)} x2={xAt(hov)} y1={P.t} y2={P.t+hP} stroke="#7dd3fc"
+                  strokeWidth="0.7" strokeDasharray="3,3" opacity="0.6"/>
+                <circle cx={xAt(hov)} cy={yAt(nm(cur.mstr))} r="3.2" fill="#facc15"
+                  stroke="#020817" strokeWidth="1.5"/>
+                {nm(cur.proj) != null && <circle cx={xAt(hov)} cy={yAt(nm(cur.proj))} r="3.2"
+                  fill="#22d3ee" stroke="#020817" strokeWidth="1.5"/>}
+              </g>)}
+            {yT.map(v => <text key={"l"+v} x={P.l-6} y={yAt(v)+4} fill="#7aa5c8" fontSize="10"
+              textAnchor="end">{"$" + Math.round(v)}</text>)}
+            {xT.map((i, k) => <text key={"x"+k} x={xAt(i)} y={P.t+hP+16} fill="#7aa5c8" fontSize="10"
+              textAnchor={k === 0 ? "start" : k === 5 ? "end" : "middle"}>{msMon(ser[i] && ser[i].d)}</text>)}
+          </svg>
+          <svg viewBox={"0 0 " + W + " " + GH} {...hitP}>
+            <rect x={P.l} y={P.t} width={cw} height={hG} fill="#070f1f" rx="2"/>
+            {shade.map(s => <rect key={s.k} x={s.x} y={P.t} width={s.w} height={hG}
+              fill="#22c55e" opacity="0.09"/>)}
+            {[[4, RD],[-4, GRN]].map(([v, c]) => (
+              <g key={v}>
+                <line x1={P.l} x2={P.l+cw} y1={gAt(v)} y2={gAt(v)} stroke={c} strokeWidth="0.7"
+                  strokeDasharray="3,3" opacity="0.5"/>
+                <text x={P.l-6} y={gAt(v)+3.5} fill={c} fontSize="9" textAnchor="end"
+                  opacity="0.8">{(v > 0 ? "+" : "−") + "4%"}</text>
+              </g>))}
+            <line x1={P.l} x2={P.l+cw} y1={gAt(0)} y2={gAt(0)} stroke="#5a7fa0" strokeWidth="0.7"/>
+            <text x={P.l-6} y={gAt(0)+3.5} fill="#7aa5c8" fontSize="9" textAnchor="end">0</text>
+            {[gA, -gA].map(v => <text key={v} x={P.l-6} y={gAt(v) + (v > 0 ? 8 : 0)} fill="#5a7fa0"
+              fontSize="9" textAnchor="end">{(v > 0 ? "+" : "−") + gA + "%"}</text>)}
+            <path d={line("gap", gAt)} fill="none" stroke="#e2e8f0" strokeWidth="1.2" opacity="0.85"/>
+            {hov != null && cGap != null && (
+              <g>
+                <line x1={xAt(hov)} x2={xAt(hov)} y1={P.t} y2={P.t+hG} stroke="#7dd3fc"
+                  strokeWidth="0.7" strokeDasharray="3,3" opacity="0.6"/>
+                <circle cx={xAt(hov)} cy={gAt(cGap)} r="3.2" fill={msCol(cGap)}
+                  stroke="#020817" strokeWidth="1.5"/>
+              </g>)}
+            <text x={P.l} y={P.t+hG+16} fill="#5a7fa0" fontSize="9">
+              {"GAP, PERCENT · GREEN BANDS ARE THE CHEAP EPISODES"}</text>
+          </svg>
+        </div>
+        <div style={FT}>{n + " daily rows from " + (ser.length ? ser[0].d : UNK) + " to "
+          + (last ? last.d : UNK) + ". Hover or tap the chart for a day. The gap axis is square-root "
+          + "scaled, so the 4% lines stay apart next to a 40% gap."}</div>
+      </div>
+
+      {/* CHEAP EPISODES */}
+      <div style={TBL}>
+        <div style={{...HD,marginBottom:10}}>CHEAP EPISODES · GAP UNDER −4%</div>
+        <div style={{overflowX:"auto"}}><div style={{display:"grid",
+          gridTemplateColumns:"196px repeat(10,minmax(58px,1fr))",minWidth:"812px"}}>
+          {hdr(["EPISODE","WORST","GAP","MSTR","PROJ","5D MSTR","5D BTC","5D GAP",
+            "10D MSTR","10D BTC","10D GAP"])}
+          {eps.map((e, r) => [String(e.start) + " to " + String(e.end), md(e.worst_date) || e.worst_date,
+            msPct(nm(e.worst_gap)), msUsd(nm(e.mstr_at_worst)), msUsd(nm(e.proj_at_worst)),
+            msPct(nm(e.mstr_5d)), msPct(nm(e.btc_5d)), msPct(nm(e.gap_5d)),
+            msPct(nm(e.mstr_10d)), msPct(nm(e.btc_10d)), msPct(nm(e.gap_10d))]
+            .map((v, i) => cel(v, i, r,
+              i === 2 ? msCol(nm(e.worst_gap)) : i === 5 ? msRet(nm(e.mstr_5d))
+                : i === 8 ? msRet(nm(e.mstr_10d)) : null)))}
+        </div></div>
+        {!eps.length && <div style={{...BODY,paddingTop:7}}>No episodes in the file.</div>}
+        <div style={FT}>{"5D and 10D are trading days after the worst day of the episode. "
+          + "Days in episode: " + eps.map(e => e.days).join(", ") + "."}</div>
+      </div>
+
+      {/* WHAT MOVES mNAV */}
+      <div style={{...TBL,display:"flex",gap:"14px",flexWrap:"wrap"}}>
+        <div style={{flex:"1 1 260px",minWidth:0}}>
+          <div style={{...HD,marginBottom:10}}>WHAT MOVES mNAV · BETA</div>
+          <div style={{overflowX:"auto"}}><div style={{display:"grid",
+            gridTemplateColumns:"1fr 62px 62px 62px",minWidth:"260px"}}>
+            {hdr(["","2Y","6M","3M"])}
+            {[["Beta to BTC", bB],["Beta to QQQ", bQ]].map(([lab, o], r) =>
+              [lab, msNum(nm(o["2y"])), msNum(nm(o["6m"])), msNum(nm(o["3m"]))]
+                .map((v, i) => cel(v, i, r, i ? "#22d3ee" : null)))}
+          </div></div>
+          <div style={FT}>Daily mNAV change against the daily move in each, over each window.</div>
+        </div>
+        <div style={{flex:"1 1 300px",minWidth:0}}>
+          <div style={{...HD,marginBottom:10}}>QQQ DAYS · LAST 6 MONTHS</div>
+          <div style={{overflowX:"auto"}}><div style={{display:"grid",
+            gridTemplateColumns:"1fr 58px 96px 88px",minWidth:"300px"}}>
+            {hdr(["QQQ DAY","DAYS","MEAN mNAV","SHARE UP"])}
+            {["red","flat","green"].map((k, r) => { const o = isObj(qd[k]) ? qd[k] : {};
+              return [k, nm(o.n) == null ? UNK : String(nm(o.n)), msPct(nm(o.mean), 2),
+                nm(o.up_share) == null ? UNK : nm(o.up_share).toFixed(0) + "%"]
+                .map((v, i) => cel(v, i, r,
+                  i === 2 ? (nm(o.mean) == null ? null : nm(o.mean) >= 0 ? GRN : RD) : null)); })}
+          </div></div>
+          <div style={FT}>mNAV follows the tape, not only BTC. Red QQQ days take mNAV down.</div>
+        </div>
+      </div>
+
+      {/* BACKTEST */}
+      <div style={TBL}>
+        <div style={{...HD,marginBottom:8}}>BACKTEST, 9/16/2026</div>
+        <div style={{fontSize:13,color:"#b0c4d8",lineHeight:1.5}}>
+          {"Window: " + (bt.window || UNK) + "."}</div>
+        <div style={{overflowX:"auto",marginTop:10}}><div style={{display:"grid",
+          gridTemplateColumns:"1fr repeat(5,minmax(62px,1fr))",minWidth:"430px"}}>
+          {hdr(["CHEAP BY 4%","EPISODES","1D","3D","5D","5D HIT"])}
+          {[[(nm(cp.days) == null ? UNK : nm(cp.days) + " days"),
+            nm(cp.episodes) == null ? UNK : String(nm(cp.episodes)),
+            msPct(nm(cp.h1), 2), msPct(nm(cp.h3), 2), msPct(nm(cp.h5), 2),
+            nm(cp.hit5) == null ? UNK : nm(cp.hit5).toFixed(0) + "%"]]
+            .map((row, r) => row.map((v, i) => cel(v, i, r,
+              i === 2 ? msRet(nm(cp.h1)) : i === 3 ? msRet(nm(cp.h3))
+                : i === 4 ? msRet(nm(cp.h5)) : null)))}
+        </div></div>
+        <div style={{overflowX:"auto",marginTop:12}}><div style={{display:"grid",
+          gridTemplateColumns:"1fr 120px",minWidth:"260px"}}>
+          {hdr(["BTC SLOPE","5-DAY RETURN"])}
+          {["0","0.0125","0.025","0.05"].map((k, r) =>
+            [k + (k === "0.025" ? " · sheet" : k === "0.0125" ? " · measured" : ""),
+              msPct(nm(sw[k]), 2)]
+              .map((v, i) => cel(v, i, r, i ? msRet(nm(sw[k])) : null)))}
+        </div></div>
+        {regR.length > 0 && <>
+          <div style={{...HD,marginTop:16,marginBottom:8}}>BY BTC'S STATE WHEN THE SIGNAL FIRED</div>
+          <div style={{overflowX:"auto"}}><div style={{display:"grid",
+            gridTemplateColumns:"1fr repeat(5,minmax(66px,1fr))",minWidth:"520px"}}>
+            {hdr(["STATE","SAMPLE","MSTR 5D","BTC 5D","MSTR 10D","BTC 10D"])}
+            {regR.map((r, k) => [String(r.state || UNK),
+              (nm(r.days) == null ? UNK : nm(r.days) + "d")
+                + (nm(r.episodes) == null ? "" : " · " + nm(r.episodes) + "ep"),
+              msPct(nm(r.mstr_5d)), msPct(nm(r.btc_5d)),
+              msPct(nm(r.mstr_10d)), msPct(nm(r.btc_10d))]
+              .map((v, i) => cel(v, i, k,
+                i === 2 ? msRet(nm(r.mstr_5d)) : i === 4 ? msRet(nm(r.mstr_10d)) : null)))}
+          </div></div>
+          {reg.note && <div style={FT}>{String(reg.note) + "."}</div>}
+          {reg.read && <div style={{fontSize:12,color:"#8aaac8",lineHeight:1.6,marginTop:10}}>
+            {reg.read}</div>}
+        </>}
+        <div style={{fontSize:13,color:"#b0c4d8",lineHeight:1.5,marginTop:12}}>
+          {"MSTX: " + (bt.mstx || UNK) + "."}</div>
+        <div style={{fontSize:13,color:"#e2e8f0",lineHeight:1.5,marginTop:6}}>
+          {"Verdict: " + (bt.verdict || UNK) + "."}</div>
+        <div style={{fontSize:12,color:"#8aaac8",lineHeight:1.6,marginTop:12,borderTop:SEP,
+          paddingTop:10}}>
+          With today's calibration the projection only tracks MSTR from about July 2026. Before that
+          the fair mNAV level was higher, so the model is a fair-value anchor for the current
+          structure, not a proven signal. Two cheap episodes since July both closed with MSTR up
+          9% and 20% in ten days. Over the whole window the gap closed more through BTC moving
+          than through MSTR moving. Hourly bars (1,978 since STRC listed) show the same gaps as
+          the daily closes and nothing that closes within the day: the intraday view gives a
+          better entry on a signal the daily data already had, and the hold is days, not hours.</div>
+      </div>
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1373,9 +1732,10 @@ function BTCPowerLaw() {
   const todayTs = today.getTime();
 
 
-  // LADDER | PLAYBOOK tab, persisted
+  // LADDER | PLAYBOOK | MSTR tab, persisted
   const [tab, setTab] = useState(() => {
-    try { return localStorage.getItem("bql_tab") === "playbook" ? "playbook" : "ladder"; } catch(_) { return "ladder"; } });
+    try { const s = localStorage.getItem("bql_tab");
+      return (s === "playbook" || s === "mstr") ? s : "ladder"; } catch(_) { return "ladder"; } });
   useEffect(() => { try { localStorage.setItem("bql_tab", tab); } catch(_) {} }, [tab]);
 
   const [priceStr,  setPriceStr]  = useState("85000");
@@ -1675,7 +2035,7 @@ function BTCPowerLaw() {
 
       {/* TAB NAV */}
       <div style={{display:"flex",alignItems:"center",gap:"18px",marginBottom:"16px",borderBottom:"1px solid #0a1628"}}>
-        {[["ladder","Ladder"],["playbook","Playbook"]].map(([k,lab])=>(
+        {[["ladder","Ladder"],["playbook","Playbook"],["mstr","MSTR"]].map(([k,lab])=>(
           <button key={k} onClick={()=>setTab(k)} style={{background:"transparent",border:"none",cursor:"pointer",
             padding:"0 0 7px 0",marginBottom:"-1px",fontSize:"11px",fontFamily:"inherit",fontWeight:700,
             letterSpacing:"0.14em",textTransform:"uppercase",color:tab===k?"#facc15":"#5a7fa0",
@@ -1908,6 +2268,8 @@ function BTCPowerLaw() {
 
       {tab === "playbook" && <PlaybookTab todayTs={todayTs} btcPrice={price} priceStr={priceStr}
         livePrice={livePrice} modelA={modelA} modelB={modelB}/>}
+
+      {tab === "mstr" && <MstrTab btcPrice={price} priceStr={priceStr} livePrice={livePrice}/>}
     </div>
   );
 }

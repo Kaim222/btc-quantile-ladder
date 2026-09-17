@@ -785,7 +785,7 @@ function PowerLawChart({ btcPrice, todayTs, liveHistory, lookupTs, modelA=JV_A, 
 
 // ── PLAYBOOK. Today's word, the open positions, and two panels behind the footer, each
 // in a frame the ladder tab already uses. Rules and numbers live in doctrine.md. ──
-const UNK = "unknown", NS = "not set", MAXS = 3;
+const UNK = "unknown";
 const HIST = "btc_weekly_macd_8_21_5_hist_rising", CROSS = "btc_weekly_macd_8_21_5_fresh_cross";
 const TCOL = {ENTRY:"#22c55e", HOLD:"#facc15", OFF:"#ef4444", UNKNOWN:"#8aaac8"};
 const GRY = "#5a7fa0", GRN = "#22c55e", RD = "#ef4444", SEP = "1px solid #ffffff10";
@@ -796,16 +796,12 @@ const CHIP = {fontSize:11,fontWeight:600,letterSpacing:"0.07em",textTransform:"u
 const ROW = {display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"};
 const LINE = {display:"flex",gap:10,alignItems:"center",padding:"7px 0"};
 const BODY = {fontSize:13,color:"#b0c4d8",flex:1,minWidth:0,overflowWrap:"anywhere"};
-const CEL = {fontSize:12,color:"#8aaac8",minWidth:0,overflowWrap:"anywhere"};
 const TBL = {background:"#040c1a",border:"1px solid #0a1628",borderRadius:6,padding:"14px 16px",marginTop:11};
-const JG = {display:"grid",gridTemplateColumns:"74px 1fr 76px 74px 24px",gap:8,alignItems:"baseline",padding:"6px"};
 const INP = {background:"#070f1f",border:"1px solid #0f2a42",borderRadius:4,color:"#facc15",fontSize:11,
   fontFamily:"inherit",fontWeight:600,padding:"4px 6px",outline:"none",width:82,flex:"0 1 82px",minWidth:0};
 const GST = {background:"transparent",border:"1px solid #162840",borderRadius:3,color:"#4a7a9b",
   fontSize:11,fontFamily:"inherit",fontWeight:600,letterSpacing:"0.1em",textTransform:"uppercase",
   padding:"4px 8px",cursor:"pointer"};
-const PEN = {background:"transparent",border:"none",color:"#5a8fc0",fontSize:12,fontFamily:"inherit",
-  padding:"2px 4px",cursor:"pointer",lineHeight:1,flexShrink:0};
 const isObj = o => o !== null && typeof o === "object" && !Array.isArray(o);
 const rowsOf = v => (Array.isArray(v) ? v.filter(isObj) : []);
 function useLocal(key, initial, fix) {
@@ -822,18 +818,8 @@ const sgn = v => (v >= 0 ? "+" : "") + Math.round(v);
 // phase bounds read "through X", "A to B" or "from A"
 const phBnd = s => { const x = String(s||""), m = x.match(/\d{4}-\d{2}-\d{2}/g) || [];
   return /^through/i.test(x) ? [null,m[0]] : /^from/i.test(x) ? [m[0],null] : [m[0],m[1]]; };
-const biz = (a, b) => { const t = Date.parse(a+"T00:00:00Z"), u = Date.parse(b+"T00:00:00Z");
-  if (isNaN(t) || isNaN(u)) return null;
-  let n = 0;  for (let x = Math.min(t,u)+864e5, h = Math.max(t,u); x <= h; x += 864e5) {
-    const w = new Date(x).getUTCDay(); if (w && w !== 6) n++; }
-  return n; };
 const days = (a, b) => { const t = Date.parse(a+"T00:00:00Z"), u = Date.parse(b+"T00:00:00Z");
   return (isNaN(t) || isNaN(u)) ? null : Math.round((u - t)/864e5); };
-const Lnk = ({children,on}) => { const [h,setH] = useState(false);
-  return <button onClick={on} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)}
-    style={{background:"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:11,
-      fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:"#7ab8d8",padding:"0 0 4px",
-      borderBottom:"2px solid "+(h?"#facc15":"transparent")}}>{children}</button>; };
 
 function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB }) {
   const [pb, setPb] = useState(null), [plg, setPlg] = useState(null);
@@ -846,16 +832,10 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
     return () => { on = false; };
   }, []);
   const inp = (pb && isObj(pb.inputs)) ? pb.inputs : {};
-  const lu = (pb && pb.rules && isObj(pb.rules.leaps_unit)) ? pb.rules.leaps_unit : null;
-  const [why, setWhy] = useState(false);
-  const [ed, setEd] = useState(null), [jEd, setJEd] = useState(null);
-  const [tEd, setTEd] = useState(false), [ivEd, setIvEd] = useState(false);
-  const [tip, setTip] = useState(null), [hb, setHb] = useState(null), [jOp, setJOp] = useState(null);
-  const [ovr, setOvr] = useLocal("bql_pb_overrides", {}, v => isObj(v) ? v : {});
-  const [rows, setRows] = useLocal("bql_pb_opens", [], rowsOf);
-  const [jnl, setJnl] = useLocal("bql_pb_journal", [], rowsOf);
+  const [tip, setTip] = useState(null), [hb, setHb] = useState(null);
+  const [ovr] = useLocal("bql_pb_overrides", {}, v => isObj(v) ? v : {});
   const [uSl, setUSl] = useLocal("bql_pb_mstx", 16.4, v => nm(v) == null ? 16.4 : nm(v));
-  const railRef = useRef(null), trigRef = useRef(null);
+  const trigRef = useRef(null);
   const d0 = new Date().toISOString().slice(0,10);
   // one tooltip for the tab: hover, or tap on touch
   const tipAt = (t, e) => { const r = e.currentTarget.getBoundingClientRect();
@@ -866,8 +846,7 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
     onMouseLeave:() => { setHb(null); setTip(null); },
     onTouchStart:e => { const on = tip && tip.t === t;
       setHb(on ? null : i); if (on) setTip(null); else tipAt(t, e); }};
-  const go = k => () => { const r = k === "rail" ? railRef : trigRef;
-    if (r.current) r.current.scrollIntoView({block:"start"}); };
+  const go = () => () => { if (trigRef.current) trigRef.current.scrollIntoView({block:"start"}); };
 
   // the ladder's render seed, 85000, is never a price
   const own = String(priceStr||"").trim() !== "85000" && typeof btcPrice === "number" && btcPrice > 0;
@@ -886,20 +865,18 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
   const cr = inp[CROSS] || {}, wkN = typeof cr.bars_since_cross === "number" ? cr.bars_since_cross
     : Math.round((Date.parse(cr.bar_date) - Date.parse(cr.cross_bar_date))/6048e5);
 
-  const ivR = inp.iv_rank || {}, ivH = nm(ovr.iv_rank), ivW = nm(ivR.n_days);
-  const ivJ = typeof ivR.value === "number" ? ivR.value : null;
-  // two ranks: 3-month off the ledger, 52-week off the scrape
+  // IV rank, three months. The 52-week rank is not in the file, so nothing claims one.
   const ivB = (pb && isObj(pb.iv) && isObj(pb.iv.mstr)) ? pb.iv.mstr : {};
-  const r3 = isObj(ivB.rank_3m) ? ivB.rank_3m : {}, r52 = isObj(ivB.rank_52w) ? ivB.rank_52w : {};
-  const iv3 = nm(r3.value) != null ? nm(r3.value) : ivJ;
-  const iv3n = nm(r3.n_days) != null ? nm(r3.n_days) : ivW;
-  const iv52 = ivH != null ? ivH : nm(r52.value);
-  const iv52d = r52.as_of ? (md(r52.as_of) || String(r52.as_of)) : null;
-  const r52p = nm(r52.printed);
-  const evs = rowsOf(pb && pb.events_upcoming), nxt = evs[0];
-  const nd = !nxt ? NaN : typeof nxt.days_to === "number" ? nxt.days_to : days(d0, nxt.date);
-  const ev3 = evs.slice(0,3).map(e => (md(e.date)||e.date) + " " + String(e.type||"").replace(/_/g," ")
-    + " in " + (e.days_to == null ? (days(d0, e.date) || 0) : e.days_to) + " days").join(" · ");
+  const r3 = isObj(ivB.rank_3m) ? ivB.rank_3m : {};
+  const ivR = inp.iv_rank || {};
+  const iv3 = nm(r3.value) != null ? nm(r3.value) : (typeof ivR.value === "number" ? ivR.value : null);
+  const iv3n = nm(r3.n_days) != null ? nm(r3.n_days) : nm(ivR.n_days);
+  // events are counted from today, and one that has passed is not an event
+  const evs = rowsOf(pb && pb.events_upcoming).map(e => ({e, d:days(d0, e.date)}))
+    .filter(x => x.d != null && x.d >= 0);
+  const nxt = evs.length ? evs[0] : null;
+  const ev3 = evs.slice(0,3).map(x => (md(x.e.date) || x.e.date) + " "
+    + String(x.e.type||"").replace(/_/g," ") + " in " + x.d + " days").join(" \u00b7 ");
   const gen = String((pb && pb.generated_at) || "");
   const genTxt = /^\d{4}-\d{2}-\d{2}T\d\d:\d\d/.test(gen)
     ? "REFRESHED " + md(gen.slice(0,10)) + " " + gen.slice(11,16) + " UTC" : null;
@@ -913,90 +890,45 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
   const cut = (!acD && act.length > 110) ? act.indexOf(". ") : -1;
   const act1 = (cut > 0 ? act.slice(0, cut+1) : act) || "No plan phase on file.";
   const act2 = acD || (cut > 0 ? act.slice(cut+2) : null);
-  const chips = [[tkr ? tkr + " REGIME" : "REGIME UNKNOWN"],
-    [q == null ? "LADDER UNKNOWN" : q.toFixed(1) + "q · " + band(q), "trig",
+  const chips = [
+    tkr && [tkr + " REGIME"],
+    q != null && [q.toFixed(1) + "q \u00b7 " + band(q), true,
       "The power law model on this page, run on the price above."],
-    [(iv3 == null && iv52 == null) ? "IV RANK BY HAND"
-      : "IV 3M " + (iv3 == null ? UNK : iv3.toFixed(0))
-        + " · 52W " + (iv52 == null ? UNK : iv52.toFixed(0)), "trig",
-      "Two ranks. AlphaQuery 30-day mean vol over " + (iv3n == null ? UNK : iv3n)
-        + " days, and projectoption over 52 weeks."],
-    [isNaN(nd) ? "NO EVENT ON FILE" : nd + "d TO " + String(nxt.type||"").replace(/_/g," "),
-      "rail", ev3 || null],
-    [trig === "HOLD" ? "CROSS " + (isNaN(wkN) ? UNK : wkN) + " WEEKS OLD"
-      : trig === "ENTRY" ? "CROSS THIS WEEK" : null, "trig",
-      "The last weekly cross. The chart marks the bar."]].filter(c => c[0]);
-  // POSITIONS: the LEAPS unit, then the spreads by hand
-  const L = lu || {}, luD = nm(L.net_debit), luW = nm(L.width), luP = nm(L.short_funds_pct);
-  const leg = s => String(s||"").replace(/ call$/i, "");
-  const luTxt = !lu ? "LEAPS · not in the rules file"
-    : join(["LEAPS", lu.long && "long " + leg(lu.long), lu.short && "short " + leg(lu.short),
-      (luD != null && luW != null) && luD.toFixed(2) + " on " + luW, luP != null && luP + "% funded"]);
-  const luBad = !lu ? "refresh not run"
-    : (luD == null || luW == null) ? "fill by hand" : luD >= luW ? "debit over width"
-    : !tkr ? "regime not known"
-    : String(lu.ticker||"").toUpperCase() !== tkr.toUpperCase() ? "ticker off regime" : null;
-  // PHASE RAIL: the three phases on one calendar bar
-  const dn = s => { const t = Date.parse(String(s||"")+"T00:00:00Z"); return isNaN(t) ? null : t; };
-  const r0 = dn("2026-09-13"), r1 = dn("2027-01-09");
-  const pct = t => t == null ? 0 : Math.min(100, Math.max(0, 100*(t-r0)/(r1-r0)));
-  const rng = b => !b[0] ? "TO " + md(b[1]) : !b[1] ? "FROM " + md(b[0])
-    : md(b[0]) + " TO " + md(b[1]);
-  const segs = phs.map(x => { const b = phBnd(x.dates), a = pct(b[0] ? dn(b[0]) : r0);
-    return {x, lab:rng(b), l:a, w:Math.max(3, pct(b[1] ? dn(b[1]) : r1) - a),
-      on:!!(ph && x.id === ph.id)}; });
-  const nowPct = pct(dn(d0));
+    iv3 != null && ["IV 3M " + iv3.toFixed(0), true,
+      "AlphaQuery 30-day mean vol over " + (iv3n == null ? UNK : iv3n) + " days."],
+    nxt && [nxt.d + "d TO " + String(nxt.e.type||"").replace(/_/g," "), false, ev3 || null],
+    trig === "ENTRY" ? ["CROSS THIS WEEK", true, "The last weekly cross. The chart marks the bar."]
+      : (trig === "HOLD" && !isNaN(wkN)) ? ["CROSS " + wkN + " WEEKS OLD", true,
+        "The last weekly cross. The chart marks the bar."] : null].filter(Boolean);
 
-  // PHASE 1: the 9/13 journal row is the only source
-  const j13 = rowsOf(plg && plg.journal).find(r => isObj(r.debit_mid)) || {};
-  const dm = isObj(j13.debit_mid) ? j13.debit_mid : {};
-  const pairs = Object.keys(dm);
-  const gv = (o, k) => isObj(o) ? nm(o[k]) : null;
-  const lk = k => nm(String(k).split("/")[0]), sk = k => String(k).split("/")[1] || null;
+  // PHASE 1: the spreads that are on, from the ledger
+  const sk = k => String(k).split("/")[1] || null;
   const ph1 = phs.find(x => String(x.id) === "1") || null;
-  const sp1 = rowsOf(ph1 && ph1.spreads);
-  const p1 = sp1.length ? sp1.map(s => ({k:String(s.key||UNK), legs:s.legs||null, mid:nm(s.debit),
-      nat:nm(s.debit_natural), hur:nm(s.hurdle), odds:nm(s.odds_short)}))
-    : pairs.map(k => ({k, legs:(isObj(j13.legs) && j13.legs[k]) || null,
-    mid:gv(dm,k), nat:gv(j13.debit_natural,k), hur:gv(j13.hurdle,k),
-    odds:gv(j13.odds_short_mid,k)}));
+  const p1 = rowsOf(ph1 && ph1.spreads).map(s => ({k:String(s.key||UNK), legs:s.legs||null,
+    mid:nm(s.debit), nat:nm(s.debit_natural), hur:nm(s.hurdle), odds:nm(s.odds_short)}));
   const x2 = (v, s) => v == null ? UNK : v.toFixed(2) + (s||"");
-  const dte = days(d0, j13.short_expiry);
-  const oddsTip = "Model odds from the " + (md(j13.chain_reference)||UNK) + " chain IV. Expiry "
-    + (md(j13.short_expiry)||UNK) + (dte == null ? "" : ", " + dte + " days out") + ".";
+  const oddsTip = "Model odds of the short strike finishing in the money.";
 
-  // UNITS: each spread settles at the short's expiry, legs at intrinsic
-  const uAnc = nm(plg && plg.plan && plg.plan.unit_price_anchor_mstx);
-  const uAt = nm(L.net_debit), uPer = nm(L.cost_per_dollar_of_mstx);
-  const uPx = S => (uAnc == null || uAt == null || uPer == null) ? null : uAt + uPer*(S - uAnc);
-  const wid = k => { const w = gv(j13.width, k); return w == null ? 1 : w; };
-  const pairVal = S => { if (!pairs.length) return null; let v = 0;
-    for (const k of pairs) { const d = gv(dm,k), a = lk(k);
-      if (!d || a == null) return null;
-      v += Math.max(Math.min(S - a, wid(k)), 0)/d/pairs.length; }
-    return v; };
-  const ub = rowsOf(ph1 && ph1.units_by_price).filter(r => nm(r.mstx) != null);
-  const uLive = ub.length > 0;
-  const uRows = uLive ? ub.map(r => ({S:nm(r.mstx), pv:nm(r.dollars), up:nm(r.unit), n:nm(r.leaps)}))
-    : [13,14,15,16,16.4,17,17.5,18,19].map(S => { const pv = pairVal(S), up = uPx(S);
-    return {S, pv, up, n:(pv == null || !up) ? null : 100*pv/up}; });
+  // UNITS: the LEAPS count by settlement close, straight from the ledger
+  const uRows = rowsOf(ph1 && ph1.units_by_price).filter(r => nm(r.mstx) != null)
+    .map(r => ({S:nm(r.mstx), pv:nm(r.dollars), up:nm(r.unit), n:nm(r.leaps)}));
   const uMin = uRows.length ? Math.min(...uRows.map(r => r.S)) : 13;
   const uMax = uRows.length ? Math.max(...uRows.map(r => r.S)) : 19;
   const uV = Math.min(uMax, Math.max(uMin, nm(uSl) == null ? 16.4 : nm(uSl)));
-  const uSel = uRows.reduce((a,r) => Math.abs(r.S-uV) < Math.abs(a-uV) ? r.S : a, uRows.length ? uRows[0].S : 13);
+  const uSel = uRows.reduce((a,r) => Math.abs(r.S-uV) < Math.abs(a-uV) ? r.S : a,
+    uRows.length ? uRows[0].S : 13);
   const uSelR = uRows.find(r => r.S === uSel) || {};
-  const uNow = pairVal(uV), uNowP = uPx(uV);
-  const uRead = uLive
-    ? "At " + uSel.toFixed(0) + " on the 25th: position about "
-      + (uSelR.pv == null ? UNK : "$" + Math.round(uSelR.pv).toLocaleString("en-US"))
-      + ", unit " + x2(uSelR.up) + ", " + (uSelR.n == null ? UNK : uSelR.n.toFixed(0)) + " LEAPS"
-    : "At " + uV.toFixed(1) + ": payout " + (uNow == null ? UNK : uNow.toFixed(2))
-    + " per 1.00, unit " + x2(uNowP) + ", "
-    + ((uNow == null || !uNowP) ? UNK : (100*uNow/uNowP).toFixed(1)) + " units per 100";
-  const mx = inp.mstx_price || {}, mxV = nm(mx.value);
-  const uTod = (uAt == null || uPer == null || uAnc == null || mxV == null) ? null
-    : "Unit about " + (uAt + uPer*(mxV - uAnc)).toFixed(2) + " at MSTX " + mxV.toFixed(2)
-      + ", the " + (md(mx.as_of)||UNK) + " close.";
+  const uRead = "At " + String(+uSel.toFixed(2)) + " on settlement: position about "
+    + (uSelR.pv == null ? UNK : "$" + Math.round(uSelR.pv).toLocaleString("en-US"))
+    + ", unit " + x2(uSelR.up) + ", " + (uSelR.n == null ? UNK : uSelR.n.toFixed(0)) + " LEAPS";
+
+  // PHASE 2: the default, and the strike it puts on by settlement close
+  const ph2 = phs.find(x => String(x.id) === "2") || null;
+  const sm = (ph2 && isObj(ph2.strike_map)) ? ph2.strike_map : {};
+  const smRows = Object.keys(sm).map(k => [k, sm[k]]).sort((a, b) => nm(a[0]) - nm(b[0]));
+  const p2act = String((ph2 && ph2.next_action) || "");
+  const p2cut = p2act.indexOf(". ");
+  const p2one = p2cut > 0 ? p2act.slice(0, p2cut+1) : p2act;
 
   // TRIGGER: the weekly bars
   const hR = inp[HIST] || {};
@@ -1014,17 +946,14 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
   const cy = v => CP.t + cht*(vmax - v)/vsp, zy = cy(0);
   const bw = cwd/Math.max(1, bars.length), bwi = Math.max(2, bw*0.66);
   const bx = i => CP.l + i*bw + (bw - bwi)/2;
-  const bTip = b => "week ending " + (md(b.bar)||b.bar) + " · " + sgn(b.v)
-    + (b.bar === xd0 ? " · cross" : "");
+  const bTip = b => "week ending " + (md(b.bar)||b.bar) + " \u00b7 " + sgn(b.v)
+    + (b.bar === xd0 ? " \u00b7 cross" : "");
 
   // ROUTES: the operator's own calculation
   const routes = rowsOf(plg && plg.plan && plg.plan.routes);
-  const rAs = md((String((plg && plg.plan && plg.plan.routes_note) || "")
-    .match(/\d{4}-\d{2}-\d{2}/) || [""])[0]);
   const rNote = String((plg && plg.plan && plg.plan.routes_note) || "");
-  const rFoot = /^Leif model/.test(rNote) ? rNote : "Your calculation, " + (rAs || UNK) + ". Unit " + x2(uAt) + " at MSTX "
-    + (uAnc == null ? UNK : uAnc) + ", plus " + x2(uPer)
-    + " per 1.00. The December distribution is assumed.";
+  const rCut = rNote.indexOf(". ");
+  const rFoot = rCut > 0 ? rNote.slice(0, rCut+1) : rNote;
   const PNL = {background:tier?tier.darkBg:"#070f1f",border:"1px solid "+AC+"30",
     borderLeft:"3px solid "+AC,borderRadius:"6px",padding:"14px 16px",marginTop:11};
   const FT = {fontSize:10,color:GRY,letterSpacing:"0.04em",marginTop:9};
@@ -1035,77 +964,10 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
   const scards = [["LADDER QUANTILE", q == null ? UNK : q.toFixed(1),
       q == null ? UNK : band(q), AC,
       "The power law model on this page, run on the price above.", 1],
-    ["IV RANK 3M", iv3 == null ? UNK : iv3.toFixed(0),
-      iv3n == null ? UNK : iv3n + "-day window", "#facc15",
+    iv3 == null ? null : ["IV RANK 3M", iv3.toFixed(0),
+      iv3n == null ? "3-month rank" : iv3n + "-day window", "#facc15",
       "AlphaQuery 30-day mean vol. Window " + (md(r3.first)||UNK) + " to " + (md(r3.last)||UNK)
-        + ", " + (iv3n == null ? UNK : iv3n) + " days."],
-    ["IV RANK 52W", iv52 == null ? UNK : iv52.toFixed(0),
-      ivH != null ? "your own number" : iv52d == null ? UNK : "52-week, as of " + iv52d, "#facc15",
-      ivH != null ? "Your own number, typed in the why panel."
-        : "projectoption, as of " + (iv52d||UNK) + "."
-          + (r52p != null ? " Their printed rank is " + r52p.toFixed(0) + "." : "")]];
-  const wOf = r => { const a = nm(r.longK), b = nm(r.shortK);
-    return (a != null && b != null) ? Math.abs(b - a) : null; };
-  const sBad = (r, i) => {
-    if (i >= MAXS) return "over three spreads";
-    const x = String(r.expiry||"").trim();
-    if (x && rows.some((o,j) => { const y = j === i ? "" : String(o.expiry||"").trim();
-      if (!y) return false; const n = biz(x, y); return n == null || n < 10; })) return "expiries too close";
-    const d = nm(r.debit), w = wOf(r);
-    return (d == null || w == null) ? "fill by hand" : d >= w ? "debit over width" : null; };
-  const sTxt = r => join(["SPREAD", r.expiry && "exp " + r.expiry, r.longK && "long " + r.longK,
-    r.shortK && "short " + r.shortK, r.debit && r.debit + (wOf(r) != null ? " on " + wOf(r) : "")]);
-  // a plain function, not a nested component, so an open input keeps focus
-  const prow = (k, body, fail, i) => { const dot = fail ? RD : GRN, open = i != null && ed === i;
-    return (
-    <div key={k} style={{borderTop:k === "leaps" ? "none" : SEP}}>
-      <div style={LINE}>
-        <span style={{width:8,height:8,borderRadius:4,flexShrink:0,background:dot,
-          boxShadow:"0 0 6px "+dot+"66"}}/>
-        <span style={BODY}>{body}</span>
-        {fail && <span style={{fontSize:11,color:RD,flexShrink:0}}>{fail}</span>}
-        {i != null && <button style={PEN} onClick={()=>setEd(v => v===i ? null : i)}>{open?"▾":"✎"}</button>}</div>
-      {open && <div style={{...ROW,gap:6,paddingLeft:18,paddingBottom:8}}>
-        {["expiry","longK","shortK","debit"].map(f =>
-          <input key={f} value={rows[i][f]||""} placeholder={f.replace("K","")} style={INP}
-            onChange={e=>setRows(rs=>rs.map((x,j)=>j===i?{...x,[f]:e.target.value}:x))}/>)}
-        <button style={GST} onClick={()=>{ setEd(null); setRows(rs=>rs.filter((_,j)=>j!==i)); }}>drop</button></div>}
-    </div>); };
-
-  // JOURNAL: repo rows, then browser rows
-  const all = rowsOf(plg && plg.journal).concat(rowsOf(plg && plg.paper_calls))
-    .sort((a,b) => String(a.date||"").localeCompare(String(b.date||"")))
-    .map(r => [r, null]).concat(jnl.map((r,i) => [r, i]));
-  const jDet = r => [r.structure, isObj(r.odds_short_mid) && Object.keys(r.odds_short_mid)
-      .map(k => k + " at " + Math.round(nm(r.odds_short_mid[k])*100) + "%").join(", ") + ".",
-    r.odds_short_mid_note || r.implied_p_note || r.note].filter(Boolean).join(" ");
-
-  // WHY: the trigger overrides sit behind the heading pencil
-  const pw = p => p == null ? UNK : p ? "pass" : "fail", pc = p => p == null ? "#eab308" : p ? GRN : RD;
-  const xd = cross === false && md(cr.cross_bar_date);
-  const wrows = [
-    [<span>{"weekly MACD(8,21,5) histogram rising · "}<b style={{color:pc(hist)}}>{pw(hist)}</b></span>],
-    [<span>{"fresh weekly cross · "}<b style={{color:pc(cross)}}>{pw(cross)}</b>
-      {xd ? ", last cross " + xd : ""}</span>],
-    tEd && [<span style={{...ROW,gap:12}}>{[["rising",HIST],["cross",CROSS]].map(([l,k]) =>
-      <span key={k} style={{...ROW,gap:6}}><span style={{fontSize:11,color:GRY}}>{l}</span>
-        <select value={ovr[k]||""} onChange={e=>setOvr(o=>({...o,[k]:e.target.value}))}
-          style={{...INP,width:70,flex:"0 0 70px",cursor:"pointer"}}>
-          {["","pass","fail"].map(o=><option key={o} value={o}>{o||"auto"}</option>)}</select></span>)}</span>],
-    [iv3 == null ? "IV rank 3M is not known."
-      : "IV rank 3M " + iv3.toFixed(0) + ", AlphaQuery 30-day mean vol"
-        + (iv3n != null ? " over " + iv3n + " days" : "") + "."],
-    [ivH != null ? "IV rank 52W " + ivH.toFixed(0) + ", your own number."
-      : iv52 == null ? "IV rank 52W is not known. Type your own number in the field."
-      : "IV rank 52W " + iv52.toFixed(0) + (iv52d ? ", projectoption as of " + iv52d : "") + "."
-        + (r52p != null ? " Their printed rank is " + r52p.toFixed(0) + ", one source." : "")
-        + " Type your own number to override it.", ()=>setIvEd(v=>!v)],
-    ivEd && [<input value={ovr.iv_rank||""} placeholder="52w rank" style={INP}
-      onChange={e=>setOvr(o=>({...o,iv_rank:e.target.value}))}/>],
-    nm(L.cost_per_dollar_of_mstx) != null && ["The unit costs about "
-      + nm(L.cost_per_dollar_of_mstx).toFixed(2) + " more per 1.00 of "
-      + String(L.ticker||"").toUpperCase() + "."],
-    ["Rules and numbers live in doctrine.md, off this site."]].filter(Boolean);
+        + ", " + (iv3n == null ? UNK : iv3n) + " days."]].filter(Boolean);
 
   return (
     <div>
@@ -1117,57 +979,18 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
           <span style={LAB}>TODAY</span>
           {genTxt && <span style={{fontSize:10,color:GRY,letterSpacing:"0.06em"}}>{genTxt}</span>}</div>
         <div style={{fontSize:"28px",fontWeight:700,color:TCOL[trig],lineHeight:1,letterSpacing:"0.02em"}}>
-          {trig + (ph ? " · PHASE " + ph.id : "")}</div>
+          {trig + (ph ? " \u00b7 PHASE " + ph.id : "")}</div>
         <div style={{fontSize:15,color:"#e2e8f0",lineHeight:1.5,marginTop:10}}>{act1}</div>
         {act2 && <div style={{fontSize:12,color:"#8aaac8",lineHeight:1.5,
           marginTop:5}}>{act2}</div>}
         <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:14}}>
-          {chips.map(([c,to,t],i) => <span key={i} {...hit(t)} onClick={to ? go(to) : undefined}
+          {chips.map(([c,to,t],i) => <span key={i} {...hit(t)} onClick={to ? go() : undefined}
             style={{...ACH,cursor:(to||t)?"pointer":"default"}}>{c}</span>)}</div>
-      </div>
-
-      {/* PHASE RAIL */}
-      <div style={PNL} ref={railRef}>
-        <div style={{...HD,marginBottom:4}}>PHASE RAIL</div>
-        <div style={{position:"relative",height:"40px",marginTop:"24px"}}>
-          {segs.map(s => (
-            <div key={s.x.id} {...hit(s.lab + " · " + (s.x.structure||UNK))}
-              style={{position:"absolute",top:"6px",bottom:"6px",cursor:"pointer",
-              left:s.l+"%",width:"calc("+s.w+"% - 2px)",
-              background:s.on?AC+"30":AC+"0d",border:"1px solid "+(s.on?AC:AC+"40"),
-              borderRadius:"4px",overflow:"hidden",boxShadow:s.on?"0 0 12px "+AC+"44":"none",
-              display:"flex",alignItems:"center",justifyContent:"center",gap:"5px"}}>
-              <span style={{fontSize:10,fontWeight:700,letterSpacing:"0.06em",lineHeight:1.15,
-                textAlign:"center",color:s.on?AC:AC+"99"}}>{"PHASE " + s.x.id + " · " + s.lab}</span>
-            </div>))}
-          <div style={{position:"absolute",top:0,bottom:0,left:nowPct+"%",width:"2px",
-            marginLeft:"-1px",background:AC,boxShadow:"0 0 6px "+AC,borderRadius:"1px"}}/>
-          <div style={{position:"absolute",top:"-3px",left:nowPct+"%",transform:"translateX(-50%)",
-            width:0,height:0,borderLeft:"4px solid transparent",borderRight:"4px solid transparent",
-            borderTop:"5px solid "+AC}}/>
-          <div {...hit("today " + (md(d0)||UNK))} style={{position:"absolute",top:0,bottom:0,
-            left:nowPct+"%",marginLeft:"-7px",width:"14px",cursor:"pointer"}}/>
-          <div style={{position:"absolute",top:"-17px",left:nowPct+"%",fontSize:10,color:AC,
-            fontWeight:700,letterSpacing:"0.08em",whiteSpace:"nowrap",
-            transform:nowPct < 12 ? "none" : nowPct > 88 ? "translateX(-100%)" : "translateX(-50%)"}}>
-            {"TODAY " + (md(d0)||UNK)}</div>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(168px,1fr))",
-          gap:"14px",marginTop:"14px"}}>
-          {segs.map(s => (
-            <div key={s.x.id} style={{borderTop:SEP,paddingTop:"8px",display:"flex",
-              flexDirection:"column",gap:"5px"}}>
-              <div style={{...LAB,color:s.on?AC:"#5a8fc0"}}>{"PHASE " + s.x.id}</div>
-              <div style={{fontSize:12,color:"#b0c4d8",lineHeight:1.5}}>{s.x.structure||UNK}</div>
-              <div style={{fontSize:12,color:"#8aaac8",lineHeight:1.5,marginTop:"auto"}}>
-                {"Roll: " + (s.x.roll_rules||UNK)}</div>
-            </div>))}
-        </div>
       </div>
 
       {/* PHASE 1 */}
       <div style={PNL}>
-        <div style={{...HD,marginBottom:10}}>{(ph1 && ph1.panel_title) || "PHASE 1 · TWO SPREADS · SHORTS SEP 25"}</div>
+        <div style={{...HD,marginBottom:10}}>{(ph1 && ph1.panel_title) || "PHASE 1 \u00b7 WHAT IS ON"}</div>
         {p1.map((r,i) => (
           <div key={r.k} style={{display:"flex",alignItems:"baseline",gap:"12px",flexWrap:"wrap",
             padding:"7px 0",borderTop:i?SEP:"none"}}>
@@ -1175,34 +998,27 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
               minWidth:"46px",whiteSpace:"nowrap",flexShrink:0}}>{r.k}</span>
             <span style={{fontSize:13,color:"#a0b8cc"}}>{r.legs||UNK}</span>
             <span style={{fontSize:15,fontWeight:700,color:"#f1f5f9"}}>
-              {"debit " + x2(r.mid, sp1.length ? " fill" : " mid")}</span>
+              {"debit " + x2(r.mid, " fill")}</span>
             {r.nat != null && <span style={{fontSize:11,color:GRY}}>{"natural " + x2(r.nat)}</span>}
             <span style={{fontSize:13,color:"#a0b8cc"}}>{"hurdle " + x2(r.hur)}</span>
-            <span {...hit(oddsTip)} style={{...ACH,marginLeft:"auto",cursor:"pointer"}}>
-              {(sk(r.k)||UNK) + " strike · " + (r.odds == null ? UNK + " odds"
-                : (r.odds*100).toFixed(0) + "% odds")}</span>
+            {r.odds != null && <span {...hit(oddsTip)} style={{...ACH,marginLeft:"auto",cursor:"pointer"}}>
+              {(sk(r.k)||UNK) + " strike \u00b7 " + (r.odds*100).toFixed(0) + "% odds"}</span>}
           </div>))}
-        {!p1.length && <div style={{...BODY,padding:"7px 0"}}>No 9/13 row in the ledger.</div>}
-        <div style={{...LINE,borderTop:SEP}}><span style={BODY}>
-          {(ph1 && ph1.note) || ("Strikes move down a dollar at 13 and up a dollar at 15 to 16. "
-            + "The structure and the split do not change.")}</span></div>
-        <div style={FT}>{sp1.length ? "Fills are yours. Odds are model odds of the short strike finishing in the money."
-          : "Quotes are the " + (md(j13.chain_reference)||UNK)
-          + " close, delayed. The morning quote wins. Odds are model odds."}</div>
+        {!p1.length && <div style={{...BODY,padding:"7px 0"}}>No spreads in the ledger.</div>}
+        <div style={FT}>Fills are yours. Odds are model odds of the short strike finishing in the money.</div>
       </div>
 
       {/* UNITS */}
-      <div style={TBL}>
-        <div style={{...HD,marginBottom:10}}>
-          {uLive ? "LEAPS YOU COULD BUY, BY MSTX CLOSE ON THE 25TH" : "LEAPS UNITS PER 100 OF CAPITAL, BY MSTX CLOSE ON THE 25TH"}</div>
+      {uRows.length > 0 && <div style={TBL}>
+        <div style={{...HD,marginBottom:10}}>LEAPS YOU COULD BUY, BY MSTX CLOSE ON SETTLEMENT</div>
         <div style={{overflowX:"auto"}}><div style={{display:"grid",
           gridTemplateColumns:"1fr 1fr 1fr 1fr",minWidth:"300px"}}>
-          {(uLive ? ["MSTX","POSITION VALUE","UNIT PRICE","LEAPS"] : ["MSTX","PAYOUT PER 1.00","UNIT PRICE","UNITS PER 100"]).map((h,i) =>
+          {["MSTX","POSITION VALUE","UNIT PRICE","LEAPS"].map((h,i) =>
             <div key={h} style={{...LAB,padding:"4px 6px",textAlign:i?"right":"left"}}>{h}</div>)}
           {uRows.map(r => { const hl = r.S === uSel;
-            return (uLive ? [r.S.toFixed(0), r.pv == null ? UNK : "$" + Math.round(r.pv).toLocaleString("en-US"), x2(r.up),
-              r.n == null ? UNK : r.n.toFixed(0)] : [r.S.toFixed(1), r.pv == null ? UNK : r.pv.toFixed(1), x2(r.up),
-              r.n == null ? UNK : r.n.toFixed(1)]).map((v,i) =>
+            return [String(+r.S.toFixed(2)),
+              r.pv == null ? UNK : "$" + Math.round(r.pv).toLocaleString("en-US"), x2(r.up),
+              r.n == null ? UNK : r.n.toFixed(0)].map((v,i) =>
               <div key={r.S+"-"+i} style={{padding:"5px 6px",fontSize:12,
                 borderBottom:"1px solid #070f1f",textAlign:i?"right":"left",
                 background:hl?AC+"14":"transparent",
@@ -1210,26 +1026,40 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
           })}
         </div></div>
         <div style={{...ROW,gap:10,marginTop:14}}>
-          <span style={{...LAB,whiteSpace:"nowrap"}}>MSTX ON THE 25TH</span>
+          <span style={{...LAB,whiteSpace:"nowrap"}}>MSTX ON SETTLEMENT</span>
           <div style={{position:"relative",display:"flex",alignItems:"center",
             flex:"1 1 110px",minWidth:"88px",height:"20px"}}>
             <div style={{position:"absolute",left:0,right:0,height:"3px",
               background:"#0d1e30",borderRadius:"3px"}}/>
             <div style={{position:"absolute",left:0,width:((uV-uMin)/((uMax-uMin)||1)*100)+"%",height:"3px",
               background:AC,borderRadius:"3px",opacity:0.75}}/>
-            <input type="range" min={uMin} max={uMax} step={uLive ? 1 : 0.1} value={uV}
+            <input type="range" min={uMin} max={uMax} step={0.25} value={uV}
               onChange={e=>setUSl(parseFloat(e.target.value))}
               style={{position:"absolute",left:0,right:0,width:"100%",appearance:"none",
                 WebkitAppearance:"none",background:"transparent",cursor:"pointer",
                 margin:0,height:"20px"}}/>
           </div>
           <span style={{fontSize:12,fontWeight:700,color:AC,minWidth:"32px",
-            textAlign:"right"}}>{uV.toFixed(1)}</span>
+            textAlign:"right"}}>{String(+uSel.toFixed(2))}</span>
         </div>
         <div style={{fontSize:11,color:"#b0c4d8",marginTop:7}}>{uRead}</div>
-        <div style={FT}>{uLive ? ((ph1 && ph1.units_note) || "") : ("Legs settle at intrinsic, long time value excluded, the conservative read. "
-          + "Objective: units, not dollars (doctrine section 19).")}</div>
-      </div>
+      </div>}
+
+      {/* PHASE 2 */}
+      {smRows.length > 0 && <div style={TBL}>
+        <div style={{...HD,marginBottom:8}}>PHASE 2 · THE DEFAULT AND ITS STRIKE MAP</div>
+        {p2one && <div style={{fontSize:13,color:"#e2e8f0",lineHeight:1.5,marginBottom:10}}>{p2one}</div>}
+        <div style={{overflowX:"auto"}}><div style={{display:"grid",
+          gridTemplateColumns:"1fr 1fr",minWidth:"260px"}}>
+          {["MSTX CLOSE","JAN LONG / DEC SHORT"].map((h,i) =>
+            <div key={h} style={{...LAB,padding:"4px 6px",textAlign:i?"right":"left"}}>{h}</div>)}
+          {smRows.map(([k,v],n) => [k, String(v)].map((x,i) =>
+            <div key={n+"-"+i} style={{padding:"5px 6px",fontSize:12,
+              borderBottom:"1px solid #070f1f",textAlign:i?"right":"left",whiteSpace:"nowrap",
+              background:n%2?"transparent":"#050d1c",color:i?"#d0dde8":"#8aaac8",
+              fontWeight:i?600:400}}>{x}</div>))}
+        </div></div>
+      </div>}
 
       {/* TRIGGER */}
       <div ref={trigRef} style={{...TBL,display:"flex",gap:"14px",flexWrap:"wrap"}}>
@@ -1277,23 +1107,6 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
         </div>
       </div>
 
-      {/* POSITIONS */}
-      <div style={{background:tier?tier.darkBg:"#070f1f",border:"1px solid "+AC+"30",
-        borderLeft:"3px solid "+AC,borderRadius:"6px",padding:"14px 16px",marginTop:11}}>
-        <div style={{...ROW,justifyContent:"space-between",marginBottom:4}}>
-          <span style={HD}>POSITIONS</span>
-          {rows.length < MAXS && <button style={GST} onClick={()=>{ setEd(rows.length);
-            setRows(rs => [...rs, {expiry:"",longK:"",shortK:"",debit:""}]); }}>+ spread</button>}</div>
-        {prow("leaps", <>{luTxt}{uTod && <span style={{display:"block",fontSize:11,color:GRY,
-          marginTop:3}}>{uTod}</span>}</>, luBad, null)}
-        {rowsOf(ph1 && ph1.positions).map((s,i) => prow("pos"+i, String(s.text||UNK), null, null))}
-        {rows.map((r,i) => prow(i, sTxt(r), sBad(r,i), i))}
-        {ph && ph.roll_rules && <div style={{...LINE,borderTop:SEP,gap:12,paddingLeft:18,
-          alignItems:"baseline"}}>
-          <span style={{...LAB,width:"46px",flexShrink:0}}>ROLL</span>
-          <span style={BODY}>{ph.roll_rules}</span></div>}
-      </div>
-
       {/* ROUTES */}
       <div style={TBL}>
         <div style={{...HD,marginBottom:10}}>LEAPS UNITS AT THE END, BY ROUTE</div>
@@ -1309,52 +1122,8 @@ function PlaybookTab({ todayTs, btcPrice, priceStr, livePrice, modelA, modelB })
               {i === 0 ? v : v == null ? UNK : v.toFixed(0)}</div>))}
         </div></div>
         {!routes.length && <div style={{...BODY,paddingTop:7}}>No routes in the ledger.</div>}
-        <div style={FT}>{rFoot}</div>
+        {rFoot && <div style={FT}>{rFoot}</div>}
       </div>
-
-      <div style={TBL}>
-        <div style={{...ROW,justifyContent:"space-between",marginBottom:8}}>
-          <span style={HD}>{"JOURNAL · " + all.length}</span>
-          <button style={GST} onClick={()=>{ setJEd(jnl.length);
-            setJnl(rs => [...rs, {date:d0,trade:"",odds:"",result:""}]); }}>+ row</button></div>
-        <div style={{overflowX:"auto"}}><div style={{minWidth:"420px"}}>
-          <div style={JG}>{["DATE","TRADE","ODDS AT ENTRY","RESULT",""].map((h,i) =>
-            <span key={i} style={LAB}>{h}</span>)}</div>
-          {all.map(([r,i], n) => { const e = i != null && jEd === i, p = nm(r.implied_p);
-            const res = String(r.result || r.outcome || "") || NS, dt = jDet(r);
-            return (
-            <React.Fragment key={n}>
-            <div style={{...JG,background:n%2?"transparent":"#050d1c",
-              cursor:(e || !dt) ? "default" : "pointer"}}
-              onClick={(e || !dt) ? undefined : () => setJOp(v => v===n ? null : n)}>
-              {[["date",r.date||NS,{fontSize:12,color:"#d0dde8",fontWeight:600}],
-                ["trade",r.trade || join([r.ticker, r.rule || r.event]) || NS, CEL],
-                ["odds",r.odds || (p == null ? NS : (p*100).toFixed(0) + "%"), CEL],
-                ["result",res,{...CEL,color:/hit/i.test(res)?GRN:/miss/i.test(res)?RD:GRY}]].map(([k,v,st]) =>
-                e ? <input key={k} value={r[k]||""} placeholder={k}
-                      style={{...INP,width:"100%",flex:"1 1 auto"}}
-                      onChange={x=>setJnl(rs=>rs.map((y,j)=>j===i?{...y,[k]:x.target.value}:y))}/>
-                  : <span key={k} style={st}>{v}</span>)}
-              {i != null && <button style={PEN} onClick={x=>{ x.stopPropagation();
-                setJEd(v => v===i ? null : i); }}>{e?"▾":"✎"}</button>}
-            </div>
-            {jOp === n && <div style={{padding:"0 6px 8px",fontSize:11,color:"#8aaac8",
-              lineHeight:1.5,background:n%2?"transparent":"#050d1c"}}>{dt}</div>}
-            </React.Fragment>); })}
-        </div></div>
-        <div style={{...ROW,justifyContent:"flex-end",borderTop:SEP,marginTop:8,paddingTop:8}}>
-          <Lnk on={()=>setWhy(v=>!v)}>WHY</Lnk></div>
-      </div>
-
-      {why && (
-        <div style={TBL}>
-          <div style={{...ROW,justifyContent:"space-between",marginBottom:4}}>
-            <span style={HD}>WHY</span>
-            <button style={PEN} onClick={()=>setTEd(v=>!v)}>{tEd ? "▾" : "✎"}</button></div>
-          {wrows.map(([b,on],i) => <div key={i} style={{...LINE,borderTop:i?SEP:"none"}}>
-            <span style={BODY}>{b}</span>
-            {on && <button style={PEN} onClick={on}>{ivEd ? "▾" : "✎"}</button>}</div>)}
-        </div>)}
 
       {tip && <div style={{position:"fixed",left:tip.x,top:tip.y-10,zIndex:60,
         transform:"translate(-50%,-100%)",pointerEvents:"none",maxWidth:"264px",
@@ -1581,7 +1350,6 @@ function MstrTab({ btcPrice, priceStr, livePrice, liveHistory }) {
     .map(p => Array.isArray(p) ? Number(p[1]) : NaN).filter(v => isFinite(v) && v > 0));
   const maS = avg(ser.slice(-50).map(r => nm(r.btc)).filter(v => v != null && v > 0));
   const ma50 = maL != null ? maL : maS;
-  const maSrc = maL != null ? "live daily history" : maS != null ? "the daily model file" : null;
   const mReg = (mon.st && typeof mon.st.regime === "string") ? mon.st.regime : null;
   const up = (ma50 != null && vBtc != null) ? vBtc >= ma50 : mReg ? /above/i.test(mReg) : null;
   const regTxt = up == null ? "regime unavailable" : up ? "above its 50-day" : "below its 50-day";
@@ -1611,7 +1379,7 @@ function MstrTab({ btcPrice, priceStr, livePrice, liveHistory }) {
     ? {w:"WAIT", c:AMB, why:"Cheap by " + pctT(vGap)
         + ", but BTC's 50-day is unknown. Direction unclear."}
     : vGap >= riT
-    ? {w:"SELL / DON'T ADD", c:RD, why:"Rich by " + pctT(vGap)
+    ? {w:"SELL", c:RD, why:"Rich by " + pctT(vGap)
         + ". Rich readings faded about 2% vs BTC over five days."}
     : {w:"NO TRADE", c:AMB, why:"MSTR is " + pctT(vGap) + " " + side + " projection, inside the "
         + bandTxt + "% band."};
@@ -1712,13 +1480,7 @@ function MstrTab({ btcPrice, priceStr, livePrice, liveHistory }) {
     + " · projected " + msUsd(nm(cur.proj)) + " · gap " + msPct(cGap);
 
   // TABLES
-  const fac = isObj(dat.factors) ? dat.factors : {};
-  const bB = isObj(fac.mnav_beta_btc) ? fac.mnav_beta_btc : {};
-  const bQ = isObj(fac.mnav_beta_qqq) ? fac.mnav_beta_qqq : {};
-  const qd = isObj(fac.qqq_days_6m) ? fac.qqq_days_6m : {};
   const bt = isObj(dat.backtest) ? dat.backtest : {};
-  const cp = isObj(bt.cheap_4pct) ? bt.cheap_4pct : {};
-  const sw = isObj(bt.slope_sweep_h5) ? bt.slope_sweep_h5 : {};
   const reg = isObj(dat.regime) ? dat.regime : {};
   const regR = rowsOf(reg.rows);
   const hdr = hs => hs.map((h, i) =>
@@ -1747,8 +1509,8 @@ function MstrTab({ btcPrice, priceStr, livePrice, liveHistory }) {
         <div style={{...ROW,justifyContent:"space-between",marginBottom:4}}>
           <span style={HD}>MSTR NOW</span>
           <span style={{fontSize:10,color:GRY,letterSpacing:"0.06em"}}>SHORT-TERM GAP TRADE</span></div>
-        <div style={{fontSize:"clamp(34px,9vw,52px)",fontWeight:800,letterSpacing:"-0.02em",
-          lineHeight:1.05,color:vd.c,margin:"7px 0 0"}}>{vd.w}</div>
+        <div style={{fontSize:"clamp(40px,6vw,56px)",fontWeight:800,letterSpacing:"0.01em",
+          lineHeight:1.05,color:vd.c,margin:"7px 0 0",whiteSpace:"nowrap"}}>{vd.w}</div>
         <div style={{fontSize:14,color:"#e2e8f0",lineHeight:1.55,marginTop:9,maxWidth:"780px"}}>
           {vd.why}</div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(124px,1fr))",
@@ -1785,7 +1547,6 @@ function MstrTab({ btcPrice, priceStr, livePrice, liveHistory }) {
         <div style={{fontSize:13,color:"#b0c4d8",lineHeight:1.6}}>
           {"Next holdings update: the Monday 8-K, if they bought last week, "}
           <span style={{whiteSpace:"nowrap"}}>{msMonday(new Date(nowTs)) + "."}</span></div>
-        {maSrc && <div style={FT}>{"50-day average off " + maSrc + "."}</div>}
       </div>
 
       {/* SHORT-TERM LOG */}
@@ -1812,77 +1573,6 @@ function MstrTab({ btcPrice, priceStr, livePrice, liveHistory }) {
           <div style={BODY}>{logEmpty}</div>)}
       </div>
 
-      {/* WHAT IF \u00b7 THE CALCULATOR, SEEDED FROM THE SAME LIVE PRICES */}
-      <div style={{background:"#070f1f",border:"1px solid #0f2035",borderLeft:"4px solid #facc15",
-        borderRadius:"6px",padding:"16px 20px",marginTop:11}}>
-        <div style={{...ROW,justifyContent:"space-between",marginBottom:10}}>
-          <span style={HD}>WHAT IF</span>
-          <span style={{fontSize:10,color:GRY,letterSpacing:"0.06em"}}>
-            SEEDED WITH LIVE PRICES</span></div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(122px,1fr))",gap:"10px"}}>
-          {MS_FLD.map(([k, lab]) => (
-            <div key={k}>
-              <div style={{...LAB,marginBottom:4}}>{lab}</div>
-              <input value={f[k]} inputMode="decimal" placeholder={lab.toLowerCase()}
-                onChange={e => { touched.current[k] = true;
-                  setF(v => ({...v, [k]:e.target.value.replace(/[^0-9.\-]/g,"")})); }}
-                style={{...INP,width:"100%",flex:"1 1 auto",fontSize:13,padding:"6px 8px",
-                  color:k === "strc" ? msStrcCol(strcI) : INP.color}}/>
-              {k === "strc" && strcI != null &&
-                <div style={{...SH,marginTop:5}}>{"base " + msStrc(strcI).toFixed(4)}</div>}
-              {k === "btc" && liveBtc != null &&
-                <button style={{...GST,marginTop:5}}
-                  onClick={() => setF(v => ({...v, btc:String(Math.round(liveBtc))}))}>
-                  {"use live " + fmt(liveBtc)}</button>}
-              {k === "mstr" && qM &&
-                <button style={{...GST,marginTop:5}}
-                  onClick={() => setF(v => ({...v, mstr:qM.px.toFixed(2)}))}>
-                  {"use $" + qM.px.toFixed(2)}</button>}
-              {k === "mstx" && mstxImp != null &&
-                <div style={{...SH,marginTop:5}}>implied, 2x MSTR</div>}
-            </div>))}
-        </div>
-        <div style={{...ROW,gap:8,marginTop:14}}>
-          <span style={{...LAB,whiteSpace:"nowrap"}}>WHAT-IF SLOPE PER $2,500 OF BTC</span>
-          {MS_SL.map(([v, lab]) => (
-            <button key={v} onClick={() => setSlope(v)} style={{...GST,
-              textTransform:"none",letterSpacing:"0.02em",
-              background:slope === v ? "#0c2040" : "transparent",
-              border:"1px solid " + (slope === v ? "#1e5f8a" : "#162840"),
-              color:slope === v ? "#7dd3fc" : "#4a7a9b"}}>
-              {lab + (v === 0.025 ? " · your sheet" : "")}</button>))}
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(132px,1fr))",
-          gap:"10px",marginTop:14}}>
-          {cards.map(([h, v, sub, c]) => (
-            <div key={h} style={SC}>
-              <div style={{...LAB,marginBottom:6}}>{h}</div>
-              <div style={{...SV,color:c}}>{v}</div>
-              <div style={SH}>{sub}</div>
-            </div>))}
-        </div>
-        <div style={{fontSize:11,color:"#b0c4d8",lineHeight:1.5,marginTop:12}}>
-          {live ? "Holdings " + Math.round(live.held).toLocaleString() + " BTC over "
-            + live.sh.toFixed(3) + "M assumed diluted shares, live from strategy.com ("
-            + msWhen(live.ts) + "). "
-            : "Holdings and shares come from strategy.com when it answers, else from the config file. "}
-          Slope and thresholds come from data/mstr-config.json, which the gap monitor reads too.{" "}
-          <a href="https://github.com/Kaim222/btc-quantile-ladder/edit/main/data/mstr-config.json"
-            target="_blank" rel="noopener" style={{color:"inherit"}}>Edit it on GitHub</a> and both
-          update.</div>
-        <div style={FT}>{"Target rule: STRC-linked base, 0.90 at STRC 97.5 and up, sliding down, "
-          + "plus " + cfgSlope + " per $2,500 of BTC over $75,000. The 0.0125 is the measured "
-          + "mNAV beta to BTC; the sweep is in Details."}</div>
-      </div>
-
-      {/* DETAILS \u00b7 THE LONG SECTIONS, COLLAPSED BY DEFAULT */}
-      <div style={{...TBL,padding:"10px 16px"}}>
-        <button onClick={() => setDet(v => !v)} style={{...GST,border:"none",padding:"2px 0",
-          color:"#7ab8d8",fontSize:11,letterSpacing:"0.1em",width:"100%",textAlign:"left"}}>
-          {(det ? "\u25be " : "\u25b8 ")
-            + "DETAILS \u00b7 CHART, EPISODES, BACKTEST"}</button>
-      </div>
-      {det && (<>
       {/* PROJECTED VS ACTUAL */}
       <div style={TBL}>
         <div style={{...ROW,justifyContent:"space-between",marginBottom:4}}>
@@ -1952,6 +1642,75 @@ function MstrTab({ btcPrice, priceStr, livePrice, liveHistory }) {
           + "band lines stay apart."}</div>
       </div>
 
+      {/* WHAT IF \u00b7 THE CALCULATOR, SEEDED FROM THE SAME LIVE PRICES */}
+      <div style={{background:"#070f1f",border:"1px solid #0f2035",borderLeft:"4px solid #facc15",
+        borderRadius:"6px",padding:"16px 20px",marginTop:11}}>
+        <div style={{...ROW,justifyContent:"space-between",marginBottom:10}}>
+          <span style={HD}>WHAT IF</span>
+          <span style={{fontSize:10,color:GRY,letterSpacing:"0.06em"}}>
+            SEEDED WITH LIVE PRICES</span></div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(122px,1fr))",gap:"10px"}}>
+          {MS_FLD.map(([k, lab]) => (
+            <div key={k}>
+              <div style={{...LAB,marginBottom:4}}>{lab}</div>
+              <input value={f[k]} inputMode="decimal" placeholder={lab.toLowerCase()}
+                onChange={e => { touched.current[k] = true;
+                  setF(v => ({...v, [k]:e.target.value.replace(/[^0-9.\-]/g,"")})); }}
+                style={{...INP,width:"100%",flex:"1 1 auto",fontSize:13,padding:"6px 8px",
+                  color:k === "strc" ? msStrcCol(strcI) : INP.color}}/>
+              {k === "strc" && strcI != null &&
+                <div style={{...SH,marginTop:5}}>{"base " + msStrc(strcI).toFixed(4)}</div>}
+              {k === "btc" && liveBtc != null &&
+                <button style={{...GST,marginTop:5}}
+                  onClick={() => setF(v => ({...v, btc:String(Math.round(liveBtc))}))}>
+                  {"use live " + fmt(liveBtc)}</button>}
+              {k === "mstr" && qM &&
+                <button style={{...GST,marginTop:5}}
+                  onClick={() => setF(v => ({...v, mstr:qM.px.toFixed(2)}))}>
+                  {"use $" + qM.px.toFixed(2)}</button>}
+              {k === "mstx" && mstxImp != null &&
+                <div style={{...SH,marginTop:5}}>implied, 2x MSTR</div>}
+            </div>))}
+        </div>
+        <div style={{...ROW,gap:8,marginTop:14}}>
+          <span style={{...LAB,whiteSpace:"nowrap"}}>WHAT-IF SLOPE PER $2,500 OF BTC</span>
+          {MS_SL.map(([v, lab]) => (
+            <button key={v} onClick={() => setSlope(v)} style={{...GST,
+              textTransform:"none",letterSpacing:"0.02em",
+              background:slope === v ? "#0c2040" : "transparent",
+              border:"1px solid " + (slope === v ? "#1e5f8a" : "#162840"),
+              color:slope === v ? "#7dd3fc" : "#4a7a9b"}}>
+              {lab + (v === 0.025 ? " · your sheet" : "")}</button>))}
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(132px,1fr))",
+          gap:"10px",marginTop:14}}>
+          {cards.map(([h, v, sub, c]) => (
+            <div key={h} style={SC}>
+              <div style={{...LAB,marginBottom:6}}>{h}</div>
+              <div style={{...SV,color:c}}>{v}</div>
+              <div style={SH}>{sub}</div>
+            </div>))}
+        </div>
+        <div style={{fontSize:11,color:"#b0c4d8",lineHeight:1.5,marginTop:12}}>
+          {live ? "Holdings " + Math.round(live.held).toLocaleString() + " BTC over "
+            + live.sh.toFixed(3) + "M assumed diluted shares, live from strategy.com ("
+            + msWhen(live.ts) + "). "
+            : "Holdings and shares come from strategy.com when it answers, else from the config file. "}
+          Slope and thresholds come from data/mstr-config.json, which the gap monitor reads too.{" "}
+          <a href="https://github.com/Kaim222/btc-quantile-ladder/edit/main/data/mstr-config.json"
+            target="_blank" rel="noopener" style={{color:"inherit"}}>Edit it on GitHub</a> and both
+          update.</div>
+        <div style={FT}>{"Target rule: STRC-linked base, 0.90 at STRC 97.5 and up, sliding down, "
+          + "plus " + cfgSlope + " per $2,500 of BTC over $75,000."}</div>
+      </div>
+
+      {/* DETAILS \u00b7 THE EPISODES AND WHAT FOLLOWED THEM */}
+      <div style={{...TBL,padding:"10px 16px"}}>
+        <button onClick={() => setDet(v => !v)} style={{...GST,border:"none",padding:"2px 0",
+          color:"#7ab8d8",fontSize:11,letterSpacing:"0.1em",width:"100%",textAlign:"left"}}>
+          {(det ? "\u25be " : "\u25b8 ") + "DETAILS \u00b7 CHEAP EPISODES, WHAT FOLLOWED"}</button>
+      </div>
+      {det && (<>
       {/* CHEAP EPISODES */}
       <div style={TBL}>
         <div style={{...HD,marginBottom:10}}>{"CHEAP EPISODES · GAP UNDER −"
@@ -1973,95 +1732,26 @@ function MstrTab({ btcPrice, priceStr, livePrice, liveHistory }) {
           + "Days in episode: " + eps.map(e => e.days).join(", ") + "."}</div>
       </div>
 
-      {/* WHAT MOVES mNAV */}
-      <div style={{...TBL,display:"flex",gap:"14px",flexWrap:"wrap"}}>
-        <div style={{flex:"1 1 260px",minWidth:0}}>
-          <div style={{...HD,marginBottom:10}}>WHAT MOVES mNAV</div>
-          <div style={{overflowX:"auto"}}><div style={{display:"grid",
-            gridTemplateColumns:"1fr 62px 62px 62px",minWidth:"260px"}}>
-            {hdr(["","2Y","6M","3M"])}
-            {[["Per 1% BTC move", bB],["Per 1% QQQ move", bQ]].map(([lab, o], r) =>
-              [lab, msNum(nm(o["2y"])), msNum(nm(o["6m"])), msNum(nm(o["3m"]))]
-                .map((v, i) => cel(v, i, r, i ? "#22d3ee" : null)))}
-          </div></div>
-          <div style={FT}>mNAV's move for a 1% move in each, same day.</div>
-        </div>
-        <div style={{flex:"1 1 300px",minWidth:0}}>
-          <div style={{...HD,marginBottom:10}}>QQQ DAYS</div>
-          <div style={{overflowX:"auto"}}><div style={{display:"grid",
-            gridTemplateColumns:"1fr 48px 142px 118px",minWidth:"400px"}}>
-            {hdr(["QQQ DAY","DAYS","AVERAGE mNAV MOVE","DAYS mNAV ROSE"])}
-            {["red","flat","green"].map((k, r) => { const o = isObj(qd[k]) ? qd[k] : {};
-              return [k[0].toUpperCase() + k.slice(1),
-                nm(o.n) == null ? UNK : String(nm(o.n)), msPct(nm(o.mean), 2),
-                nm(o.up_share) == null ? UNK : nm(o.up_share).toFixed(0) + "%"]
-                .map((v, i) => cel(v, i, r,
-                  i === 2 ? (nm(o.mean) == null ? null : nm(o.mean) >= 0 ? GRN : RD) : null)); })}
-          </div></div>
-          <div style={FT}>Six months of days. Red is QQQ down over 0.5%, green up over 0.5%.</div>
-        </div>
-      </div>
+      {regR.length > 0 && <div style={TBL}>
+        <div style={{...HD,marginBottom:8}}>WHAT HAPPENED NEXT, BY BTC'S STATE</div>
+        <div style={{overflowX:"auto"}}><div style={{display:"grid",
+          gridTemplateColumns:"1fr repeat(5,minmax(66px,1fr))",minWidth:"520px"}}>
+          {hdr(["STATE","SAMPLE","MSTR 5D","BTC 5D","MSTR 10D","BTC 10D"])}
+          {regR.map((r, k) => [String(r.state || UNK),
+            (nm(r.days) == null ? UNK : nm(r.days) + "d")
+              + (nm(r.episodes) == null ? "" : " \u00b7 " + nm(r.episodes) + "ep"),
+            msPct(nm(r.mstr_5d)), msPct(nm(r.btc_5d)),
+            msPct(nm(r.mstr_10d)), msPct(nm(r.btc_10d))]
+            .map((v, i) => cel(v, i, k,
+              i === 2 ? msRet(nm(r.mstr_5d)) : i === 4 ? msRet(nm(r.mstr_10d)) : null)))}
+        </div></div>
+        {reg.read && <div style={{fontSize:12,color:"#8aaac8",lineHeight:1.6,marginTop:10}}>
+          {reg.read}</div>}
+        <div style={FT}>{"Window: " + (bt.window || UNK) + "."}</div>
+        <div style={FT}>Nothing in the daily data is statistically proven either way; the monitor's
+          log is the live test.</div>
+      </div>}
 
-      {/* BACKTEST */}
-      <div style={TBL}>
-        <div style={{...HD,marginBottom:8}}>BACKTEST, 9/16/2026</div>
-        <div style={{fontSize:13,color:"#b0c4d8",lineHeight:1.5}}>
-          {"Window: " + (bt.window || UNK) + "."}</div>
-        <div style={{overflowX:"auto",marginTop:10}}><div style={{display:"grid",
-          gridTemplateColumns:"1fr repeat(5,minmax(62px,1fr))",minWidth:"430px"}}>
-          {hdr(["DAYS CHEAP BY " + nTxt(chT) + "%","EPISODES","1 DAY","3 DAYS","5 DAYS",
-            "5-DAY UP RATE"])}
-          {[[(nm(cp.days) == null ? UNK : nm(cp.days) + " days"),
-            nm(cp.episodes) == null ? UNK : String(nm(cp.episodes)),
-            msPct(nm(cp.h1), 2), msPct(nm(cp.h3), 2), msPct(nm(cp.h5), 2),
-            nm(cp.hit5) == null ? UNK : nm(cp.hit5).toFixed(0) + "%"]]
-            .map((row, r) => row.map((v, i) => cel(v, i, r,
-              i === 2 ? msRet(nm(cp.h1)) : i === 3 ? msRet(nm(cp.h3))
-                : i === 4 ? msRet(nm(cp.h5)) : null)))}
-        </div></div>
-        <div style={FT}>{"Average MSTR return after a close " + nTxt(chT) + "% or more under "
-          + "projection. Up rate is the share higher five days on."}</div>
-        <div style={{overflowX:"auto",marginTop:12}}><div style={{display:"grid",
-          gridTemplateColumns:"1fr 120px",minWidth:"260px"}}>
-          {hdr(["TARGET mNAV PER $2,500 OF BTC","MSTR 5-DAY"])}
-          {["0","0.0125","0.025","0.05"].map((k, r) =>
-            [k + (k === "0.025" ? " · your sheet" : k === "0.0125" ? " · measured" : ""),
-              msPct(nm(sw[k]), 2)]
-              .map((v, i) => cel(v, i, r, i ? msRet(nm(sw[k])) : null)))}
-        </div></div>
-        {regR.length > 0 && <>
-          <div style={{...HD,marginTop:16,marginBottom:8}}>WHAT HAPPENED NEXT, BY BTC'S STATE</div>
-          <div style={{overflowX:"auto"}}><div style={{display:"grid",
-            gridTemplateColumns:"1fr repeat(5,minmax(66px,1fr))",minWidth:"520px"}}>
-            {hdr(["STATE","SAMPLE","MSTR 5D","BTC 5D","MSTR 10D","BTC 10D"])}
-            {regR.map((r, k) => [String(r.state || UNK),
-              (nm(r.days) == null ? UNK : nm(r.days) + "d")
-                + (nm(r.episodes) == null ? "" : " · " + nm(r.episodes) + "ep"),
-              msPct(nm(r.mstr_5d)), msPct(nm(r.btc_5d)),
-              msPct(nm(r.mstr_10d)), msPct(nm(r.btc_10d))]
-              .map((v, i) => cel(v, i, k,
-                i === 2 ? msRet(nm(r.mstr_5d)) : i === 4 ? msRet(nm(r.mstr_10d)) : null)))}
-          </div></div>
-          {reg.note && <div style={FT}>{String(reg.note) + "."}</div>}
-          {reg.read && <div style={{fontSize:12,color:"#8aaac8",lineHeight:1.6,marginTop:10}}>
-            {reg.read}</div>}
-        </>}
-        <div style={{fontSize:13,color:"#b0c4d8",lineHeight:1.5,marginTop:12}}>
-          {"MSTX: " + (bt.mstx || UNK) + "."}</div>
-        <div style={{fontSize:13,color:"#e2e8f0",lineHeight:1.5,marginTop:6}}>
-          {"Verdict: " + (bt.verdict || UNK) + "."}</div>
-        {bt.note && <div style={FT}>{String(bt.note).replace(/\.?$/, ".")}</div>}
-        <div style={{fontSize:12,color:"#8aaac8",lineHeight:1.6,marginTop:12,borderTop:SEP,
-          paddingTop:10}}>
-          With today's calibration the projection only tracks MSTR from about July 2026. Before that
-          the fair mNAV level was higher, so the model is a fair-value anchor for the current
-          structure, not a proven signal. {eps.length ? "The " + eps.length + " cheap episodes in "
-            + "the file recovered " + eps.map(e => msPct(nm(e.mstr_10d))).join(" and ")
-            + " in MSTR over ten days. " : ""}Over the whole window the gap closed more through BTC
-          moving than through MSTR moving. Hourly bars (1,978 since STRC listed) show the same gaps as
-          the daily closes and nothing that closes within the day: the intraday view gives a
-          better entry on a signal the daily data already had, and the hold is days, not hours.</div>
-      </div>
       </>)}
     </div>
   );

@@ -3,9 +3,9 @@
     "phases": [
       {
         "id": 1,
-        "dates": "to Fri Sep 18 (settlement) or Thu Sep 17 (switch)",
+        "dates": "to Thu Sep 17 (switch) or Fri Sep 18 (settlement)",
         "structure": "407 x Sep 18 12/12.50 call verticals at 0.29 ($11,803), plus 60 x Sep 18 15/16 at 0.10 (near zero)",
-        "next_action": "Thursday 9/17: if the vertical can be sold at 0.38 or better (about $16,000; needs MSTX near 13.25 in the morning or 13 late), buy 250 x Oct 2 14 / Sep 25 15 at 0.50 to 0.52 and 100 x Oct 2 15 / Sep 25 16 at 0.35 to 0.38, then nothing until the 25th. Under 13, hold the vertical to Friday's close. Never sell it under 0.30 into a dip.",
+        "next_action": "Thursday 9/17, MSTX 13.40 after hours: sell the 407 verticals at 0.42 or better (post 0.44 at the open, work it 15 minutes, never under 0.40), then one order, 250 x Oct 2 14 / Sep 25 15.50 at 0.69 (your fills: 1.15 and 0.46). If it is quoted 0.75 or more, take the 14/15 at 0.62 instead. Then nothing until the 25th.",
         "roll_rules": "none",
         "status": "on",
         "panel_title": "PHASE 1 · WHAT IS ON · SETTLES FRI SEP 18",
@@ -134,9 +134,9 @@
         "units_market": 55
       },
       {
-        "route": "Thursday switch: 250 × 14/15 + 100 × 15/16 → 9/25 → Jan/Dec → LEAPS 12/19",
-        "units_thesis": 140,
-        "units_market": 67
+        "route": "Thursday switch: 250 × Oct 2 14 / Sep 25 15.50 at 0.69 → 9/25 → Jan/Dec (strike map) → LEAPS 12/19",
+        "units_thesis": 143,
+        "units_market": 68
       },
       {
         "route": "Vertical settles → LEAPS straight from the $20,350 on 9/18 (count fixed once bought)",
@@ -144,7 +144,7 @@
         "units_market": 102
       }
     ],
-    "routes_note": "Leif model, 2026-09-16 close. The vertical route is conditional on a 12.50-or-better Friday close (about 60% on the chain); a sub-12 close is zero and ends Phases 2 and 3. Your view: December near 1.9x the Phase 1 settlement close, and for the switch route the 25th's odds shifted one dollar up. Market: the chain's own for both. LEAPS priced off the 33/60 quotes at the December close.",
+    "routes_note": "Leif model, 2026-09-16 late. The switch route's odds: your view = the 25th shifted one dollar up and December near 1.9x the close (a 14.50 close is 164 on your view, 78 on the market's); market = the chain's own.",
     "week_of_2026_09_14": {
       "date": "2026-09-16",
       "text": "Week of 9/14 in one line: 656 x 17/17.50 sold 9/14 into the pair (175 x Oct 2 14 / Sep 25 15 + 150 x Oct 9 16 / Sep 25 17, $25,700), hedged and reshaped through 9/15 into 321 x Oct 2 15 / Sep 25 16 + 55 x 16.50/18, then 204 x Sep 25 13.50 / Sep 18 14.50 + 60 x Sep 18 15/16 ($15,084), then on 9/16 (FOMC hike day, MSTX 12.35 to 13.02) 407 x Sep 18 12/12.50 call verticals at 0.29 ($11,803). The round trips cost about $9,700 of basis; the position now fits the $13 tape.",

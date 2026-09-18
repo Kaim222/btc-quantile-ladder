@@ -158,22 +158,22 @@
   "unit_price_anchor_mstx": 14,
   "routes": [
    {
-    "route": "Vertical settles Fri 9/18 at 12.50+ ($20,350) → Jan/Dec (strike map) → LEAPS 12/19",
-    "units_thesis": 114,
-    "units_market": 55
+    "route": "Double calendar to Fri 10/2 → Jan/Dec (strike map) → LEAPS 12/19",
+    "units_thesis": 49,
+    "units_market": 52
    },
    {
-    "route": "Thursday switch: 250 × Oct 2 14 / Sep 25 15.50 at 0.69 → 9/25 → Jan/Dec (strike map) → LEAPS 12/19",
-    "units_thesis": 143,
-    "units_market": 68
+    "route": "Double calendar to Fri 10/2 → LEAPS straight on 10/5 (count fixed once bought)",
+    "units_thesis": 51,
+    "units_market": 52
    },
    {
-    "route": "Vertical settles → LEAPS straight from the $20,350 on 9/18 (count fixed once bought)",
-    "units_thesis": 102,
-    "units_market": 102
+    "route": "Close today and buy LEAPS now, after five cents of slippage on 450 calendars (count fixed once bought)",
+    "units_thesis": 57,
+    "units_market": 57
    }
   ],
-  "routes_note": "Leif model, 2026-09-16 late. The switch route's odds: your view = the 25th shifted one dollar up and December near 1.9x the close (a 14.50 close is 164 on your view, 78 on the market's); market = the chain's own.",
+  "routes_note": "Leif model, 2026-09-18 13:10 ET, MSTX 18.00, no cash carried. Phase 1 marked at 100% vol at the 10/2 close, the site's basis; at 118% the first two routes read 65 / 69 and 68 / 69, and closing today reads 57 to 75 depending on the vol the calendars are sold at. Your view = the 10/2 and 12/18 odds shifted one dollar up, and it LOWERS the count here because Phase 1 pays for MSTX sitting between 16 and 18. 200 units needs a 16 to 18 close on 10/2 and a December close of 26 to 30. The unit formula may read low: Yahoo's prints on 9/18 put the unit near 3.50 with MSTX at 16.97 against 2.99 from the formula; if that holds every count is about 15% lower. Re-anchor from his grid.",
   "week_of_2026_09_14": {
    "date": "2026-09-16",
    "text": "Week of 9/14 in one line: 656 x 17/17.50 sold 9/14 into the pair (175 x Oct 2 14 / Sep 25 15 + 150 x Oct 9 16 / Sep 25 17, $25,700), hedged and reshaped through 9/15 into 321 x Oct 2 15 / Sep 25 16 + 55 x 16.50/18, then 204 x Sep 25 13.50 / Sep 18 14.50 + 60 x Sep 18 15/16 ($15,084), then on 9/16 (FOMC hike day, MSTX 12.35 to 13.02) 407 x Sep 18 12/12.50 call verticals at 0.29 ($11,803). The round trips cost about $9,700 of basis; the position now fits the $13 tape.",

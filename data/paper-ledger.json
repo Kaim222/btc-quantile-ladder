@@ -4,10 +4,10 @@
    {
     "id": 1,
     "dates": "2026-09-15 to 2026-10-02",
-    "structure": "Double calendar. 275 x long Oct 9 $16 / short Oct 2 $16 at a net 0.21 ($5,775) and 175 x long Oct 16 $18 / short Oct 2 $18 at 0.64 ($11,200), plus about $1,000 cash. Total in: $17,975.",
-    "next_action": "Hold both calendars to Friday 10/2, with one checkpoint on Friday 9/25: MSTX outside 15 to 19, close; inside, hold the final week. The spare $1,000 is tied up today as collateral on a Sep 18 17/17.50 call credit spread.",
+    "structure": "Double calendar. 275 x long Oct 9 $16 / short Oct 2 $16 at a net 0.21 ($5,775) and 175 x long Oct 16 $18 / short Oct 2 $18 at 0.64 ($11,200). No cash. Total in: $17,975.",
+    "next_action": "Hold both calendars. Tripwire until 9/25: a daily close above 20 or under 15 closes it the next morning. Checkpoint Fri 9/25: outside 15 to 19 close, inside hold the final week. Decision date Fri 10/2.",
     "roll_rules": "none",
-    "status": "LIVE 9/18. 275 x Oct 9 16 / Oct 2 16 and 175 x Oct 16 18 / Oct 2 18, about $1,000 cash. Holds 100 or more LEAPS from a 15.50 to an 18 close on 10/2.",
+    "status": "LIVE. 275 x Oct 9 16 / Oct 2 16 and 175 x Oct 16 18 / Oct 2 18. MSTX closed 9/18 at 18.73, on the upper strike.",
     "panel_title": "PHASE 1 · WHAT IS ON · SETTLES FRI OCT 2",
     "spreads": [
      {
@@ -26,7 +26,7 @@
      }
     ],
     "note": "9/18: the $15 longs were rolled up to the $16s for an $11,000 credit in the first six minutes, zero to five cents under the model. The $18 calendar went on at 09:52 at 0.64 with MSTX near 16.70, BTC through 80,000 and the gap at +0.2% to +1.3%, which was his entry rule. The model read 0.64 at that price, so the fill was at fair. Neither calendar can go negative; the floor is the cash.",
-    "positions": "Marked at MSTX 16.70 on 9/18 09:54 ET the two calendars model at $20,500 to $26,100 (118% to 150% vol), so the account is roughly $21,500 to $27,100 against $17,975 in. Break-evens at the 10/2 close are about 14.93 and 19.59. The plateau runs from 15.50 to 18.",
+    "positions": "At the 9/18 close (MSTX 18.73) the two calendars model at about $20,600 to $26,700 (118% to 150% vol) against $17,975 in. Break-evens at the 10/2 close are about 14.93 and 19.59. The plateau runs from 15.50 to 18.",
     "units_by_price": [
      {
       "mstx": 13,
@@ -107,13 +107,13 @@
       "leaps": 18
      }
     ],
-    "units_note": "At the Oct 2 close, low-vol column (118% times 0.85). Both shorts settle intrinsic; the Oct 9 $16 long is marked with 7 days left and the Oct 16 $18 long with 14. About $1,000 cash included. Peaks at the 16 and 18 strikes, 100 or more LEAPS between 15.50 and 18, break-evens near 14.93 and 19.59.",
+    "units_note": "At the Oct 2 close, low-vol column. Both shorts settle intrinsic; the Oct 9 $16 long is marked with 7 days left and the Oct 16 $18 long with 14. The unit price on the page comes from the real option prints (data/leaps-cost.json), not the old hand formula, which read about 25% low.",
     "next_action_steps": [
-     "Hold both calendars. The decision date is Friday 10/2.",
-     "On 10/2 close both as spread orders in the afternoon and work the limits. Close the shorts before the bell if either strike is in play, so nothing is assigned over the weekend.",
-     "10/5: Phase 2 off the strike map, 70% of the sleeve. Refill the lag and swing sleeves to 10% each first."
+     "Hold both calendars. No reshapes: eight alternatives were tested on 9/18 and holding beat every one.",
+     "Tripwire: a daily close above 20 or under 15 closes the position the next morning. Checkpoint Fri 9/25: outside 15 to 19, close; inside, hold the final week.",
+     "On 10/2 close both as spread orders in the afternoon and work the limits. Close the shorts before the bell if either strike is in play."
     ],
-    "next_action_detail": "BTC daily close under 75k moves everything to Phase 2 at the next open.",
+    "next_action_detail": "Proposed, not yet decided: skip Phase 2 and convert everything to LEAPS units on the first day the gap is at or under zero, or on 10/2 at the latest. Never while Rich is on.",
     "dates_note": "9/18: long rolled up to the Oct 9 $16, then the Oct 16 / Oct 2 $18 calendar added. Decision date unchanged at 10/2."
    },
    {
@@ -154,7 +154,7 @@
     ]
    }
   ],
-  "objective": "LEAPS units, not dollars: the count of MSTX Dec 2028 33 / Jan 2028 60 units the account can buy after the trade settles, at that day's unit price, about 2.25 at MSTX 14 plus 0.25 per 1.00 of MSTX",
+  "objective": "LEAPS units, not dollars: the count of MSTX Dec 2028 $33 / Jan 2028 $60 units the account can buy after the trade settles, at that day's unit price. The unit price is estimated from the real option prints and refreshed daily.",
   "unit_price_anchor_mstx": 14,
   "routes": [
    {
@@ -368,6 +368,15 @@
    "structure": "Sold about 23 x Sep 18 $17 / $17.50 call credit spreads for about $150, against the spare $1,000, near 10:00 ET with MSTX at 16.50 and the gap near +4%. Count inferred from the $1,000 at risk; not given.",
    "result": "open, expires today",
    "note": "At 11:58 ET MSTX 17.72, gap +4.9%, both strikes in the money; model value of the spread 0.31 to 0.36 against 0.065 taken in. A +4% gap is not a signal: the only measured fade is Rich at +8%, and that is a five-day effect, not a four-hour one. Must be closed before the bell if MSTX is near 17 to 17.50, or the short 17s assign into about 2,300 short shares over the weekend."
+  },
+  {
+   "date": "2026-09-18",
+   "mode": "live",
+   "ticker": "MSTX",
+   "rule": "none: the same-day credit spread, settled",
+   "structure": "About 23 x Sep 18 $17 / $17.50 call credit spreads, sold for about $150 against the spare $1,000.",
+   "result": "at or near max loss, about -$1,000",
+   "note": "MSTX closed 18.73 with both strikes in the money. Sold at 16.50 on a +4% gap, which is not a signal. Logged from the closing price; he has not confirmed the exit fill."
   }
  ],
  "paper_calls": [

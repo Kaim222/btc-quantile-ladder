@@ -1,0 +1,43 @@
+name: Refresh site data
+
+# Keeps the Playbook inputs and the LEAPS cost chart current without anyone running a script by hand.
+on:
+  schedule:
+    - cron: '25 21 * * 1-5'   # weekdays after the US close
+    - cron: '10 13 * * 1-5'   # weekdays before the US open
+  workflow_dispatch:
+
+concurrency:
+  group: refresh-site-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install
+        run: pip install -q yfinance==1.7.0 pandas numpy
+      - name: LEAPS cost history
+        continue-on-error: true
+        run: python tools/leaps_cost.py
+      - name: Playbook inputs
+        continue-on-error: true
+        run: python tools/playbook_refresh.py
+      - name: Commit
+        run: |
+          git config user.name  "ladder-refresh"
+          git config user.email "refresh@noreply"
+          git add data/leaps-cost.json data/playbook.json data/iv-ledger.json
+          if git diff --staged --quiet; then echo "nothing changed"; exit 0; fi
+          git commit -q -m "data refresh: $(date -u +%Y-%m-%dT%H:%MZ)"
+          for i in 1 2 3; do
+            if git push -q origin HEAD:main; then exit 0; fi
+            git pull -q --rebase origin main
+          done
+          echo "could not push after 3 tries"; exit 1

@@ -371,6 +371,30 @@
         "iv": 0.36627,
         "source": "alphaquery_iv_mean_30d"
       }
+    },
+    "2026-09-14": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.39061,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-15": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.393386,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-16": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.391548,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-17": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.33074,
+        "source": "alphaquery_iv_mean_30d"
+      }
     }
   },
   "MSTR": {
@@ -765,6 +789,40 @@
         "strike": 130.0,
         "spot": 130.970001
       }
+    },
+    "2026-09-14": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.722608,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-15": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.714443,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-16": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.682966,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-17": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.652937,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-18": {
+      "yahoo_option_chain": {
+        "iv": 0.685001,
+        "source": "yahoo_option_chain",
+        "expiry": "2026-10-16",
+        "dte": 28,
+        "strike": 155.0,
+        "spot": 153.919998
+      }
     }
   },
   "MSTX": {
@@ -1137,6 +1195,30 @@
     "2026-09-11": {
       "alphaquery_iv_mean_30d": {
         "iv": 1.369022,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-14": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.430598,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-15": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.37869,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-16": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.311933,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-17": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.291132,
         "source": "alphaquery_iv_mean_30d"
       }
     }

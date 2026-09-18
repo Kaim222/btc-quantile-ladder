@@ -1,0 +1,305 @@
+{
+ "sections": [
+  {
+   "name": "MSTX NOW — lag verdict headline (BUY / NO LAG / WARMING UP / STALE / OFF HOURS)",
+   "lines": "1836-1857",
+   "shows": "One giant word plus a sentence: whether MSTX just fell 3%+ against its own last hour while BTC held, and what the backtest says happened next.",
+   "source": "Derived from mstr_state.json + mstr_ledger.json (btc-monitor repo, MS_RAW line 1383) and evidence.lag rows in data/mstr-model.json.",
+   "verdict": "keep",
+   "reason": "This is the single thing on the tab Alex acts on intraday. It is the only section that earns a full-width headline.",
+   "duplicates": "",
+   "stale_or_hardcoded": "The five non-firing states (NO LAG / WARMING UP / STALE / OFF HOURS x2) are five different sentences for 'nothing to do'. Collapse to two."
+  },
+  {
+   "name": "MSTX NOW — day cards row (MSTX VS LAST HOUR · MSTR · MSTX · MONITOR)",
+   "lines": "1671-1675 (data), 1852-1857 (render)",
+   "shows": "Four number tiles: the lag in MSTX terms, MSTR's live quote, the implied MSTX price, and the monitor's last run time.",
+   "source": "api.strategy.com/btc/mstrKpiData (MSTR); MSTX is computed, not fetched (mstxImp = last close x 2x MSTR's move); monitor state for the rest.",
+   "verdict": "fix",
+   "reason": "Two of four are dead weight. Keep MSTX price and MONITOR heartbeat; the lag number is already in the headline sentence above it, and MSTR's raw price is an input he never trades.",
+   "duplicates": "MSTX VS LAST HOUR repeats dv.why verbatim ('MSTX fell x% vs its last hour'). MONITOR repeats monLine at line 1900.",
+   "stale_or_hardcoded": "The MSTX card is blank right now. mstr-model.json is as_of 2026-09-16, today is 2026-09-18, so mStale (line 1539) is true, mstxImp is null, and the card reads '—  model file is stale'."
+  },
+  {
+   "name": "MSTX NOW — SWING / LEVEL verdict (CHEAP / FAIR / RICH)",
+   "lines": "1678-1683 (data), 1858-1866 (render)",
+   "shows": "The day-level read: MSTX's gap to projected fair value, with the cheap and rich lines stated.",
+   "source": "Computed live from strategy.com MSTR + STRC quotes, live BTC, and cheap_threshold / rich_threshold in data/mstr-config.json.",
+   "verdict": "keep",
+   "reason": "This is item (2) of what he uses the tab for. Thresholds render correctly: -6% MSTX cheap, +8% MSTX rich, matching the config at 2x the MSTR terms.",
+   "duplicates": "",
+   "stale_or_hardcoded": ""
+  },
+  {
+   "name": "MSTX NOW — level cards row (PROJECTED · GAP · mNAV · BTC)",
+   "lines": "1697-1703 (data), 1867-1875 (render)",
+   "shows": "Projected MSTR price with projected MSTX underneath, the gap, current vs target mNAV, and BTC vs its 50-day.",
+   "source": "Computed from the live quotes and cfgSlope 0.025; ma50 from the app's own liveHistory, falling back to the model series then the monitor's regime string.",
+   "verdict": "fix",
+   "reason": "Cut the mNAV card. mNAV and target mNAV are the intermediate step that produces PROJECTED; he trades the gap, not the ratio. Promote projected MSTX from a subtitle to its own tile, since that is the number he actually wants.",
+   "duplicates": "All four are recomputed as six cards in WHAT IF at line 2056, which seeds from the same live prices, so on load the two grids show the same numbers.",
+   "stale_or_hardcoded": "PROJECTED's subtitle is supposed to read 'MSTX $x' but falls back to the generic 'fair value now' whenever the model file is stale, which is the state today."
+  },
+  {
+   "name": "MSTX NOW — closedLine and asOfTxt footnotes",
+   "lines": "1690-1696 (data), 1876-1878 (render)",
+   "shows": "After the close: how far BTC moved since the last model close, and how many gap points $1,000 of BTC is worth. Plus up to three 'this quote is not live' disclaimers.",
+   "source": "Computed; liveUpdatedAt prop and the model series' last row.",
+   "verdict": "cut",
+   "reason": "A sensitivity coefficient ('each $1,000 of BTC moves the gap 2.4%') is reference math, not a decision. The three staleness disclaimers are better expressed as one grey timestamp under the affected card.",
+   "duplicates": "asOfTxt's 'BTC from the model file close' overlaps the BTC card's own subtitle.",
+   "stale_or_hardcoded": ""
+  },
+  {
+   "name": "THIS WEEK — next 8-K line",
+   "lines": "1879-1885",
+   "shows": "'Next 8-K: Mon <date>, if they bought last week.'",
+   "source": "Hardcoded template string; the date is computed by msMonday(now).",
+   "verdict": "cut",
+   "reason": "It is a calendar fact that is always true and never actionable. It tells him nothing he did not know, every single day.",
+   "duplicates": "",
+   "stale_or_hardcoded": "The whole sentence is hardcoded JSX. The conditional 'if they bought last week' means it is wrong roughly half the weeks and the site cannot tell which."
+  },
+  {
+   "name": "THIS WEEK — five-day gap chip row",
+   "lines": "1705 (data), 1886-1895 (render)",
+   "shows": "The last five daily closes' gap in MSTX terms as a chip strip, cut to three on narrow screens.",
+   "source": "data/mstr-model.json series tail.",
+   "verdict": "merge",
+   "reason": "Useful trend context but it does not deserve its own card with its own header. Fold it under the gap chart as that chart's last-five-days label.",
+   "duplicates": "The same five points are the right-hand tip of the gap chart at line 1991.",
+   "stale_or_hardcoded": "Ends 2026-09-16, so on a Friday it shows Wednesday as the newest value with no indication the file is two days behind."
+  },
+  {
+   "name": "SHORT-TERM LOG — monLine header strip",
+   "lines": "1717-1722 (data), 1898-1901 (render)",
+   "shows": "A grey right-aligned strip: 'AT <time> · GAP x% MSTX · LAG y% MSTX'.",
+   "source": "mstr_state.json from the btc-monitor repo.",
+   "verdict": "cut",
+   "reason": "Three numbers, all three already on screen above in larger type.",
+   "duplicates": "AT duplicates the MONITOR card; GAP duplicates the GAP card; LAG duplicates the MSTX VS LAST HOUR card and the headline sentence. A triple duplicate in one 10-word strip.",
+   "stale_or_hardcoded": ""
+  },
+  {
+   "name": "SHORT-TERM LOG — 'WHEN IT FIRES' four-row threshold list",
+   "lines": "1723-1730 (data), 1902-1913 (render)",
+   "shows": "lag / watch / cheap / rich, each with its MSTR and MSTX line and its cadence.",
+   "source": "Computed from data/mstr-config.json thresholds. Values are correct: lag -3.0% MSTX, watch -2.0% MSTX, cheap -6% MSTX, rich +8% MSTX.",
+   "verdict": "merge",
+   "reason": "Four rows x two numbers each to say what the two verdict blocks above already announce. Compress to one line: 'Fires at -3.0% MSTX (lag), -6% (cheap), +8% (rich). Watch at -2.0% logs without a push.'",
+   "duplicates": "The lag line repeats dv.why's 'Fires at -3.0%'; cheap and rich repeat vd.why's 'Cheap -6%, rich +8%'. Then tvLine immediately below repeats the lag line a third time.",
+   "stale_or_hardcoded": ""
+  },
+  {
+   "name": "SHORT-TERM LOG — tvLine rules paragraph",
+   "lines": "1731-1737 (data), 1914-1915 (render)",
+   "shows": "A grey paragraph: the regime gate, the lag line and whether it reads at the bar low, both slopes, the BTC hour-move floor, and that watch rows send no push.",
+   "source": "data/mstr-config.json fields, read directly.",
+   "verdict": "fix",
+   "reason": "This is the one line on the tab that tells him when he gets a ping, and its first clause is wrong. Fix the Rich clause, drop the slope and hour-floor detail into DETAILS, keep one sentence.",
+   "duplicates": "Restates the lag threshold already given twice above.",
+   "stale_or_hardcoded": "It claims 'Rich unless below [the 50-day]'. The config sets rich_gate false as of 9/17 and the monitor honors that (mstr_gap.py:111, 'Rich fires in either regime'). index.html never reads rich_gate at all, so the site documents a gate that was removed."
+  },
+  {
+   "name": "SHORT-TERM LOG — ten-column alert ledger",
+   "lines": "1917-1935",
+   "shows": "The last 20 monitor events: when, kind, MSTX, projected MSTX, gap MSTX, lag MSTX, MSTX at 30 and 60 min, and MSTR-vs-BTC at 30 and 60 min.",
+   "source": "mstr_ledger.json from the btc-monitor repo.",
+   "verdict": "fix",
+   "reason": "This is item (2) of what he uses the tab for and it must stay, but ten columns behind a 920px horizontal scroll is unreadable on a phone. Cut to five: when, kind, lag MSTX, 60-min MSTX, 60-min vs BTC. The 30-minute pair and the two price columns are for a post-mortem, not a glance.",
+   "duplicates": "PROJ MSTX and GAP MSTX repeat the PROJECTED and GAP cards for the moment the alert fired.",
+   "stale_or_hardcoded": "Unlike every other table on the tab, this one has no narrow-screen variant, so on his phone it is the only section that forces a sideways scroll."
+  },
+  {
+   "name": "SHORT-TERM LOG — scored tally footer",
+   "lines": "1710-1716 (data), 1936 (render)",
+   "shows": "'N lag alerts scored · X% beat BTC at 60 minutes · mean +y%'.",
+   "source": "Computed over scored rows in mstr_ledger.json.",
+   "verdict": "keep",
+   "reason": "One line, and it is the live evidence that the signal works. This is the honest answer to 'I don't even know if it works'.",
+   "duplicates": "",
+   "stale_or_hardcoded": ""
+  },
+  {
+   "name": "PROJECTED VS ACTUAL — MSTR price vs projection chart",
+   "lines": "1938-1990",
+   "shows": "285 days of MSTR (solid amber) against projected fair value (dashed cyan), with cheap episodes shaded green and a crosshair readout.",
+   "source": "data/mstr-model.json series.",
+   "verdict": "cut",
+   "reason": "Two lines that track each other within a few percent for 285 days. The information is the distance between them, which is exactly what the gap chart below plots directly and legibly. Keeping both is paying twice for one fact.",
+   "duplicates": "It is the gap chart's inputs. The green episode shading duplicates the CHEAP EPISODES table.",
+   "stale_or_hardcoded": "Series ends 2026-09-16; the chart gives no visual cue that the right edge is two days old."
+  },
+  {
+   "name": "PROJECTED VS ACTUAL — gap sub-chart with alert lines",
+   "lines": "1991-2010",
+   "shows": "The gap as a percent of MSTR over 285 days, square-root scaled near zero, with dashed cheap and rich alert lines and floating labels.",
+   "source": "data/mstr-model.json series gap field; thresholds from mstr-config.json.",
+   "verdict": "keep",
+   "reason": "The one chart worth having: it shows where he sits between the two lines that actually fire. Promote it to a top-level section on its own.",
+   "duplicates": "",
+   "stale_or_hardcoded": "Axis and labels are in MSTR terms while every card and the ledger are in MSTX terms, so the dashed lines read -4%/+4% here and -6%/+8% everywhere else. Convert the chart to MSTX terms."
+  },
+  {
+   "name": "Chart footer ('285 days since Jul 2025 · tap for a day · scale is stretched')",
+   "lines": "2011-2013",
+   "shows": "Chart provenance and an interaction hint.",
+   "source": "Computed from the series length.",
+   "verdict": "merge",
+   "reason": "Fold the one useful clause (the scale is stretched near zero) into the gap chart's own label; drop the rest.",
+   "duplicates": "'285 days' also appears in the EVIDENCE level header and again in the regime table's window footer.",
+   "stale_or_hardcoded": ""
+  },
+  {
+   "name": "WHAT IF — six input boxes (BTC / MSTR / MSTX / STRC / BTC HELD / SHARES)",
+   "lines": "2021-2043",
+   "shows": "Editable fields seeded from live prices, with 'use live' shortcut buttons and the STRC tier base under the STRC box.",
+   "source": "Seeded from the live feeds and mstr-config.json / strategy.com holdings; then whatever he types.",
+   "verdict": "fix",
+   "reason": "Keep the calculator, cut it to four boxes. BTC HELD and SHARES come from strategy.com and he has no reason to hand-edit them; they exist only to feed BTC PER SHARE, a card that should also go.",
+   "duplicates": "",
+   "stale_or_hardcoded": "The MSTX box seeds from the 2026-09-16 close (12.95) whenever the model file is stale, which is now, so the calculator starts from a two-day-old MSTX price with no warning."
+  },
+  {
+   "name": "WHAT IF — slope toggle and 'reset to live' buttons",
+   "lines": "2044-2055",
+   "shows": "Two buttons switching the what-if slope between 0.025 (projection config) and 0.0125 (lag config), plus a reset.",
+   "source": "data/mstr-config.json btc_slope_per_2500 and lag_slope.",
+   "verdict": "cut",
+   "reason": "The two slopes do different jobs. The config note says so explicitly: 0.0125 is a minute-scale deviation parameter, not a pricing slope. Offering it as a projection slope invites a calculation that means nothing. Keep 'reset to live', drop the toggle and the slope state it drives.",
+   "duplicates": "",
+   "stale_or_hardcoded": ""
+  },
+  {
+   "name": "WHAT IF — six result cards (BTC PER SHARE · mNAV · TARGET mNAV · PROJECTED MSTR · GAP · PROJECTED MSTX)",
+   "lines": "1826-1833 (data), 2056-2064 (render)",
+   "shows": "The full projection chain recomputed from the boxes.",
+   "source": "Computed from the input boxes and the what-if slope.",
+   "verdict": "fix",
+   "reason": "Cut to three: PROJECTED MSTX, GAP, and the verdict word. BTC PER SHARE, mNAV and TARGET mNAV are the plumbing; he asks 'where does MSTX have to be', not 'what is the share's BTC backing'.",
+   "duplicates": "All six restate the MSTX NOW level cards while the boxes hold their seeded live values, which is their state on every page load. This is the biggest single redundancy on the tab.",
+   "stale_or_hardcoded": "The GAP card's subtitle appends gapCap() ('inside the band' / 'past the cheap line'), which is the same judgment the CHEAP/FAIR/RICH word already made higher up."
+  },
+  {
+   "name": "WHAT IF — holdings source line and config link",
+   "lines": "2065-2076",
+   "shows": "'845,050 BTC over 450.112M shares, strategy.com, 7:59 PM' plus an 'edit on GitHub' link to mstr-config.json.",
+   "source": "api.strategy.com/btc/bitcoinKpis; link is hardcoded to the repo.",
+   "verdict": "merge",
+   "reason": "Keep the GitHub link, it is the only way he changes a threshold from his phone. Compress the holdings sentence to a grey timestamp, or drop it with the two holdings input boxes.",
+   "duplicates": "",
+   "stale_or_hardcoded": ""
+  },
+  {
+   "name": "DETAILS disclosure toggle",
+   "lines": "2078-2083",
+   "shows": "A collapse control, remembered in localStorage, hiding everything below.",
+   "source": "useLocal('bql_mstr_details').",
+   "verdict": "keep",
+   "reason": "Correct instinct, wrong contents. Keep the toggle and put much less behind it.",
+   "duplicates": "",
+   "stale_or_hardcoded": ""
+  },
+  {
+   "name": "DETAILS / EVIDENCE — lag table, level lines, slope sweep, verdict lines",
+   "lines": "2085-2123",
+   "shows": "Four rows of measured lag drops with signal counts and 30/60-minute MSTR returns; three prose lines on the daily level test; a slope sweep line; and four amber verdict lines.",
+   "source": "data/mstr-model.json evidence.lag.rows, evidence.level, backtest.slope_sweep_h5, evidence.verdict_lines.",
+   "verdict": "merge",
+   "reason": "Keep the four-row lag table, it is the only evidence anyone would check. Cut the level lines, the slope sweep and the verdict prose down to the two verdict_lines that matter. This is the single block DETAILS should contain.",
+   "duplicates": "The -3.0% row's +0.83% is quoted in the headline's evTP sentence AND in verdict_lines AND in the table. Three places for one number. lvlLines' '+5.9% above, -4.3% below' is exactly rows 1 and 2 of the regime table at 2153.",
+   "stale_or_hardcoded": "Line 2111 renders lvl.count_rule, a key that does not exist in mstr-model.json, so that branch is permanently dead."
+  },
+  {
+   "name": "DETAILS / CHEAP EPISODES — eleven-column table",
+   "lines": "2124-2152",
+   "shows": "Four historical episodes where the gap went past -4% MSTR, with worst date, gap, MSTR, projection, and 5-day and 10-day follow-through for MSTR, BTC and the gap.",
+   "source": "data/mstr-model.json episodes (4 rows).",
+   "verdict": "cut",
+   "reason": "Four rows of eleven columns, none newer than 2026-09-10, describing a level test he does not trade. It is reference material he reads once. The one usable conclusion already exists as prose in the regime read.",
+   "duplicates": "The same four episodes are the green shading on the price chart and the same 5D/10D numbers appear in the regime table and in lvlLines.",
+   "stale_or_hardcoded": "Newest episode ended 2026-09-10. The footnote 'MSTX is 2x MSTR daily minus about 0.26% a day' is hardcoded prose duplicating backtest.mstx, a JSON field the tab never renders."
+  },
+  {
+   "name": "DETAILS / WHAT HAPPENED NEXT, BY BTC'S STATE",
+   "lines": "2153-2177",
+   "shows": "Four rows splitting cheap days by BTC's 50-day regime, with 5-day and 10-day MSTR and BTC follow-through, plus two read lines.",
+   "source": "data/mstr-model.json regime.rows and regime.read_lines.",
+   "verdict": "merge",
+   "reason": "The two read_lines are the whole payload and they justify the regime gate, which is worth stating once. The six-column table behind them adds nothing he would act on. Keep the two sentences inside EVIDENCE, drop the table.",
+   "duplicates": "Rows 1 and 2 are the same +5.9% / -4.3% pair printed in lvlLines twelve lines earlier. The 'all' row's 62 days duplicates sheet_slope.days.",
+   "stale_or_hardcoded": "The 'since July 2026' row is a hand-cut window that will keep aging without anyone noticing."
+  },
+  {
+   "name": "DETAILS / target rule footer",
+   "lines": "2178-2181",
+   "shows": "'Target rule: STRC base 0.90 at 97.5+, sliding down, plus 0.025 per $2,500 over $75,000.'",
+   "source": "Half hardcoded JSX, half cfgSlope from mstr-config.json.",
+   "verdict": "cut",
+   "reason": "A formula restated in prose, in its own bordered card, at the very bottom of a collapsed section. Nobody reads it and nothing depends on it.",
+   "duplicates": "tvLine already prints 'projection slope 0.025'; mstr-model.json carries the same sentence in model.target_rule, which the tab never renders.",
+   "stale_or_hardcoded": "The 0.90 / 97.5 / $75,000 constants are hardcoded in the JSX while the slope comes from config, so a config change would leave this line half-updated."
+  }
+ ],
+ "defects": [
+  {
+   "severity": "high",
+   "where": "index.html:1731-1732 (tvLine) vs data/mstr-config.json rich_gate=false and personal/trading/mstr-mnav-model/monitor/mstr_gap.py:111",
+   "what": "The tab tells him Rich is muted unless BTC is below its 50-day. That gate was removed 9/17: the config sets rich_gate false and the monitor honors it, so Rich now fires in either regime. The string 'rich_gate' appears nowhere in index.html, so the site can never reflect that field. This is the one line that documents when he gets a ping and it is wrong."
+  },
+  {
+   "severity": "high",
+   "where": "data/mstr-model.json (as_of 2026-09-16) feeding index.html:1533-1539, 1673, 1699",
+   "what": "The daily model file is two days stale, so mStale is true, mstxImp is null, and the tab's MSTX price card reads '—  model file is stale' while the PROJECTED card silently drops its 'MSTX $x' subtitle and falls back to 'fair value now'. The projected MSTX price, which is one of the three things he uses the tab for, is not on screen today. Nothing anywhere warns that the file needs regenerating."
+  },
+  {
+   "severity": "medium",
+   "where": "index.html:1651-1656 (the !st and stale branches of dv)",
+   "what": "When the monitor is dead outside market hours the verdict renders 'OFF HOURS', which is identical to what a perfectly healthy monitor renders. A silently dead monitor is indistinguishable from a sleeping one, which is exactly the failure mode behind 'I don't get any pings'. The MONITOR card's last-run time is the only clue and it is a raw timestamp with no staleness colouring."
+  },
+  {
+   "severity": "medium",
+   "where": "index.html:1917-1935",
+   "what": "The alert ledger is the only table on the tab with no narrow-screen variant. Every other table branches on `narrow`; this one hardcodes minWidth 920px inside an overflow-x container, so on his phone the most important table is the one he has to scroll sideways to read."
+  },
+  {
+   "severity": "medium",
+   "where": "data/mstr-model.json: model, factors, backtest.cheap_4pct, backtest.mstx, backtest.note, episodes_meta.slope",
+   "what": "Roughly a third of the model file is never rendered anywhere in the tab. factors (mNAV betas vs BTC and QQQ, QQQ day buckets), backtest.cheap_4pct, backtest.mstx, backtest.note and model.* are all dead payload carried on every page load. Anything that regenerates this file is doing work nobody sees."
+  },
+  {
+   "severity": "low",
+   "where": "index.html:2111-2112",
+   "what": "Renders lvl.count_rule, a key that does not exist in evidence.level in mstr-model.json. Permanently dead render branch."
+  },
+  {
+   "severity": "low",
+   "where": "index.html:1496",
+   "what": "setLive stores mnavEV: k.mNav from strategy.com and nothing ever reads it. Only live.ts is used downstream."
+  },
+  {
+   "severity": "low",
+   "where": "data/mstr-model.json backtest.note",
+   "what": "The note claims the slope sweep's 0.0125 'is what the cards and chart use'. The cards and chart use cfgSlope, which is btc_slope_per_2500 = 0.025. The file's own documentation has rotted against the config. Not rendered, so invisible, but it will mislead the next person editing the file."
+  },
+  {
+   "severity": "low",
+   "where": "index.html:1587-1596, 1826-1833, 2044-2055",
+   "what": "The WHAT IF block recomputes the entire projection chain into six cards that, on page load, hold exactly the numbers the MSTX NOW level cards already show, because both seed from the same live quotes. It reads as a second dashboard rather than a calculator until he types something."
+  },
+  {
+   "severity": "low",
+   "where": "index.html:1576-1578, 2044-2055",
+   "what": "The what-if slope toggle offers lag_slope 0.0125 as a projection slope. The config note states outright that 0.0125 is a minute-scale deviation parameter and deliberately not a pricing slope, so the toggle produces a projected price with no interpretation."
+  }
+ ],
+ "minimal_layout": [
+  "MSTX NOW — the lag verdict headline with three tiles: MSTX price, lag vs last hour, monitor heartbeat (coloured when stale, not just timestamped). Non-firing states collapse from five sentences to two.",
+  "LEVEL — the CHEAP / FAIR / RICH word with three tiles: gap in MSTX terms, projected MSTX, BTC vs its 50-day. mNAV, target mNAV and BTC-per-share drop off the page.",
+  "ALERT LOG — the ledger cut to five columns (when, kind, lag MSTX, 60-min MSTX, 60-min vs BTC) with a narrow-screen variant, the scored tally underneath, and one corrected line stating the fire levels and the real gates (Rich ungated).",
+  "GAP CHART — the gap sub-chart alone, converted to MSTX terms so its dashed lines read -6% and +8% like everything else, with the last five closes labelled beneath it. The MSTR-vs-projection price chart goes.",
+  "WHAT IF — four boxes (BTC, MSTR, MSTX, STRC), three result cards (projected MSTX, gap, verdict), reset-to-live, and the edit-config-on-GitHub link. No slope toggle, no holdings inputs.",
+  "DETAILS (collapsed) — the four-row lag evidence table and the two regime read lines. Nothing else: cheap episodes, the regime table, the level lines, the slope sweep and the target-rule footer are cut."
+ ],
+ "summary": "The MSTX tab shows 14 number cards, 2 charts, 4 tables, a 4-row threshold list and 6 input boxes across roughly 760 lines, and a large fraction of it is the same six numbers rendered again in a different box. The worst offender is WHAT IF: it seeds from the live quotes, so on every page load its six cards restate the four level cards directly above it. The lag threshold is printed three separate times within 60 lines (the headline sentence, the fires list, the tvLine paragraph), and the monitor strip at the top of SHORT-TERM LOG repeats three numbers that are all already on screen in larger type. In DETAILS, the same four cheap episodes and the same +5.9%/-4.3% regime split appear in an 11-column table, a 6-column table, a prose line and the price chart's green shading. Two defects matter more than the noise. First, the tab tells him Rich is muted unless BTC is below its 50-day; that gate was removed on 9/17, the config and the monitor both fire Rich in either regime, and the string rich_gate does not appear anywhere in index.html, so the one line documenting when he gets a ping is simply wrong. Second, mstr-model.json is as_of 2026-09-16 and today is 9/18, which trips the staleness gate and blanks the MSTX price card and the projected-MSTX subtitle, so one of the three things he uses this tab for is not on screen right now with no warning that the file needs regenerating. Two more are worth fixing while in there: a dead monitor renders the same OFF HOURS as a healthy sleeping one, and the alert ledger is the only table with no narrow-screen variant, so his phone has to scroll sideways for the most important table on the page. My cut: six sections, three tiles per verdict instead of four to six cards, one chart instead of two, one table instead of four."
+}

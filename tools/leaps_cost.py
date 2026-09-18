@@ -70,12 +70,15 @@ def back(n):
 last = rows[-1]
 lo = min(rows, key=lambda r: r["cost"]); hi = max(rows, key=lambda r: r["cost"])
 ref = {"today": last, "week_ago": back(5), "month_ago": back(21), "two_months_ago": back(42), "three_months_ago": back(63), "low": lo, "high": hi}
+# what one unit costs today at other MSTX prices, on today's vols: the site's by-close table reads this
+d0 = px.index[-1]
+unit_at = [{"mstx": k / 2, "unit": round(call(k / 2, LONG["k"], T(d0, LONG), iv_long[d0]) - call(k / 2, SHORT["k"], T(d0, SHORT), iv_short[d0]), 2)} for k in range(16, 61)]
 out = {"updated": dt.datetime.now().strftime("%Y-%m-%d %H:%M"), "units": N_UNITS,
        "unit": "long Dec 15 2028 $33 call, short Jan 21 2028 $60 call",
        "long_first_trade": listed.strftime("%Y-%m-%d"), "short_first_trade": start.strftime("%Y-%m-%d"),
        "vol_ratio_long_to_short": round(ratio, 3), "model_vs_prints_mean_abs_error": round(float(np.mean(err)), 2) if err else None,
        "note": "Model estimate near the mid: Black-Scholes on each day's MSTX close, vol backed out of the short leg's real trades, the long leg's vol scaled from it. Before the long leg first traded the line is hypothetical. A fill costs more than the mid: the long leg's market is several dollars wide.",
-       "ref": ref, "prints": prints, "series": rows}
+       "ref": ref, "unit_at": unit_at, "prints": prints, "series": rows}
 json.dump(out, open(OUT, "w"), indent=1, allow_nan=False)
 print("wrote %d days, %s to %s. vol ratio %.3f. prints %d, mean abs error vs prints $%.2f a unit" % (len(rows), rows[0]["d"], last["d"], ratio, len(prints), np.mean(err) if err else float("nan")))
 for k, r in ref.items(): print("  %-17s %s  MSTX %6.2f  unit $%5.2f  200 units $%s" % (k, r["d"], r["mstx"], r["unit"], format(r["cost"], ",")))

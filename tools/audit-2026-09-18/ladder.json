@@ -1,0 +1,280 @@
+{
+ "sections": [
+  {
+   "name": "PIN gate",
+   "lines": "2775-2856",
+   "shows": "Passcode screen; SHA-256 of the typed PIN compared to a hardcoded hex, unlock stored in sessionStorage.",
+   "source": "Hardcoded hash in the JSX (line 2787).",
+   "verdict": "keep",
+   "reason": "Only access control on a page carrying his live positions. Small, works, no maintenance cost.",
+   "duplicates": "",
+   "stale_or_hardcoded": ""
+  },
+  {
+   "name": "Header — title + model label + gradient rule",
+   "lines": "2431-2447",
+   "shows": "\"BTC QUANTILE LADDER\" + \"Kaim Power Law Model\" + a 4-color gradient hairline.",
+   "source": "Hardcoded JSX.",
+   "verdict": "fix",
+   "reason": "Keep the title, drop the \"Kaim Power Law Model\" subtitle (repeated verbatim in the footer) and the decorative gradient. One line, not three.",
+   "duplicates": "\"Kaim Power Law Model\" is repeated in the footer line at 2757.",
+   "stale_or_hardcoded": ""
+  },
+  {
+   "name": "Header status — LIVE chip, fetch time, date",
+   "lines": "2448-2462",
+   "shows": "\"● LIVE PRICE\" or \"⚠ PRICE MANUAL\" chip, last-fetch clock time, today's date.",
+   "source": "liveFetch / liveUpdatedAt state from the CoinGecko-then-Coinbase poller (2220-2249).",
+   "verdict": "fix",
+   "reason": "This is the one thing that answers \"does it work.\" But the chip lies: it reports the FETCH status, not what the page is showing. After any manual price edit follow.current goes false and every number on the tab is computed off the typed price while the chip still reads LIVE. Make it one line that states what is actually driving the numbers, and add the monitor's last-run stamp so a dead cron is visible here.",
+   "duplicates": "Live price is shown a second time on the \"● Live $X\" button at 2547-2553.",
+   "stale_or_hardcoded": ""
+  },
+  {
+   "name": "EMA model selector — standard / weighted + half-life slider",
+   "lines": "2463-2500",
+   "shows": "Two buttons plus a 1-17 year half-life slider that refits the power law, with a FV-vs-standard readout.",
+   "source": "fitEMA() over the BTC_HISTORY seed array (lines 71-146, 149-168).",
+   "verdict": "cut",
+   "reason": "A research toy on a daily-use dashboard, and a footgun: flipping to weighted silently re-bases the fair value, the quantile, the band, the ticker and every strike on the page, with no indication downstream that the numbers are no longer the model the rules were written against. Every rule in ladder-rules.json assumes the fixed A=5.82 / B=-17.029 model. Roughly 40 lines of header plus fitEMA and the modelA/modelB prop threaded through five components.",
+   "duplicates": "",
+   "stale_or_hardcoded": ""
+  },
+  {
+   "name": "Light-mode toggle + injected light CSS",
+   "lines": "2293-2404 (CSS), 2502-2513 (button)",
+   "shows": "Sun/moon icon that injects ~110 lines of CSS remapping dark colors to light.",
+   "source": "Hardcoded style block, matched against inline styles by attribute substring.",
+   "verdict": "cut",
+   "reason": "The largest single block in the shell, and the most brittle thing in the file: every rule matches on a serialized inline-style substring like [style*=\"background: rgb(7, 15, 31)\"], so it breaks silently the moment any hex in 2,887 lines changes. Its neighbor block (mobile) has already rotted the same way. A dark terminal dashboard does not need a second palette.",
+   "duplicates": "",
+   "stale_or_hardcoded": "The comment above the button reads \"Alert bell + theme toggle\" but no bell was ever built."
+  },
+  {
+   "name": "Tab bar — Ladder / MSTX / Playbook",
+   "lines": "2516-2524",
+   "shows": "Three tabs, choice persisted to localStorage.",
+   "source": "Hardcoded JSX; tab state in localStorage key bql_tab.",
+   "verdict": "keep",
+   "reason": "Three tabs map exactly to his three uses. Note the MSTX tab's internal key is still \"mstr\".",
+   "duplicates": "",
+   "stale_or_hardcoded": ""
+  },
+  {
+   "name": "Price input row — −5K / input / +5K / Live button",
+   "lines": "2526-2555",
+   "shows": "Typed BTC price that drives the quantile, the vs-FV card, the rail needle and the chart dot.",
+   "source": "priceStr state, seeded \"85000\", overwritten by the live poller until first manual edit.",
+   "verdict": "fix",
+   "reason": "Keep the input and the \"● Live\" reset. Cut the −5K / +5K steppers: what-if lives on the MSTX tab per the strikes rule, and the ladder answer only changes at band lines thousands of dollars apart.",
+   "duplicates": "The \"● Live $X\" button repeats the live price already in the header chip area.",
+   "stale_or_hardcoded": "Initial value hardcoded to 85000, which is roughly 27% above the last seeded spot."
+  },
+  {
+   "name": "Price preset buttons",
+   "lines": "2556-2570",
+   "shows": "Eight buttons, 75K through 250K in 25K steps.",
+   "source": "PRESETS useMemo at 2408-2412.",
+   "verdict": "cut",
+   "reason": "Every preset is above spot (the seed's last point is 67,250), so not one of them is reachable with a click from where BTC actually is. Pure chrome on the busiest row of the page.",
+   "duplicates": "",
+   "stale_or_hardcoded": "Range 75K-250K was set for a higher-price regime and never re-anchored."
+  },
+  {
+   "name": "Three stat cards — fair value / vs fair value / quantile",
+   "lines": "2573-2591",
+   "shows": "Model fair value, percent deviation from it, and the quantile.",
+   "source": "fairValueAt() and priceToQuantile() on the typed price at today's timestamp.",
+   "verdict": "merge",
+   "reason": "Merge into the tier card as a single line under the instrument name. vs-fair-value is a monotone restatement of quantile, and quantile is already on the rail needle and again in the tier card's live-q sentence. Three 22px numbers for one fact is most of why the top of the page reads as noise.",
+   "duplicates": "Quantile appears three times within 200px: this card, the rail needle at 2665-2673, and the \"Live {q}q\" sentence at 2638-2643. vs-fair-value restates the same position a fourth way.",
+   "stale_or_hardcoded": ""
+  },
+  {
+   "name": "Tier card — Active Instrument, rotate lines, monthly-close note, quantile rail",
+   "lines": "2592-2676",
+   "shows": "Band name (e.g. MSTX PMCC), structure chips, description, max interest rate, the rotate-up and rotate-down prices, the monthly-close vs live-touch sentence, and the 4-segment rail with the needle.",
+   "source": "LADDER array (248-276) + monthlyClose() on liveHistory + quantileToPrice().",
+   "verdict": "fix",
+   "reason": "This is the core answer to use case 1 and the rail plus the monthly-close sentence are the best things on the tab. Trim inside it: cut the \"Max interest rate: < 12%\" row (a debt constraint from an older framework, referenced nowhere in the rules and nothing he acts on), cut the typeNote chips, and fold the merged fair-value/quantile line in here.",
+   "duplicates": "The \"long 12 mo · short 90 d, rolled\" chips repeat the Structure card's own sub-labels, the time rule in ladder-rules.json, and the footer. The MSTX description's \"bottom episodes ran 13 to 16 months\" repeats the Band history table's MSTX note.",
+   "stale_or_hardcoded": "tier.desc and tier.debt are hardcoded in the LADDER array in the JSX, not in data/, so they cannot be edited without touching index.html — the opposite of the ladder-rules.json convention."
+  },
+  {
+   "name": "Structure card — long and short strikes",
+   "lines": "2678-2711",
+   "shows": "LONG 0.75 delta at +12 months and SHORT at the band-ceiling quantile carried to +90 days, with the BTC price for the short.",
+   "source": "tierStrikes() (291-300) from the LADDER band definitions.",
+   "verdict": "keep",
+   "reason": "The one card that converts the band into an order. Highest value per pixel on the tab.",
+   "duplicates": "Its content is restated as prose in the rules card's time and strikes rows.",
+   "stale_or_hardcoded": ""
+  },
+  {
+   "name": "Margin Framework card (STRC band only)",
+   "lines": "2712-2739",
+   "shows": "Leverage, net carry, margin-call drawdown and maintenance for the sell-zone STRC position.",
+   "source": "marginStats() (304-308) on LADDER[0].margin.",
+   "verdict": "keep",
+   "reason": "Costs nothing today: it renders only when the monthly close is above the 85 line, which has not happened since March 2022. Leave it dormant.",
+   "duplicates": "",
+   "stale_or_hardcoded": "Rate 4.75% and yield 12% are hardcoded in the LADDER array and unverified against current STRC terms."
+  },
+  {
+   "name": "LadderRules — \"The rules\" card",
+   "lines": "905-965 (component), rendered 2740",
+   "shows": "Seven doctrine rows (gate, band, time, strikes, entry, size, exit) plus the sizing schedule and the phase note.",
+   "source": "data/ladder-rules.json, fetched no-store.",
+   "verdict": "fix",
+   "reason": "Four of the seven rows are prose restatements of live numbers shown a few inches above. Keep gate, entry, size and exit; cut band, time and strikes. Better still, render the gate as state rather than text: the gate rule turns on BTC's daily close versus its 50-day, and nothing on this tab shows the 50-day, so today the most important rule is unverifiable from the page it sits on.",
+   "duplicates": "band duplicates the rail + tier card + footer; time duplicates the typeNote chips + Structure sub-labels + footer; strikes duplicates the Structure card rows.",
+   "stale_or_hardcoded": "phase_note still describes Phase 2 (Jan long / Dec 18 short) as the live phase and the sizing row dated 2026-09-17 renders as a future-tense schedule though that date has passed."
+  },
+  {
+   "name": "LadderRules — \"Band history\" card",
+   "lines": "905-965 (component), rendered 2740",
+   "shows": "Visits, median and longest months for each of the four bands, plus a cycle-peaks-by-quantile paragraph.",
+   "source": "history block of data/ladder-rules.json.",
+   "verdict": "cut",
+   "reason": "Reference, not a daily read. It did its job once: it justified the 12-month long, and that decision is already baked into the Structure card. It is the longest block of text on the tab and he acts on none of it on any given day. It stays in ladder-rules.json and BUILD-NOTES.md.",
+   "duplicates": "The MSTX row's note repeats the tier description; the tops_note repeats the STRC band description's \"the 2024 top peaked at quantile 81\" claim.",
+   "stale_or_hardcoded": "\"the current visit began 2026-03 and is 6.5 months in\" is a hand-written age that has to be re-edited every month or it rots."
+  },
+  {
+   "name": "Forward Price Projections table",
+   "lines": "373-447 (component), rendered 2743-2745",
+   "shows": "6 band rows by 11 date columns (1yr ago through 10yr), with a BTC/MSTR unit toggle.",
+   "source": "bandPriceAt() at each offset; MSTR column via useMstrUnits() hitting three api.strategy.com endpoints.",
+   "verdict": "cut",
+   "reason": "66 cells, and Price Lookup below it computes the same six band prices at any date he picks, with an opex stepper, the actual historical print, and a today's-quantile-held-forward row on top. The two dates he acts on (+90 days and +12 months) are already resolved to strikes in the Structure card. This is the single biggest block of undifferentiated numbers on the tab.",
+   "duplicates": "Entirely subsumed by Price Lookup, which is strictly more capable. The 1yr-ago and 6mo-ago columns duplicate what the chart shows better.",
+   "stale_or_hardcoded": "The 10yr column projects to 2036, five years past the chart's own right edge."
+  },
+  {
+   "name": "Price Lookup",
+   "lines": "502-612 (component), rendered 2747-2750",
+   "shows": "Date picker with opex steppers; the six band prices at that date, each with percent above/below current; the actual print if the date is past; and today's quantile carried to that date.",
+   "source": "BAND_DEFS + bandOffset at the chosen timestamp; priceOn() against liveHistory; date persisted to localStorage.",
+   "verdict": "keep",
+   "reason": "The one genuinely interactive tool on the tab and the answer to every what-if he actually asks. Keep as is, minus the duplicated BTC/MSTR unit toggle once Forward Table goes (one toggle, not two).",
+   "duplicates": "Carries its own copy of the UnitPick toggle, identical to the one in Forward Table.",
+   "stale_or_hardcoded": ""
+  },
+  {
+   "name": "Power Law Bands chart",
+   "lines": "620-860 (component), rendered 2752-2753",
+   "shows": "900x420 SVG: log-price history line, six band curves, four band fills, today marker and price dot, lookup-date marker.",
+   "source": "BTC_HISTORY seed + liveHistory from CoinGecko; band curves from BAND_DEFS.",
+   "verdict": "fix",
+   "reason": "Keep it: it is the picture of use case 1. Trim to the four ladder bands (0.1 / 15 / 50 / 85) plus their fills, drop the 99.9 line entirely and keep 95 only as the STRC fill ceiling, which cuts the legend from seven chips to five. Then fix the duplicate opacity prop (795-796) that currently renders the decorative bands at the same weight as the real ones.",
+   "duplicates": "The legend repeats the band labels already printed in Price Lookup's six cards directly above it.",
+   "stale_or_hardcoded": ""
+  },
+  {
+   "name": "Footer build line",
+   "lines": "2755-2760",
+   "shows": "\"Kaim Power Law Model · A=5.82 · B=−17.029 · v3 · bands on the monthly close · 12-month long, 3-month short · build Sep 17 2026\".",
+   "source": "Hardcoded JSX string.",
+   "verdict": "cut",
+   "reason": "Every clause is a fourth copy of something above it, and the build stamp is hand-typed so it is already wrong.",
+   "duplicates": "\"Kaim Power Law Model\" repeats the header subtitle; \"bands on the monthly close\" repeats the band rule and the tier card's monthly-close sentence; \"12-month long, 3-month short\" repeats the time rule, the typeNote chips and the Structure sub-labels.",
+   "stale_or_hardcoded": "\"build Sep 17 2026\" is hardcoded; index.html was last modified Sep 18."
+  },
+  {
+   "name": "Mobile style injector",
+   "lines": "2828-2885",
+   "shows": "Nothing visible; rewrites grids and font sizes below 700px.",
+   "source": "Hardcoded CSS string, applied by MutationObserver + resize + load.",
+   "verdict": "fix",
+   "reason": "He uses this on a phone daily and part of it no longer matches the JSX. Fix the stat-card selector and delete the three rules that target elements which no longer exist.",
+   "duplicates": "",
+   "stale_or_hardcoded": "repeat(4, 1fr) at 2840 targets a stat grid that is now repeat(3,1fr) (2574), so the stat cards never collapse on a phone. repeat(5, 1fr) at 2844-2845 matches nothing (the JSX form is repeat(5,minmax(66px,1fr))). The band-dial rules at 2864-2866 target a 68px circle that no longer exists."
+  }
+ ],
+ "defects": [
+  {
+   "severity": "high",
+   "where": "index.html:2453-2459 (chip) with follow ref at 2204 and 2540",
+   "what": "The header chip reports fetch status, not display status. Any keystroke in the price box sets follow.current=false, after which the poller keeps setting liveFetch to \"live\" while priceStr stays at whatever he typed. Chip reads \"● LIVE PRICE\" while the quantile, the band, the ticker, the vs-FV card, the rail needle and the chart dot are all computed off a stale manual number. This is the most likely source of \"I don't even know if it works properly.\""
+  },
+  {
+   "severity": "high",
+   "where": "index.html:2503 (comment), BUILD-NOTES.md:6",
+   "what": "No alert or notification path exists anywhere in index.html. The comment {/* Alert bell + theme toggle */} promises a bell that was never built. Pushes come only from a separate private repo (btc-monitor) on a GitHub Actions cron restricted to 13:00-21:59 UTC on weekdays, and nothing on this page shows the monitor's last run, so a failed or throttled cron is completely invisible here. That is why he gets no pings, and the site currently cannot tell him."
+  },
+  {
+   "severity": "high",
+   "where": "index.html:2574-2591 (stat cards) vs 2618-2643 (tier card)",
+   "what": "Two different quantiles are rendered within 200px of each other under near-identical labels. The stat card's value is q, computed from the typed/live price; its background and border color come from tier, which is derived from qM, the monthly close. On any day the live price has crossed a band line, the card shows one clock's number in the other clock's colors."
+  },
+  {
+   "severity": "high",
+   "where": "index.html:2840 vs 2574",
+   "what": "The mobile stylesheet collapses a stat grid matching [style*=\"repeat(4, 1fr)\"], but the stat grid is repeat(3,1fr). Three cards with 22px values stay three-across on a phone. He reads this site on a phone daily."
+  },
+  {
+   "severity": "medium",
+   "where": "index.html:795-796",
+   "what": "Duplicate opacity prop on the band <path>: opacity={b.dim ? 0.35 : 0.9} is immediately overridden by opacity={0.7}. The dim flag on the 99.9 and 95 bands is dead, so all six band lines render at equal weight and the four lines that actually define the ladder do not stand out. Also emits a React duplicate-prop warning."
+  },
+  {
+   "severity": "medium",
+   "where": "index.html:2253-2270",
+   "what": "fetchHistory has no fallback. fetchPrice falls back from CoinGecko to Coinbase, but the 365-day history call does not. A CoinGecko 429 (routine on the free tier from a browser origin) leaves liveHistory null, which kills monthlyClose() and silently drops the band read to the live price — degrading the site's primary function with only one line of small grey text saying so."
+  },
+  {
+   "severity": "medium",
+   "where": "index.html:692-716 (pricePath in PowerLawChart)",
+   "what": "The chart's price line double-sources the last 12 months. Every BTC_HISTORY seed point is pushed unconditionally, then live dailies are bucketed weekly and pushed as well; the 5-day dedupe keeps whichever sorts first. Seed values for the recent months are hand-rounded (105000, 85000, 67250) and can suppress the real prints, so the most-looked-at segment of the line is the least accurate."
+  },
+  {
+   "severity": "medium",
+   "where": "index.html:2414-2424",
+   "what": "bandRows, bandsAbove, bandsBelow, nearestAboveQ and nearestBelowQ are computed on every render of BTCPowerLaw and never read. Grep confirms one occurrence each for nearestAboveQ and nearestBelowQ. Leftover from a removed nearest-band highlight."
+  },
+  {
+   "severity": "medium",
+   "where": "README.md:1-10",
+   "what": "The entry doc describes a site that no longer exists: three tabs named Ladder / Signals / EO Tracker, a collector/ pipeline, signals.html, and optional ntfy alerts configured in config/manual.json. The live tabs are Ladder / MSTX / Playbook and Signals was retired in August. Anyone opening the repo cold, including a future agent, is told the wrong alert mechanism."
+  },
+  {
+   "severity": "low",
+   "where": "index.html:462-465",
+   "what": "isThirdFriday is defined and never called (one grep occurrence). nextOpex does not use it."
+  },
+  {
+   "severity": "low",
+   "where": "index.html:2289",
+   "what": "const displayName = (name) => name — an identity wrapper with a single call site at 2599."
+  },
+  {
+   "severity": "low",
+   "where": "index.html:2844-2845 and 2864-2866",
+   "what": "Dead mobile selectors. [style*=\"repeat(5, 1fr)\"] matches nothing (the only repeat(5 in the JSX is repeat(5,minmax(66px,1fr)) at 2158). The three width:68px/height:68px band-dial rules target a circular dial that no longer exists; 68px now only appears as a grid column width at 2129."
+  },
+  {
+   "severity": "low",
+   "where": "index.html:2757",
+   "what": "Footer build stamp \"build Sep 17 2026\" is a hardcoded string and index.html was last modified Sep 18. It will be wrong after every edit."
+  },
+  {
+   "severity": "low",
+   "where": "index.html:2408-2412",
+   "what": "Price presets run 75K to 250K in 25K steps. The seed's last spot is 67,250, so every preset is above the market and none is reachable from where BTC is."
+  },
+  {
+   "severity": "low",
+   "where": "index.html:161",
+   "what": "TODAY_DAYS is evaluated once at module load and used to cap the upper bands' time decay in bandOffset. The poller rolls `today` so the page survives midnight, but the decay cap does not roll with it — a tab left open for weeks keeps stale upper-band offsets."
+  }
+ ],
+ "minimal_layout": [
+  "Header: title, tab bar, and one status line that says what is driving the numbers (live price and its age, or MANUAL) plus the monitor's last run",
+  "The read: band name and ticker, the quantile, and one subline for fair value and vs-FV — the merged stat cards and tier card, keeping the 4-segment rail, the needle, the rotate-up/rotate-down prices, and the monthly-close vs live-touch sentence",
+  "Structure: the long 0.75-delta strike at +12 months and the short band-ceiling strike at +90 days, with its BTC price",
+  "The rules, trimmed to gate, entry, size and exit — with the gate rendered as live state (BTC daily close vs its 50-day) rather than prose",
+  "Power law chart: history line plus the four ladder bands and their fills, today marker, price dot, lookup marker",
+  "Price lookup: date picker with opex steppers, the six band prices at that date, the actual print when past, and today's quantile carried forward — with the single BTC/MSTR unit toggle living here"
+ ],
+ "summary": "The Ladder tab says the same thing four times and then asks him to pick a model. The quantile appears in a stat card, on the rail needle, and in the tier card's sentence; the band and structure rules appear as live numbers in the tier and Structure cards and again as prose in the rules card and again in the footer; the Forward Price Projections table's 66 cells are entirely subsumed by the Price Lookup directly beneath it. Cutting Forward Table, the band-history card, the preset row, the EMA model selector, the light-mode layer and the footer takes roughly 300 lines out of the shell without losing a single thing he acts on. Two defects explain his other two complaints. \\\"I don't know if it works\\\": the header chip reports whether the fetch succeeded, not whether the page is showing that fetch, so it reads LIVE while every number on the tab is computed off a price he typed — and a few inches below, the quantile card prints the live-price quantile in the monthly-close band's colors. \\\"I don't get any pings\\\": there is no alert code in index.html at all. The comment above the theme toggle still says \\\"Alert bell + theme toggle\\\" for a bell that was never built; pushes come only from the separate private btc-monitor repo on a weekday-only GitHub Actions cron, and nothing on this page reports whether it ran. Also real and worth fixing while in there: the mobile stylesheet collapses a four-column stat grid that is now three columns, so the top of the page never collapses on his phone; the chart's six band lines all render at the same weight because a duplicate opacity prop overrides the dim flag; the 365-day history fetch has no fallback, so a routine CoinGecko 429 silently disables the monthly-close band read that is the site's primary output; and README.md still documents a Ladder/Signals/EO-Tracker site with ntfy alerts that has not existed since August."
+}

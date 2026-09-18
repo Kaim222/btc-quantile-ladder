@@ -1,0 +1,221 @@
+{
+ "sections": [
+  {
+   "name": "Hero verdict line (word + phase + next-action steps)",
+   "lines": "1183-1197",
+   "shows": "The big word HOLD / ENTRY / OFF plus \"PHASE 1\", then the 3 next_action_steps and the next_action_detail from the current ledger phase.",
+   "source": "Word from playbook.json inputs (btc_weekly_macd_8_21_5_hist_rising.pass, fresh_cross.pass) plus the live quantile; phase text from paper-ledger.json plan.phases[current].next_action_steps / next_action_detail.",
+   "duplicates": "",
+   "stale_or_hardcoded": "The word runs on the week-ending-2026-09-06 MACD bar, two weekly bars behind today. Phase 1's next_action still says \"The spare $1,000 is tied up today as collateral on a Sep 18 17/17.50 call credit spread\" - that leg expires today and the sentence is written in present tense with no date.",
+   "verdict": "keep",
+   "reason": "This is the one thing Alex opens the tab for: what is on and what to do next. It is also the only section that survives on its own.",
+   "merge_into": ""
+  },
+  {
+   "name": "Hero REFRESHED staleness banner",
+   "lines": "1186-1188",
+   "shows": "\"REFRESHED 9/13 · 5 DAYS OLD\" in amber at the top right of the hero.",
+   "source": "playbook.json generated_at = 2026-09-13T20:10:11Z, age computed client-side.",
+   "duplicates": "",
+   "stale_or_hardcoded": "Confirmed: 5 days old today. tools/playbook_refresh.py is manual only, no scheduler anywhere in the repo, and it last wrote on 9/13 while paper-ledger.json and leaps-cost.json were both written today. The tab mixes today's ledger with 5-day-old market inputs.",
+   "verdict": "keep",
+   "reason": "It is the only honest signal on the page and it is doing its job. The fix is upstream: put playbook_refresh.py on a schedule, and turn the banner red past 2 days so it reads as broken rather than decorative.",
+   "merge_into": ""
+  },
+  {
+   "name": "Hero chip row (MSTX REGIME: quantile, IV 3M, days-to-event, cross age)",
+   "lines": "1198-1203",
+   "shows": "Four uppercase chips under a \"MSTX REGIME\" label: \"11.4Q · BELOW 15\", \"IV 3M 10\", \"26D TO CPI\", \"CROSS 6 WEEKS OLD\".",
+   "source": "Quantile computed live on the page; IV from playbook.json iv.mstr.rank_3m; event countdown from playbook.json events_upcoming; cross age from inputs.btc_weekly_macd_8_21_5_fresh_cross.",
+   "duplicates": "The quantile chip duplicates the Ladder tab headline and duplicates the LADDER QUANTILE stat card lower on this same tab. The IV chip duplicates the IV RANK 3M stat card lower on this same tab. The cross chip duplicates the caption under the MACD chart (\"Crossed 7/26, 6 weeks ago\").",
+   "stale_or_hardcoded": "IV rank is as of 9/11. Cross age of 6 weeks is measured to the 9/06 bar, not to today, so it is understated by about 2 weeks. The 9/16 FOMC in the file has already passed and is only hidden by a client-side filter.",
+   "verdict": "cut",
+   "reason": "Four chips, three of which are said twice elsewhere, and none of which Alex acts on. This is the single densest patch of noise in the hero.",
+   "merge_into": ""
+  },
+  {
+   "name": "PHASE 1 · WHAT IS ON",
+   "lines": "1205-1224",
+   "shows": "One row per open spread: key, legs, \"debit 0.21 fill\", \"hurdle unknown\", and a footer about odds.",
+   "source": "paper-ledger.json plan.phases[0].spreads.",
+   "duplicates": "",
+   "stale_or_hardcoded": "The JSX reads three fields the ledger no longer carries (debit_natural, hurdle, odds_short), so both rows literally print \"hurdle unknown\", no odds chip ever renders, and the footer still explains odds that are not on screen. Meanwhile contracts (275 and 175) and cost ($5,775 and $11,200) ARE in the ledger and are not rendered, as are status, positions (break-evens 14.93 / 19.59, plateau 15.50 to 18) and note.",
+   "verdict": "fix",
+   "reason": "This is Alex's \"what is on\" and it currently shows less than the ledger holds while printing the word unknown twice. Render legs, contracts, debit, dollars in, break-evens and the 10/2 decision date; delete the hurdle and odds fields.",
+   "merge_into": ""
+  },
+  {
+   "name": "LEAPS YOU COULD BUY, BY MSTX CLOSE ON SETTLEMENT (table + slider)",
+   "lines": "1225-1261",
+   "shows": "13-row table of MSTX close vs position value, unit price and LEAPS count, with a slider and a one-line readout.",
+   "source": "paper-ledger.json plan.phases[0].units_by_price.",
+   "duplicates": "Same question as the ROUTES table and the LeapsCost panel: how many units does this end in. Three answers, three methods, on one tab.",
+   "stale_or_hardcoded": "Every unit price in the table comes from the ledger's linear anchor 2.25 + 0.25 x (MSTX - 14). Today's real prints put the unit at 4.00 with MSTX at 18.73; the formula says 3.43. Fitting the six real prints gives an intercept near 2.92, so the anchor is about 30% low and every LEAPS count in this table is overstated roughly 15-25%. The ledger's own routes_note admits it: \"The unit formula may read low... every count is about 15% lower.\"",
+   "verdict": "fix",
+   "reason": "The units objective is Alex's stated reason for the tab, so the table stays, but it has to run on the print-calibrated unit price that LeapsCost already computes rather than a hand anchor the ledger itself flags as wrong. Cut the slider and the 13 rows to about 6 rows around today's price.",
+   "merge_into": "one LEAPS UNITS panel with the LeapsCost chart"
+  },
+  {
+   "name": "PHASE 2 · THE DEFAULT AND ITS STRIKE MAP",
+   "lines": "1262-1281",
+   "shows": "Two sentences of Phase 2 instruction plus a 10-row MSTX-close to Jan-long / Dec-short strike lookup.",
+   "source": "paper-ledger.json plan.phases[1].next_action_steps and strike_map.",
+   "duplicates": "",
+   "stale_or_hardcoded": "Confirmed rot. The steps still read \"Fri 9/18 from the vertical, 70% of $20,350 buys about 75 to 85\" and the structure says \"long one strike above the 9/25 close\", but the 9/18 vertical is gone and Phase 1's decision date moved to 10/2. The panel contradicts the hero above it.",
+   "verdict": "cut",
+   "reason": "A lookup table Alex reads exactly once, on the day Phase 1 settles, sitting on the page every day until then with wrong dates on it. Collapse to a single line in the Phase 1 panel (\"at the 10/2 close: Jan one strike above, Dec about 1.67x\") and bring the map back when Phase 2 is the current phase.",
+   "merge_into": ""
+  },
+  {
+   "name": "WEEKLY MACD (8,21,5) histogram chart",
+   "lines": "1282-1310",
+   "shows": "16 weekly histogram bars with a cross marker, plus a caption \"Rising since 9/06. Crossed 7/26, 6 weeks ago.\"",
+   "source": "playbook.json inputs.btc_weekly_macd_8_21_5_hist_rising.histogram_last16 and .fresh_cross.cross_bar_date.",
+   "duplicates": "The cross date and age also appear as a hero chip.",
+   "stale_or_hardcoded": "Last bar is week ending 2026-09-06. Two weekly bars have closed since, so the chart and its caption are 12 days behind.",
+   "verdict": "keep",
+   "reason": "It is the evidence for the hero word and it is his entry rule, so it earns one compact chart. Fix the refresh and let the caption state the bar date it is actually reading.",
+   "merge_into": ""
+  },
+  {
+   "name": "Stat cards: LADDER QUANTILE and IV RANK 3M",
+   "lines": "1311-1326",
+   "shows": "Two big-number cards beside the MACD chart: quantile with its band, IV rank with its window.",
+   "source": "Quantile computed live; IV from playbook.json iv.mstr.rank_3m.",
+   "duplicates": "Both are already chips in the hero six inches above, and the quantile is the Ladder tab's entire headline.",
+   "stale_or_hardcoded": "IV rank window ends 9/11 and it is MSTR's implied vol, not MSTX's, under a card that sits on an MSTX playbook.",
+   "verdict": "cut",
+   "reason": "Third rendering of the quantile on one page, second of an IV number Alex does not trade off. Nothing here changes an action.",
+   "merge_into": ""
+  },
+  {
+   "name": "LEAPS UNITS AT THE END, BY ROUTE",
+   "lines": "1328-1345",
+   "shows": "Three-row table: route description, your odds, market odds, in units.",
+   "source": "paper-ledger.json plan.routes and routes_note.",
+   "duplicates": "Answers the same units question as the UNITS table and the LeapsCost panel, with a third method and a different number.",
+   "stale_or_hardcoded": "Frozen at a single moment: routes_note reads \"Leif model, 2026-09-18 13:10 ET, MSTX 18.00\" and the counts are built on the same low unit anchor, so 49/51/57 units are all overstated. The note itself is 5 sentences long and only the first renders, so the caveat that the counts are wrong is cut off on screen.",
+   "verdict": "merge",
+   "reason": "A one-off comparison Alex already made. If it survives at all it is three lines inside the units panel, re-run on the print-calibrated unit price and stamped with the time it was computed.",
+   "merge_into": "one LEAPS UNITS panel"
+  },
+  {
+   "name": "COST OF 200 LEAPS UNITS, DAY BY DAY (chart)",
+   "lines": "964-1013, rendered at 1346",
+   "shows": "91-day line of what 200 units cost, with a 10-day average, white dots on days both legs really traded, a dashed section before the long leg existed, and hover readout.",
+   "source": "data/leaps-cost.json, written today by tools/leaps_cost.py.",
+   "duplicates": "",
+   "stale_or_hardcoded": "Nothing stale. This is the only unit price on the tab that is calibrated to real prints (stated mean absolute error $0.17 a unit).",
+   "verdict": "keep",
+   "reason": "It is current, it names the actual instrument (long Dec 2028 $33 / short Jan 2028 $60), and it is the correct source for the unit price the other two panels get wrong.",
+   "merge_into": ""
+  },
+  {
+   "name": "LeapsCost reference cards (7 of them)",
+   "lines": "1014-1022",
+   "shows": "TODAY, 1 WEEK AGO, 1 MONTH AGO, 2 MONTHS AGO, 3 MONTHS AGO, LOW, HIGH - each with cost, date, MSTX and a percent versus today.",
+   "source": "leaps-cost.json ref.",
+   "duplicates": "All seven points are already on the chart directly above them.",
+   "stale_or_hardcoded": "",
+   "verdict": "fix",
+   "reason": "Seven cards restating a chart. Keep two, TODAY and LOW, as the anchor and the floor; the rest is hover.",
+   "merge_into": ""
+  },
+  {
+   "name": "LeapsCost footer note",
+   "lines": "1023-1025",
+   "shows": "Three sentences on method, the model-versus-prints error, and the updated stamp.",
+   "source": "leaps-cost.json note, model_vs_prints_mean_abs_error, updated.",
+   "duplicates": "",
+   "stale_or_hardcoded": "",
+   "verdict": "merge",
+   "reason": "The one load-bearing sentence is that a fill costs more than the mid. Cut to that plus the timestamp and put it under the chart.",
+   "merge_into": "the chart caption"
+  },
+  {
+   "name": "Tooltip overlay",
+   "lines": "1348-1353",
+   "shows": "One fixed-position tooltip for the whole tab, on hover or tap.",
+   "source": "Local state only.",
+   "duplicates": "",
+   "stale_or_hardcoded": "",
+   "verdict": "keep",
+   "reason": "Cheap, and it is what lets the surviving panels drop their inline explanations. Keep it and move more prose into it.",
+   "merge_into": ""
+  }
+ ],
+ "defects": [
+  {
+   "severity": "high",
+   "where": "data/paper-ledger.json plan.objective + phases[0].units_by_price; index.html 1225-1261 and 1328-1345 versus 964-1028",
+   "what": "Two contradictory unit prices on one tab. The UNITS table and the ROUTES table run on the ledger's hand anchor 2.25 + 0.25 x (MSTX - 14); LeapsCost runs Black-Scholes calibrated to real prints. At today's MSTX 18.73 the anchor gives 3.43 and the real 9/18 print is 4.00. Fitting all six prints gives an intercept near 2.92 against 2.25, so the anchor is about 30% low and every LEAPS count Alex reads off those two tables is overstated roughly 15-25%. The ledger's own routes_note says so and that sentence is truncated off screen."
+  },
+  {
+   "severity": "high",
+   "where": "index.html 1115-1116 and 1205-1224",
+   "what": "The Phase 1 panel reads three fields the ledger no longer has (debit_natural, hurdle, odds_short), so both rows print \"hurdle unknown\", the odds chip never renders, and the footer still explains odds that are not shown. At the same time contracts (275 / 175) and cost ($5,775 / $11,200) are in the ledger and never rendered, so the \"what is on\" panel does not say how big the position is."
+  },
+  {
+   "severity": "high",
+   "where": "data/playbook.json generated_at; tools/playbook_refresh.py",
+   "what": "Playbook inputs are 5 days old and there is no scheduler for the refresh script anywhere in the repo. Downstream: the hero word runs on the week-ending-9/06 MACD bar (two weekly bars behind), the MACD chart is 12 days behind, IV rank is as of 9/11, and the events list still contains the 9/16 FOMC which only a client-side filter hides. Meanwhile paper-ledger.json and leaps-cost.json were written today, so the tab silently mixes two different as-of dates."
+  },
+  {
+   "severity": "medium",
+   "where": "index.html 1061 versus 2284",
+   "what": "The Playbook names the ticker and picks its accent color from the LIVE quantile (getTier(q)); the Ladder tab names it from the MONTHLY CLOSE (getTier(qM)), which is Alex's actual rule. Near a band edge the two tabs will claim different tickers on the same day."
+  },
+  {
+   "severity": "medium",
+   "where": "index.html 1146-1148, caption at 1311-1313",
+   "what": "The \"Rising since X\" caption lies when the histogram is falling. The loop walks back only while each bar exceeds the prior one; if the last bar is lower the loop never runs and it returns the last bar's own date, so the page prints \"Rising since <latest date>\" regardless of direction. It reads correctly today only because the histogram happens to be rising."
+  },
+  {
+   "severity": "medium",
+   "where": "index.html 1032-1039, 966-969",
+   "what": "All three fetches swallow errors with .catch(() => {}). If playbook.json fails the hero reads UNKNOWN with no explanation; if paper-ledger.json fails the tab reads \"No spreads in the ledger\" and \"No routes in the ledger\" as if the positions were flat; if leaps-cost.json fails the whole chart returns null and vanishes. This is a direct cause of \"I don't even know if it works properly.\""
+  },
+  {
+   "severity": "medium",
+   "where": "data/paper-ledger.json plan.objective; nothing in index.html",
+   "what": "The LEAPS-units objective Alex names as a reason he opens the tab (long Dec 2028 $33 call, short Jan 2028 $60 call, counted in units) exists in the ledger as plan.objective and is rendered nowhere. The instrument is named only in small grey type as the LeapsCost subtitle."
+  },
+  {
+   "severity": "low",
+   "where": "index.html 1113",
+   "what": "sk() garbles the strike chip: key \"Oct 9 16 / Oct 2 16 calendar\".split(\"/\")[1] yields \" Oct 2 16 calendar\", so the chip would read \"Oct 2 16 calendar strike · 24% odds\". Invisible today only because odds_short is absent from the ledger."
+  },
+  {
+   "severity": "low",
+   "where": "index.html 877",
+   "what": "Dead constant: LINE is defined in the playbook helper block and used nowhere in the file."
+  },
+  {
+   "severity": "low",
+   "where": "data/paper-ledger.json",
+   "what": "About 60% of the 14.8KB ledger is fetched on every page load and thrown away: journal (10 entries, 6.1KB), paper_calls (565B), plan.week_of_2026_09_14 (1.4KB), plan.objective, plan.unit_price_anchor_mstx, and per-phase structure, status, positions, note, units_note, dates_note, roll_rules. No history block is rendered at all. One journal entry is dated 2026-09-26, a future date sitting between 9/17 entries."
+  },
+  {
+   "severity": "low",
+   "where": "data/iv-ledger.json",
+   "what": "25.7KB file the page never fetches. It is an input to tools/playbook_refresh.py only, and its last write is 9/13, the same stall as playbook.json. Nothing on the tab is broken by it, but it is not a site data file."
+  },
+  {
+   "severity": "low",
+   "where": "index.html 1042, 1237-1253",
+   "what": "The UNITS slider persists per browser in localStorage (bql_pb_mstx, default 16.4) and spans 13 to 22 in 0.25 steps across only 13 sparse rows, so most drags above 19 snap to the same row and change nothing."
+  },
+  {
+   "severity": "low",
+   "where": "index.html 1054, 1102-1110",
+   "what": "The hero chips scroll to the MACD panel when clicked, including the ladder-quantile chip, which has nothing to do with the panel it jumps to."
+  }
+ ],
+ "minimal_layout": [
+  "HERO: the word, the phase, the two or three next-action steps, and the refresh age (red past 2 days). No chip row.",
+  "PHASE 1 · WHAT IS ON: legs, contracts, debit, dollars in, break-evens, and the 10/2 decision date, straight from the ledger fields that actually exist.",
+  "LEAPS UNITS: one panel. Today's real unit price and unit count at the top, the day-by-day cost chart under it, about six by-close rows re-anchored to the print-calibrated price, and TODAY / LOW as the only two reference numbers.",
+  "WEEKLY MACD: one compact histogram with the bar date it is really reading, and a caption that only claims 'rising' when it is."
+ ],
+ "summary": "The Playbook tab renders 13 visible blocks and Alex acts on four of them. Cut the hero chip row, the two stat cards and the Phase 2 strike map outright (every one of those either repeats something already on screen or, in Phase 2's case, still describes a 9/18 vertical that no longer exists while Phase 1 above it says the decision date is 10/2). Merge the ROUTES table and five of the seven LeapsCost reference cards into a single units panel. The worst defect is not clutter: the UNITS and ROUTES tables run on a hand unit-price anchor of 2.25 + 0.25 x (MSTX - 14) while the LeapsCost chart directly below them runs Black-Scholes fitted to real prints, and today those disagree by 3.43 versus 4.00 a unit, so the LEAPS counts Alex reads are overstated 15 to 25 percent. The ledger itself flags this in a sentence the page truncates. Second: the Phase 1 panel reads three fields the ledger dropped, so it prints \"hurdle unknown\" twice while the contract counts and dollars it does have go unrendered. Third, and the reason the site \"doesn't feel like it works\": playbook.json has not refreshed since 9/13, tools/playbook_refresh.py has no scheduler, and every fetch on the tab swallows its errors silently, so a failed load looks like a flat position rather than a broken page. Ship four sections, not thirteen."
+}

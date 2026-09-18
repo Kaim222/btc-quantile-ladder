@@ -5,7 +5,7 @@
     "id": 1,
     "dates": "2026-09-15 to 2026-10-02",
     "structure": "Double calendar. 275 x long Oct 9 $16 / short Oct 2 $16 at a net 0.21 ($5,775) and 175 x long Oct 16 $18 / short Oct 2 $18 at 0.64 ($11,200), plus about $1,000 cash. Total in: $17,975.",
-    "next_action": "Hold both calendars to Friday 10/2. No adjustments inside the window.",
+    "next_action": "Hold both calendars to Friday 10/2, with one checkpoint on Friday 9/25: MSTX outside 15 to 19, close; inside, hold the final week. The spare $1,000 is tied up today as collateral on a Sep 18 17/17.50 call credit spread.",
     "roll_rules": "none",
     "status": "LIVE 9/18. 275 x Oct 9 16 / Oct 2 16 and 175 x Oct 16 18 / Oct 2 18, about $1,000 cash. Holds 100 or more LEAPS from a 15.50 to an 18 close on 10/2.",
     "panel_title": "PHASE 1 · WHAT IS ON · SETTLES FRI OCT 2",
@@ -359,6 +359,15 @@
    "structure": "Bought 175 x long Oct 16 $18 / short Oct 2 $18 calendar at 0.64, $11,200. About $1,000 cash left.",
    "result": "filled",
    "note": "Filled near 09:52 ET with MSTX 16.60 to 16.80, BTC 80,300 and the gap at +0.2% to +1.3%. Model 0.64 at 118% vol, so the fill was at fair. He waited from a +3.4% gap at 09:39 until BTC closed it; the wait cost about two cents on the calendar. Position is now a 16/18 double calendar: 100 or more LEAPS from 15.50 to 18 at the 10/2 close, break-evens near 14.93 and 19.59."
+  },
+  {
+   "date": "2026-09-18",
+   "mode": "live",
+   "ticker": "MSTX",
+   "rule": "none: outside the plan, his own word for it was tilt",
+   "structure": "Sold about 23 x Sep 18 $17 / $17.50 call credit spreads for about $150, against the spare $1,000, near 10:00 ET with MSTX at 16.50 and the gap near +4%. Count inferred from the $1,000 at risk; not given.",
+   "result": "open, expires today",
+   "note": "At 11:58 ET MSTX 17.72, gap +4.9%, both strikes in the money; model value of the spread 0.31 to 0.36 against 0.065 taken in. A +4% gap is not a signal: the only measured fade is Rich at +8%, and that is a five-day effect, not a four-hour one. Must be closed before the bell if MSTX is near 17 to 17.50, or the short 17s assign into about 2,300 short shares over the weekend."
   }
  ],
  "paper_calls": [

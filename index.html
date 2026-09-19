@@ -924,6 +924,37 @@ const lcNcdf = x => { const t = 1/(1+0.2316419*Math.abs(x)), p = 1-Math.exp(-x*x
 const lcCall = (S, K, T, v, r) => { if (!(S > 0)) return 0; if (T <= 0 || !(v > 0)) return Math.max(S-K, 0);
   const d1 = (Math.log(S/K)+(r+v*v/2)*T)/(v*Math.sqrt(T)); return S*lcNcdf(d1)-K*Math.exp(-r*T)*lcNcdf(d1-v*Math.sqrt(T)); };
 
+// Copy disclosure shared by the two secondary tabs.
+function More({ children, step = false, hide = false, label = "more" }) {
+  const [expanded, setExpanded] = useState(false), [clipped, setClipped] = useState(false);
+  const preview = useRef(null);
+  const text = String(children || "");
+  const first = text.match(/^.*?[.!?](?:\s|$)/);
+  const short = step && text.length > 140 ? (first ? first[0].trim() : text.slice(0,140) + "\u2026") : text;
+  useEffect(() => {
+    const el = preview.current;
+    if (!el) return;
+    const measure = () => setClipped(el.scrollWidth > el.clientWidth);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [text, step, expanded]);
+  const canExpand = hide || (step ? text.length > 140 : clipped);
+  return <span style={{display:"block",minWidth:0}}>
+    <span ref={preview} style={{display:hide && !expanded ? "none" : "block",whiteSpace:expanded || step ? "normal" : "nowrap",
+      overflow:"hidden",textOverflow:"ellipsis",overflowWrap:"anywhere"}}>{expanded ? text : short}</span>
+    {(canExpand || expanded) && <button type="button" aria-expanded={expanded}
+      onClick={() => setExpanded(v => !v)} style={{...GST,textTransform:"none",letterSpacing:0,
+        color:"#8aaac8",padding:"3px 0",border:"none"}}>{expanded ? "less" : label}</button>}
+  </span>;
+}
+const VIS_CARD = {...TBL,marginTop:0,padding:"14px 16px",minWidth:0};
+const VIS_STACK = {display:"flex",flexDirection:"column",gap:11,minWidth:0,overflowWrap:"anywhere"};
+const stateCard = color => ({...VIS_CARD,background:color === GRN ? "#071a0f" : color === RD ? "#1c0505" : "#070f1f",
+  border:"1px solid "+color+"25",borderLeft:"4px solid "+color,
+  boxShadow:"-4px 0 24px "+color+"15, inset 1px 0 0 "+color+"08"});
+
 function LeapsCost({ lc }) {
   const [hv, setHv] = useState(null);
   const mdl = lc && isObj(lc.model) && isObj(lc.model.long) && isObj(lc.model.short) ? lc.model : null;
@@ -950,7 +981,7 @@ function LeapsCost({ lc }) {
   return (
     <div style={{marginTop:16}}>
       <div style={{...HD,marginBottom:4}}>{"COST OF " + (lc.units||200) + " LEAPS UNITS, DAY BY DAY"}</div>
-      <div style={{fontSize:11,color:"#7a9ab8",marginBottom:9}}>{String(lc.unit||"")}</div>
+      <div style={{fontSize:11,color:"#7a9ab8",marginBottom:16}}><More>{String(lc.unit||"")}</More></div>
       <svg viewBox={"0 0 " + W + " " + H} style={{width:"100%",height:"auto",display:"block",touchAction:"pan-y"}}
         onMouseMove={pick} onMouseLeave={() => setHv(null)} onTouchStart={pick} onTouchMove={pick}>
         <rect x={P.l} y={P.t} width={cw} height={ch} fill="#070f1f" rx="2"/>
@@ -969,10 +1000,10 @@ function LeapsCost({ lc }) {
         <text x={P.l} y={H-6} fill="#7aa5c8" fontSize="9">{md(rows[0].d)}</text>
         <text x={P.l+cw} y={H-6} fill="#7aa5c8" fontSize="9" textAnchor="end">{md(rows[rows.length-1].d)}</text>
       </svg>
-      <div style={{fontSize:11,color:"#b0c4d8",minHeight:16,marginTop:4}}>
+      <div style={{fontSize:11,color:"#b0c4d8",marginTop:4}}>
         {h ? h.d + " · MSTX $" + h.mstx.toFixed(2) + " · unit $" + h.unit.toFixed(2) + " · " + (lc.units||200) + " units " + usd(h.cost)
-           : "Cyan: model cost. Amber: 10-day average. White dots: days both legs really traded. Dashed: before the long leg existed."}</div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(118px,1fr))",gap:"8px",marginTop:9}}>
+           : <More>{"Cyan: model cost. Amber: 10-day average. White dots: days both legs really traded. Dashed: before the long leg existed."}</More>}</div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(118px,1fr))",gap:"8px",marginTop:16}}>
         {cards.map(([t, key]) => { const r = ref[key], ch2 = now.cost / r.cost - 1;
           return <div key={key} style={SC}>
             <div style={{...LAB,marginBottom:5}}>{t}</div>
@@ -1004,7 +1035,7 @@ function LeapsCost({ lc }) {
             <label><div style={{...LAB,marginBottom:4}}>{"OPTION VOL " + (lkVol >= 0 ? "+" : "\u2212") + Math.abs(Math.round(lkVol*100)) + "%"}</div>
               <input type="range" min="-0.3" max="0.3" step="0.05" value={lkVol} onChange={e => setLkVol(Number(e.target.value))} style={{width:"100%",marginTop:8,accentColor:"#22d3ee"}}/></label>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(118px,1fr))",gap:8,marginTop:9}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(118px,1fr))",gap:8,marginTop:16}}>
             <div style={SC}><div style={{...LAB,marginBottom:5}}>{n + " UNITS COST"}</div>
               <div style={{fontSize:20,fontWeight:700,color:"#22d3ee"}}>{usd(cost)}</div>
               <div style={{fontSize:10,color:"#7a9ab8",marginTop:3}}>{md(lkDate) + " \u00b7 MSTX $" + S.toFixed(2)}</div></div>
@@ -1014,9 +1045,9 @@ function LeapsCost({ lc }) {
             <div style={SC}><div style={{...LAB,marginBottom:5}}>WHAT MOVES IT</div>
               <div style={{fontSize:11,color:"#b0c4d8",lineHeight:1.6}}>{"MSTX +$1: " + sg(dS)}<br/>{"one week later: " + sg(dT)}<br/>{"option vol +10%: " + sg(dV)}</div></div>
           </div>
-          <div style={{fontSize:10,color:GRY,letterSpacing:"0.04em",marginTop:8}}>
+          <div style={{fontSize:10,color:GRY,letterSpacing:"0.04em",marginTop:16}}><More hide>
             {"Model estimate near the mid: both legs repriced with Black-Scholes at today's fitted vols (long "
-              + Math.round(mdl.long.iv*100) + "%, short " + Math.round(mdl.short.iv*100) + "%). A real fill costs more; the long leg's market is wide."}</div>
+              + Math.round(mdl.long.iv*100) + "%, short " + Math.round(mdl.short.iv*100) + "%). A real fill costs more; the long leg's market is wide."}</More></div>
         </div>; })()}
     </div>
   );
@@ -1112,7 +1143,7 @@ function PlaybookTab({ todayTs, tier, q }) {
   const rise = (() => { let i = bars.length - 1;
     while (i > 0 && (rising ? bars[i].v > bars[i-1].v : bars[i].v <= bars[i-1].v)) i--;
     return bars.length ? bars[i].bar : null; })();
-  const CW = 344, CH = 118, CP = {t:13, r:8, b:23, l:10};
+  const CW = window.innerWidth < 560 ? 344 : 760, CH = 118, CP = {t:13, r:8, b:23, l:10};   // full card width on a desktop, no blank half
   const cwd = CW - CP.l - CP.r, cht = CH - CP.t - CP.b;
   const vmax = Math.max(0, ...bars.map(b => b.v)), vmin = Math.min(0, ...bars.map(b => b.v));
   const vsp = (vmax - vmin) || 1;
@@ -1126,14 +1157,14 @@ function PlaybookTab({ todayTs, tier, q }) {
   const routes = rowsOf(plg && plg.plan && plg.plan.routes);
   const rNote = String((plg && plg.plan && plg.plan.routes_note) || "");
   const PNL = {background:tier?tier.darkBg:"#070f1f",border:"1px solid "+AC+"30",
-    borderLeft:"3px solid "+AC,borderRadius:"6px",padding:"14px 16px",marginTop:11};
-  const FT = {fontSize:10,color:GRY,letterSpacing:"0.04em",marginTop:9};
+    borderLeft:"3px solid "+AC,borderRadius:"6px",padding:"14px 16px",marginTop:0};
+  const FT = {fontSize:10,color:GRY,letterSpacing:"0.04em",marginTop:16};
   return (
-    <div>
+    <div style={VIS_STACK}>
       {failed.map(file => <div key={file} style={{...BODY,marginBottom:8}}>{file + " failed to load."}</div>)}
       {/* HERO */}
       <div style={{background:tier?tier.darkBg:"#070f1f",border:"1px solid "+AC+"25",
-        borderLeft:"4px solid "+AC,borderRadius:"6px",padding:"16px 20px",
+        borderLeft:"4px solid "+AC,borderRadius:"6px",padding:"14px 16px",
         boxShadow:"-4px 0 24px "+AC+"15, inset 1px 0 0 "+AC+"08"}}>
         <div style={{...ROW,justifyContent:"space-between",marginBottom:6}}>
           <span style={LAB}>{tkr + " · TODAY"}</span>
@@ -1142,11 +1173,12 @@ function PlaybookTab({ todayTs, tier, q }) {
         <div style={{fontSize:"28px",fontWeight:700,color:TCOL[trig],lineHeight:1,letterSpacing:"0.02em"}}>
           {trig + (ph ? " \u00b7 PHASE " + ph.id : "")}</div>
         {actS.length > 0
-          ? actS.map((t, i) => <div key={i} style={{fontSize:14,color:"#e2e8f0",lineHeight:1.5,
-              marginTop:i ? 4 : 10}}>{t}</div>)
-          : <div style={{fontSize:15,color:"#e2e8f0",lineHeight:1.5,marginTop:10}}>{act1}</div>}
+          ? actS.slice(0,3).map((t, i) => <div key={i} style={{fontSize:14,color:"#e2e8f0",lineHeight:1.5,
+              marginTop:i ? 4 : 10}}><More step>{t}</More></div>)
+          : <div style={{fontSize:15,color:"#e2e8f0",lineHeight:1.5,marginTop:10}}><More step>{act1}</More></div>}
+        {actS.length > 3 && <div style={{...BODY,marginTop:6}}><More hide label="more steps">{actS.slice(3).join(" ")}</More></div>}
         {act2 && <div style={{fontSize:12,color:"#8aaac8",lineHeight:1.5,
-          marginTop:6}}>{act2}</div>}
+          marginTop:6}}><More hide>{act2}</More></div>}
       </div>
 
       {/* PHASE 1 */}
@@ -1163,32 +1195,32 @@ function PlaybookTab({ todayTs, tier, q }) {
             <span style={{fontSize:13,color:"#a0b8cc"}}>{r.contracts + " contracts · cost " + (r.cost == null ? UNK : fmtFull(r.cost))}</span>
           </div>))}
         {!p1.length && <div style={{...BODY,padding:"7px 0"}}>No spreads in the ledger.</div>}
-        {ph1 && <div style={{...BODY,lineHeight:1.5,marginTop:9}}>{ph1.positions}</div>}
+        {ph1 && <div style={{...BODY,lineHeight:1.5,marginTop:9}}><More hide>{ph1.positions}</More></div>}
         {ph1 && <div style={{...BODY,lineHeight:1.5,marginTop:9}}>
-          {"Exits: " + String(ph1.next_action || "") + " " + String(ph1.next_action_detail || "")}</div>}
+          <More>{"Exits: " + String(ph1.next_action || "") + " " + String(ph1.next_action_detail || "")}</More></div>}
       </div>
 
       {/* UNITS */}
-      <div style={TBL}>
+      <div style={VIS_CARD}>
         <div style={{...HD,marginBottom:8}}>LEAPS UNITS</div>
-        <div style={{...BODY,marginBottom:8}}>{String((plg && plg.plan && plg.plan.objective) || "").split(/\.\s/)[0]}</div>
-        <div style={{fontSize:15,color:"#22d3ee",marginBottom:12}}>{"Today’s unit price: " + msUsd(nm(lc && lc.ref && lc.ref.today && lc.ref.today.unit))}</div>
+        <div style={{...BODY,marginBottom:16}}><More>{String((plg && plg.plan && plg.plan.objective) || "")}</More></div>
+        <div style={{fontSize:15,color:"#22d3ee",marginBottom:16}}>{"Today’s unit price: " + msUsd(nm(lc && lc.ref && lc.ref.today && lc.ref.today.unit))}</div>
         <div style={{...HD,marginBottom:10}}>BY MSTX CLOSE ON SETTLEMENT</div>
         <div style={{overflowX:"auto"}}><div style={{display:"grid",
-          gridTemplateColumns:"1fr 1fr 1fr 1fr",minWidth:"300px"}}>
+          gridTemplateColumns:"repeat(4,minmax(0,1fr))",minWidth:0}}>
           {["MSTX","POSITION VALUE","UNIT PRICE","LEAPS"].map((h,i) =>
             <div key={h} style={{...LAB,padding:"4px 6px",textAlign:i?"right":"left"}}>{h}</div>)}
           {uRows.map(r => { const hl = r.S === uSel;
             return [String(+r.S.toFixed(2)),
               r.pv == null ? UNK : "$" + Math.round(r.pv).toLocaleString("en-US"), x2(r.up),
               r.n == null ? UNK : r.n.toFixed(0)].map((v,i) =>
-              <div key={r.S+"-"+i} style={{padding:"5px 6px",fontSize:12,
+              <div key={r.S+"-"+i} style={{padding:"4px 6px",fontSize:12,
                 borderBottom:"1px solid #070f1f",textAlign:i?"right":"left",
                 background:hl?AC+"14":"transparent",
                 color:hl?AC:i===3?"#d0dde8":"#8aaac8",fontWeight:(hl||i===3)?600:400}}>{v}</div>);
           })}
         </div></div>
-        <div style={{...ROW,gap:10,marginTop:14}}>
+        <div style={{...ROW,gap:10,marginTop:16}}>
           <span style={{...LAB,whiteSpace:"nowrap"}}>MSTX ON SETTLEMENT</span>
           <div style={{position:"relative",display:"flex",alignItems:"center",
             flex:"1 1 110px",minWidth:"88px",height:"20px"}}>
@@ -1208,33 +1240,32 @@ function PlaybookTab({ todayTs, tier, q }) {
         <div style={{fontSize:11,color:"#b0c4d8",marginTop:7}}>{uRead}</div>
         <LeapsCost lc={lc}/>
       {/* ROUTES */}
-      <div style={{marginTop:16}}>
+      {routes.length > 0 && <div style={{marginTop:16}}>
         <div style={{...HD,marginBottom:10}}>LEAPS UNITS AT THE END, BY ROUTE</div>
         <div style={{overflowX:"auto"}}><div style={{display:"grid",
           gridTemplateColumns:"minmax(0,1fr) 64px 64px"}}>
           {["ROUTE","YOUR ODDS","MARKET ODDS"].map((h,i) =>
             <div key={h} style={{...LAB,padding:"4px 6px",textAlign:i?"right":"left"}}>{h}</div>)}
           {routes.map((r,n) => [String(r.route||UNK), nm(r.units_thesis), nm(r.units_market)]
-            .map((v,i) => <div key={n+"-"+i} style={{padding:"5px 6px",fontSize:12,
+            .map((v,i) => <div key={n+"-"+i} style={{padding:"4px 6px",fontSize:12,
               borderBottom:"1px solid #070f1f",textAlign:i?"right":"left",overflowWrap:"anywhere",
               background:n%2?"transparent":"#050d1c",color:i===1?AC:"#8aaac8",
               fontWeight:i?600:400}}>
               {i === 0 ? v : v == null ? UNK : v.toFixed(0)}</div>))}
         </div></div>
-        {!routes.length && <div style={{...BODY,paddingTop:7}}>No routes in the ledger.</div>}
-      </div>
+      </div>}
 
-        <div style={FT}>{[lc ? lc.note : "Using ledger unit prices and LEAPS counts.",
-          lc && ("Updated " + lc.updated + "."), rNote].filter(Boolean).join(" ")}</div>
+        <div style={FT}><More hide>{[lc ? lc.note : "Using ledger unit prices and LEAPS counts.",
+          lc && ("Updated " + lc.updated + "."), rNote].filter(Boolean).join(" ")}</More></div>
       </div>
 
       {/* TRIGGER */}
-      <div style={{...TBL,display:"flex",gap:"14px",flexWrap:"wrap"}}>
+      <div style={{...VIS_CARD,display:"flex",gap:"14px",flexWrap:"wrap"}}>
         <div style={{flex:"1 1 250px",minWidth:0}}>
           <div style={{...HD,marginBottom:8}}>WEEKLY MACD (8,21,5) · HISTOGRAM</div>
           {bars.length ? (
             <svg viewBox={"0 0 " + CW + " " + CH}
-              style={{width:"100%",maxWidth:"520px",height:"auto",display:"block"}}>
+              style={{width:"100%",height:"auto",display:"block"}}>
               <rect x={CP.l} y={CP.t} width={cwd} height={cht} fill="#070f1f" rx="2"/>
               {bars.map((b,i) => <rect key={b.bar} x={bx(i)} y={Math.min(cy(b.v), zy)} width={bwi}
                 height={Math.max(1, Math.abs(cy(b.v) - zy))} rx="1"
@@ -1257,9 +1288,9 @@ function PlaybookTab({ todayTs, tier, q }) {
               {bars.map((b,i) => <rect key={"h"+b.bar} x={CP.l+i*bw} y={CP.t} width={bw}
                 height={cht} fill="transparent" style={{cursor:"pointer"}} {...hit(bTip(b), i)}/>)}
             </svg>) : <div style={BODY}>Weekly histogram bars unknown.</div>}
-          <div style={{fontSize:11,color:"#b0c4d8",marginTop:7}}>
+          <div style={{fontSize:11,color:"#b0c4d8",marginTop:7}}><More>
             {(rising ? "Rising since " : "Falling since ") + (md(rise)||UNK) + ". Crossed " + (md(xd0)||UNK) + ", "
-              + (isNaN(wkN) ? UNK : wkN) + " weeks ago. Bar: " + (bars.length ? bars[bars.length-1].bar : UNK) + "."}</div>
+              + (isNaN(wkN) ? UNK : wkN) + " weeks ago. Bar: " + (bars.length ? bars[bars.length-1].bar : UNK) + "."}</More></div>
         </div>
       </div>
 
@@ -1369,7 +1400,7 @@ function MstrTab() {
   // All hooks run before the config guard; the monitor can render without a model file.
   if (!cfg || ["cheap_threshold", "rich_threshold", "lag_threshold", "lag_slope", "btc_slope_per_2500", "btc_hour_move_floor"].some(k => nm(cfg[k]) == null)
       || ["regime_gate", "rich_gate", "lag_at_low"].some(k => typeof cfg[k] !== "boolean")) return (
-    <div style={TBL}><div style={BODY}>{errors.includes("data/mstr-config.json")
+    <div style={VIS_CARD}><div style={BODY}>{errors.includes("data/mstr-config.json")
       ? "data/mstr-config.json failed to load." : "Waiting for a complete data/mstr-config.json."}</div></div>);
   const cheap = nm(cfg.cheap_threshold)*200, rich = nm(cfg.rich_threshold)*200, lagLine = nm(cfg.lag_threshold)*200;
   const verdict = gap => gap == null ? "NO READ" : gap <= cheap ? "CHEAP" : gap >= rich ? "RICH" : "FAIR";
@@ -1418,12 +1449,15 @@ function MstrTab() {
   const FT = {fontSize:11,color:GRY,lineHeight:1.5,marginTop:9};
   const tiles = items => <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(124px,1fr))",gap:10,marginTop:12}}>
     {items.map(([label,value,sub,color]) => <div key={label} style={SC}>
-      <div style={LAB}>{label}</div><div style={{fontSize:label === "MONITOR" || label === "BTC VS 50-DAY" ? 14 : 22,fontWeight:700,color,overflowWrap:"anywhere",marginTop:6}}>{value}</div>
+      <div style={LAB}>{label}</div><div style={{fontSize:label === "MONITOR" || label === "BTC VS 50-DAY" ? 14 : 22,fontWeight:700,color,overflowWrap:"anywhere",marginTop:6}}>{label === "MONITOR" && <span aria-hidden="true" style={{display:"inline-block",width:7,height:7,borderRadius:"50%",marginRight:6,background:heartbeatColor === NEU ? GRN : heartbeatColor}}/>}{value}</div>
       <div style={{fontSize:10,color:SUB,marginTop:3}}>{sub}</div></div>)}</div>;
+  const eventColor = (r,i,v) => i === 1 ? ({lag:"#22d3ee",rich:RD,cheap:GRN,watch:NEU}[r.kind] || NEU)
+    : i >= 3 ? (parseFloat(v) > 0 ? GRN : parseFloat(v.replace("\u2212","-")) < 0 ? RD : NEU) : "#d0dde8";
   const headers = ["WHEN","KIND","LAG MSTX","MSTX AFTER 60 MIN","MSTR − BTC AFTER 60 MIN"];
-  const eventValues = r => [msWhen(r.time), String(r.kind || UNK)+(r.muted ? " (muted)" : ""), msPct(nm(r.lag) == null ? null : nm(r.lag)*2),
-    msPct(r.scored ? nm(r.mstx_60m) : null), msPct(r.scored ? nm(r.rel_60m) != null ? nm(r.rel_60m)
-      : nm(r.mstr_60m) != null && nm(r.btc_60m) != null ? nm(r.mstr_60m)-nm(r.btc_60m) : null : null)];
+  const eventValues = r => [msWhen(r.time), String(r.kind || UNK)+(r.muted ? " (muted)" : ""), (nm(r.lag) == null ? "n/a" : msPct(nm(r.lag)*2)),
+    (!r.scored || nm(r.mstx_60m) == null ? "pending" : msPct(nm(r.mstx_60m))),
+    (!r.scored ? "pending" : nm(r.rel_60m) != null ? msPct(nm(r.rel_60m))
+      : nm(r.mstr_60m) != null && nm(r.btc_60m) != null ? msPct(nm(r.mstr_60m)-nm(r.btc_60m)) : "pending")];
   // Square-root gap scale, in MSTX terms throughout.
   const W = narrow ? 440 : 880, H = narrow ? 200 : 170, P = {l:narrow ? 34 : 48,r:10,t:16,b:24}, cw = W-P.l-P.r, ch = H-P.t-P.b;   // taller on a phone
   const gaps = ser.map((r,i) => { const y = ser[i-1];
@@ -1439,35 +1473,35 @@ function MstrTab() {
     if (box.width && ser.length) setHov(Math.max(0,Math.min(ser.length-1,Math.round(((clientX-box.left)/box.width*W-P.l)/cw*(ser.length-1)))));
   };
   const selected = hov == null ? ser.length-1 : Math.min(hov,ser.length-1);
-  return <div>
+  return <div style={VIS_STACK}>
     {errors.map(file => <div key={file} style={FT}>{file.split("/").pop()+" failed to load."}</div>)}
-    <div style={{...SC,borderLeft:"5px solid "+(word === "BUY" ? GRN : heartbeatColor),padding:"18px 22px"}}>
+    <div style={stateCard(word === "BUY" ? GRN : word === "STALE" ? RD : NEU)}>
       <div style={HD}>MSTX NOW</div>
-      <div style={{fontSize:"clamp(32px,6vw,48px)",fontWeight:800,color:word === "BUY" ? GRN : heartbeatColor,marginTop:7}}>{word}</div>
+      <div style={{fontSize:"clamp(32px,6vw,48px)",fontWeight:800,color:word === "BUY" ? GRN : word === "STALE" ? RD : NEU,marginTop:7}}>{word}</div>
       <div style={{...BODY,lineHeight:1.5,marginTop:9}}>{why}</div>
       {tiles([["MSTX",msUsd(prices.mstx),nm(st.mstx) != null ? "monitor" : "model close "+(last.d || UNK),AMB],
-        ["LAG VS LAST HOUR",msPct(lag),"MSTX",NEU],
+        ["LAG VS LAST HOUR",msPct(lag),"MSTX",lag != null && lag <= lagLine ? GRN : NEU],
         ["MONITOR",runTs ? msWhen(runTs) : "NO RUN",runTs ? "last run · "+Math.max(0,Math.floor(runAge))+" min ago" : "state unavailable",heartbeatColor]])}
     </div>
-    <div style={TBL}>
+    <div style={stateCard(gapColor(gap))}>
       <div style={HD}>LEVEL</div><div style={{fontSize:28,fontWeight:700,color:gapColor(gap),marginTop:6}}>{verdict(gap)}</div>
-      {tiles([["GAP MSTX",msPct(gap),"against projection",gapColor(gap)], ["PROJECTED MSTX",msUsd(projected),"fair value",gapColor(gap)],
+      {tiles([["GAP MSTX",msPct(gap),"against projection",gapColor(gap)], ["PROJECTED MSTX",msUsd(projected),"fair value","#22d3ee"],
         ["BTC VS 50-DAY",st.regime || UNK,msUsd(prices.btc,0),NEU]])}
     </div>
-    <div style={TBL}>
+    <div style={VIS_CARD}>
       <div style={{...HD,marginBottom:9}}>ALERT LOG</div>
       {narrow ? led.map((r,k) => <div key={r.time+"-"+k} style={{padding:"8px 0",borderBottom:SEP}}>
         {eventValues(r).map((v,i) => <div key={i} style={{...ROW,justifyContent:"space-between",fontSize:12,padding:"3px 0"}}>
-          <span style={LAB}>{headers[i]}</span><span style={{color:"#d0dde8"}}>{v}</span></div>)}</div>)
+          <span style={LAB}>{headers[i]}</span><span style={{color:eventColor(r,i,v)}}>{v}</span></div>)}</div>)
         : <div style={{display:"grid",gridTemplateColumns:"116px 100px repeat(3,minmax(0,1fr))"}}>
           {headers.map(h => <div key={h} style={{...LAB,padding:6}}>{h}</div>)}
-          {led.map((r,k) => eventValues(r).map((v,i) => <div key={k+"-"+i} style={{fontSize:12,padding:6,borderBottom:SEP,color:"#d0dde8"}}>{v}</div>))}</div>}
+          {led.map((r,k) => eventValues(r).map((v,i) => <div key={k+"-"+i} style={{fontSize:12,padding:6,borderBottom:SEP,color:eventColor(r,i,v)}}>{v}</div>))}</div>}
       {!led.length && <div style={BODY}>No alert rows available.</div>}
-      <div style={FT}>{tally}</div><div style={FT}>{rules}</div>
+      <div style={FT}><More>{tally}</More></div><div style={FT}><More>{rules}</More></div>
     </div>
-    <div style={TBL}>
+    <div style={VIS_CARD}>
       <div style={HD}>GAP CHART · MSTX</div>
-      <div style={FT}>{ser[selected] ? ser[selected].d+" · gap "+msPct(gaps[selected]) : "No history available."}</div>
+      <div style={FT}><More>{ser[selected] ? ser[selected].d+" · gap "+msPct(gaps[selected]) : "No history available."}</More></div>
       <svg viewBox={"0 0 "+W+" "+H} style={{width:"100%",height:"auto",display:"block",touchAction:"pan-y"}}
         onMouseMove={pick} onMouseLeave={() => setHov(null)} onTouchStart={pick} onTouchMove={pick}>
         <rect x={P.l} y={P.t} width={cw} height={ch} fill="#070f1f" rx="2"/>
@@ -1479,16 +1513,16 @@ function MstrTab() {
         {[0,ser.length-1].map((i,k) => <text key={k} x={k ? P.l+cw : P.l} y={H-5} fill="#7aa5c8" fontSize="10"
           textAnchor={k ? "end" : "start"}>{ser[i] && ser[i].d}</text>)}
       </svg>
-      <div style={FT}>Tap for a day. Dashed lines are Cheap and Rich; the gap scale is stretched near zero.</div>
+      <div style={FT}><More>Tap for a day. Dashed lines are Cheap and Rich; the gap scale is stretched near zero.</More></div>
     </div>
-    <div style={TBL}>
+    <div style={VIS_CARD}>
       <div style={{...HD,marginBottom:10}}>WHAT IF</div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(122px,1fr))",gap:10}}>
         {MS_FLD.map(([k,label]) => <label key={k} style={LAB}>{label}
           <input value={f[k]} inputMode="decimal" onChange={e => { touched.current[k]=true; setF(v => ({...v,[k]:e.target.value.replace(/[^0-9.\-]/g,"")})); }}
             style={{...INP,display:"block",width:"100%",marginTop:5,fontSize:13,padding:"6px 8px"}}/></label>)}
       </div>
-      {tiles([["PROJECTED MSTX",msUsd(whatPrice),"at these inputs",gapColor(whatGap)], ["GAP MSTX",msPct(whatGap),"against projection",gapColor(whatGap)],
+      {tiles([["PROJECTED MSTX",msUsd(whatPrice),"at these inputs","#22d3ee"], ["GAP MSTX",msPct(whatGap),"against projection",gapColor(whatGap)],
         ["VERDICT",verdict(whatGap),"at these inputs",gapColor(whatGap)]])}
       <div style={{...ROW,marginTop:12}}><button style={GST} onClick={() => { touched.current={}; seed(); }}>reset to live</button>
         <a href="https://github.com/Kaim222/btc-quantile-ladder/edit/main/data/mstr-config.json" target="_blank" rel="noopener" style={{fontSize:11,color:"#7ab8d8"}}>edit config</a></div>
@@ -1522,7 +1556,7 @@ function MstrTab() {
       const top = Math.ceil(mstrAt(b1, tHi)/100)*100, xb = b => P2.l+cw2*(b-b0)/(b1-b0), yb = v => P2.t+ch2*(1-v/top);
       const line = t => grid.map((b,i) => (i ? "L" : "M")+xb(b).toFixed(1)+","+yb(mstrAt(b, t)).toFixed(1)).join(" ");
       const levels = [60000,70000,80000,90000,100000,110000,120000,133000,150000];
-      return <div style={TBL}>
+      return <div style={VIS_CARD}>
         <div style={{...HD,marginBottom:10}}>BITCOIN PRICE LOOKUP</div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10}}>
           <label style={LAB}>IF BITCOIN IS AT
@@ -1536,7 +1570,7 @@ function MstrTab() {
               style={{...INP,display:"block",width:"100%",marginTop:5,fontSize:13,padding:"6px 8px"}}/></label>}
         </div>
         {tiles([["TARGET mNAV",rng(tLo(B),tHi(B),x2),"STRC $"+strcI.toFixed(2)+" base "+x2(base),NEU],
-          ["PROJECTED MSTR",rng(mstrAt(B,tLo),mstrAt(B,tHi),usd0),"if today's "+msPct(gapNow*100)+" gap holds: "+usd0(mstrAt(B,tHeld)),AMB],
+          ["PROJECTED MSTR",rng(mstrAt(B,tLo),mstrAt(B,tHi),usd0),"if today's "+msPct(gapNow*100)+" gap holds: "+usd0(mstrAt(B,tHeld)),"#22d3ee"],
           ["PROJECTED MSTX",rng(mstxAt(B,tLo),mstxAt(B,tHi),usd2),"if today's gap holds: "+(mstxAt(B,tHeld) == null ? UNK : usd2(mstxAt(B,tHeld)))+(yrs > 0 ? " \u00b7 "+Math.round((1-decay)*100)+"% decay by "+md(lkDay) : ""),"#22d3ee"]]
           .concat(tMine ? [["AT YOUR mNAV "+myM.toFixed(2),usd0(mstrAt(B,tMine)),"MSTX "+(mstxAt(B,tMine) == null ? UNK : usd2(mstxAt(B,tMine))),GRN]] : []))}
         <svg viewBox={"0 0 "+W2+" "+H2} style={{width:"100%",height:"auto",display:"block",marginTop:12}}>
@@ -1553,19 +1587,19 @@ function MstrTab() {
           {btcI > b0 && btcI < b1 && mstrI > 0 && mstrI < top && <circle cx={xb(btcI)} cy={yb(mstrI)} r="3" fill="#f1f5f9"/>}
           {B > b0 && B < b1 && <circle cx={xb(B)} cy={yb(mstrAt(B,tLo))} r="3.4" fill="#22d3ee"/>}
         </svg>
-        <div style={FT}>Projected MSTR against Bitcoin. Cyan: the live rule. White: the rule with the current gap held. Amber dashes: the convex fit, the high end. Green: your mNAV, if entered. White dot: MSTR now. Cyan dot: your Bitcoin price.</div>
+        <div style={FT}><More>Projected MSTR against Bitcoin. Cyan: the live rule. White: the rule with the current gap held. Amber dashes: the convex fit, the high end. Green: your mNAV, if entered. White dot: MSTR now. Cyan dot: your Bitcoin price.</More></div>
         <div style={{overflowX:"auto",marginTop:10}}><div style={{display:"grid",gridTemplateColumns:"repeat(4,minmax(0,1fr))",minWidth:narrow ? 0 : 520}}>
           {["BITCOIN","TARGET mNAV","MSTR","MSTX"+(yrs > 0 ? " BY "+md(lkDay) : "")].map(h => <div key={h} style={{...LAB,padding:"4px 6px"}}>{h}</div>)}
           {levels.map((b,n) => [usd0(b), rng(tLo(b),tHi(b),x2), rng(mstrAt(b,tLo),mstrAt(b,tHi),usd0), rng(mstxAt(b,tLo),mstxAt(b,tHi),usd2)].map((v,i) =>
             <div key={n+"-"+i} style={{padding:"5px 6px",fontSize:narrow ? 11 : 12,color:i ? "#d0dde8" : "#8aaac8",borderBottom:SEP,background:n%2 ? "transparent" : "#050d1c"}}>{v}</div>))}
         </div></div>
-        <div style={FT}>{"Uses the MSTR, MSTX and STRC boxes in WHAT IF as the starting point and assumes MSTR trades at its projected price. "
+        <div style={FT}><More>{"Uses the MSTR, MSTX and STRC boxes in WHAT IF as the starting point and assumes MSTR trades at its projected price. "
           + "MSTX is a 2x daily fund. For today's date it is twice the day's move off yesterday's closes, the same formula as WHAT IF. For a later date it is MSTX now x (MSTR ratio) squared, less decay at "+Math.round(vol*100)+"% MSTR vol. "
           + "A range means rule to convex fit; the convex fit lost to the rule out of sample, so plan on the low end."
           + (ops != null ? " Your mNAV is Strategy's own measure, enterprise value over Bitcoin: price = mNAV x Bitcoin per share - $"+ops.toFixed(2)+" of debt and preferred per share"
-            + (holdings.prefPct > 0 ? " (preferred "+Math.round(holdings.prefPct)+"% of the Bitcoin, debt "+(holdings.debtPct || 0).toFixed(1)+"%)." : ".") : "")}</div>
+            + (holdings.prefPct > 0 ? " (preferred "+Math.round(holdings.prefPct)+"% of the Bitcoin, debt "+(holdings.debtPct || 0).toFixed(1)+"%)." : ".") : "")}</More></div>
       </div>; })()}
-    <div style={TBL}>
+    <div style={VIS_CARD}>
       <button style={{...GST,border:"none",padding:0}} onClick={() => setDet(v => !v)}>{(det ? "▾ " : "▸ ")+"DETAILS"}</button>
       {det && <div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(4,minmax(0,1fr))",marginTop:10}}>
@@ -1574,7 +1608,7 @@ function MstrTab() {
             <div key={k+"-"+i} style={{padding:4,fontSize:12,color:"#d0dde8",borderBottom:SEP,
               background:nm(r.mstr) === nm(cfg.lag_threshold)*100 ? "#0c2040" : "transparent"}}>{v}</div>))}
         </div>
-        {regRead.map((line,i) => <div key={i} style={FT}>{line}</div>)}
+        {regRead.map((line,i) => <div key={i} style={FT}><More>{line}</More></div>)}
       </div>}
     </div>
   </div>;

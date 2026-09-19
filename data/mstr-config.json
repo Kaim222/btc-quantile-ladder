@@ -19,5 +19,6 @@
     "cap": 2.0
   },
   "mstr_vol": 0.75,
-  "lookup_note": "convex_fit is the HIGH end for the Bitcoin price lookup only: target = STRC base + b1*x + b2*x^2 with x = (BTC - 75,000) / 2,500, fitted in sample over the STRC era on 2026-09-19. Out of sample it lost to the straight rule (see mstr-mnav-model/2026-09-19-mnav-shape.md), so signals never use it. mstr_vol 0.75 is the annual MSTR vol used for MSTX's 2x decay over time: MSTX = MSTX now x (MSTR ratio)^2 x exp(-vol^2 x years)."
+  "lookup_note": "convex_fit is the HIGH end for the Bitcoin price lookup only: target = STRC base + b1*x + b2*x^2 with x = (BTC - 75,000) / 2,500, fitted in sample over the STRC era on 2026-09-19. Out of sample it lost to the straight rule (see mstr-mnav-model/2026-09-19-mnav-shape.md), so signals never use it. mstr_vol 0.75 is the annual MSTR vol used for MSTX's 2x decay over time: MSTX = MSTX now x (MSTR ratio)^2 x exp(-vol^2 x years). gap_half_life_days 28: the lookup's best estimate is the rule carrying today's gap, fading by half every 28 calendar days. Walk-forward over the STRC era (2026-09-19): rule alone 0.083 mean abs error at 5, 10 and 20 trading days; rule plus the full gap 0.044, 0.063, 0.076; rule plus half the gap 0.072 at 20 and at 40 days, where the rule alone is 0.072 and the full gap is worse (0.093). Signals still use the rule alone.",
+  "gap_half_life_days": 28
 }

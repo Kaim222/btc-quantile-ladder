@@ -1544,10 +1544,13 @@ function MstrTab() {
       if (!B) return null;
       // MSTR has spent long stretches above the rule, so also show the rule with today's gap carried along
       const gapNow = btcI > 0 && mstrI > 0 ? mstrI/mstrAt(btcI, tLo)-1 : 0;
-      const tHeld = b => tLo(b)*(1+gapNow);
+      // best estimate: the rule carrying today's gap, which fades by half about every gap_half_life_days (tested 2026-09-19)
+      const halfLife = nm(cfg.gap_half_life_days) > 0 ? nm(cfg.gap_half_life_days) : 28, wGap = Math.pow(0.5, yrs*365/halfLife);
+      const tHeld = b => tLo(b)*(1+gapNow*wGap);
       // his own view: Strategy's enterprise-value mNAV. Price = mNAV x Bitcoin per share - debt and preferred per share.
       const ops = holdings && holdings.ops > 0 ? holdings.ops : null, mEv = holdings && holdings.mnavEv > 0 ? holdings.mnavEv : null;
       const myM = nm(lkM) > 0 ? nm(lkM) : null;
+      const mImp = ops != null && btcI > 0 && mstrI > 0 ? (mstrI+ops)/(bps*btcI) : null;   // the multiple today's price implies on this identity
       const tMine = myM && ops != null ? (b => Math.max(0, myM-ops/(bps*b))) : null;
       const rng = (lo, hi, fmt) => lo == null ? UNK : Math.abs(hi-lo) < 1e-9 ? fmt(lo) : fmt(lo)+" to "+fmt(hi);
       const usd0 = v => "$"+Math.round(v).toLocaleString("en-US"), usd2 = v => "$"+v.toFixed(2), x2 = v => v.toFixed(2);
@@ -1565,13 +1568,13 @@ function MstrTab() {
           <label style={LAB}>BY THIS DATE
             <input type="date" value={lkDay} min={today} onChange={e => e.target.value && setLkDay(e.target.value)}
               style={{...INP,display:"block",width:"100%",marginTop:5,fontSize:13,padding:"6px 8px",colorScheme:"dark",boxSizing:"border-box"}}/></label>
-          {ops != null && <label style={LAB}>{"YOUR STRATEGY mNAV" + (mEv ? " (now " + mEv.toFixed(2) + ")" : "")}
+          {ops != null && <label style={LAB}>{"YOUR mNAV, DEBT AND PREFERRED INCLUDED" + (mImp ? " (now " + mImp.toFixed(2) + ")" : "")}
             <input value={lkM} inputMode="decimal" placeholder="optional" onChange={e => setLkM(e.target.value.replace(/[^0-9.]/g,""))}
               style={{...INP,display:"block",width:"100%",marginTop:5,fontSize:13,padding:"6px 8px"}}/></label>}
         </div>
         {tiles([["TARGET mNAV",rng(tLo(B),tHi(B),x2),"STRC $"+strcI.toFixed(2)+" base "+x2(base),NEU],
-          ["PROJECTED MSTR",rng(mstrAt(B,tLo),mstrAt(B,tHi),usd0),"if today's "+msPct(gapNow*100)+" gap holds: "+usd0(mstrAt(B,tHeld)),"#22d3ee"],
-          ["PROJECTED MSTX",rng(mstxAt(B,tLo),mstxAt(B,tHi),usd2),"if today's gap holds: "+(mstxAt(B,tHeld) == null ? UNK : usd2(mstxAt(B,tHeld)))+(yrs > 0 ? " \u00b7 "+Math.round((1-decay)*100)+"% decay by "+md(lkDay) : ""),"#22d3ee"]]
+          ["BEST ESTIMATE MSTR",usd0(mstrAt(B,tHeld)),"rule "+usd0(mstrAt(B,tLo))+" \u00b7 high "+usd0(mstrAt(B,tHi))+" \u00b7 carries "+Math.round(wGap*100)+"% of today's "+msPct(gapNow*100)+" gap",AMB],
+          ["BEST ESTIMATE MSTX",mstxAt(B,tHeld) == null ? UNK : usd2(mstxAt(B,tHeld)),"rule "+(mstxAt(B,tLo) == null ? UNK : usd2(mstxAt(B,tLo)))+" \u00b7 high "+(mstxAt(B,tHi) == null ? UNK : usd2(mstxAt(B,tHi)))+(yrs > 0 ? " \u00b7 "+Math.round((1-decay)*100)+"% decay by "+md(lkDay) : ""),"#22d3ee"]]
           .concat(tMine ? [["AT YOUR mNAV "+myM.toFixed(2),usd0(mstrAt(B,tMine)),"MSTX "+(mstxAt(B,tMine) == null ? UNK : usd2(mstxAt(B,tMine))),GRN]] : []))}
         <svg viewBox={"0 0 "+W2+" "+H2} style={{width:"100%",height:"auto",display:"block",marginTop:12}}>
           <rect x={P2.l} y={P2.t} width={cw2} height={ch2} fill="#070f1f" rx="2"/>
@@ -1587,15 +1590,15 @@ function MstrTab() {
           {btcI > b0 && btcI < b1 && mstrI > 0 && mstrI < top && <circle cx={xb(btcI)} cy={yb(mstrI)} r="3" fill="#f1f5f9"/>}
           {B > b0 && B < b1 && <circle cx={xb(B)} cy={yb(mstrAt(B,tLo))} r="3.4" fill="#22d3ee"/>}
         </svg>
-        <div style={FT}><More>Projected MSTR against Bitcoin. Cyan: the live rule. White: the rule with the current gap held. Amber dashes: the convex fit, the high end. Green: your mNAV, if entered. White dot: MSTR now. Cyan dot: your Bitcoin price.</More></div>
+        <div style={FT}><More>Projected MSTR against Bitcoin. Cyan: the live rule. White: the best estimate, the rule carrying today's gap. Amber dashes: the convex fit, the high end. Green: your mNAV, if entered. White dot: MSTR now. Cyan dot: your Bitcoin price.</More></div>
         <div style={{overflowX:"auto",marginTop:10}}><div style={{display:"grid",gridTemplateColumns:"repeat(4,minmax(0,1fr))",minWidth:narrow ? 0 : 520}}>
-          {["BITCOIN","TARGET mNAV","MSTR","MSTX"+(yrs > 0 ? " BY "+md(lkDay) : "")].map(h => <div key={h} style={{...LAB,padding:"4px 6px"}}>{h}</div>)}
-          {levels.map((b,n) => [usd0(b), rng(tLo(b),tHi(b),x2), rng(mstrAt(b,tLo),mstrAt(b,tHi),usd0), rng(mstxAt(b,tLo),mstxAt(b,tHi),usd2)].map((v,i) =>
+          {["BITCOIN","MSTR, RULE","MSTR, BEST ESTIMATE","MSTX"+(yrs > 0 ? " BY "+md(lkDay) : "")].map(h => <div key={h} style={{...LAB,padding:"4px 6px"}}>{h}</div>)}
+          {levels.map((b,n) => [usd0(b), usd0(mstrAt(b,tLo)), usd0(mstrAt(b,tHeld)), mstxAt(b,tHeld) == null ? UNK : usd2(mstxAt(b,tHeld))].map((v,i) =>
             <div key={n+"-"+i} style={{padding:"5px 6px",fontSize:narrow ? 11 : 12,color:i ? "#d0dde8" : "#8aaac8",borderBottom:SEP,background:n%2 ? "transparent" : "#050d1c"}}>{v}</div>))}
         </div></div>
         <div style={FT}><More>{"Uses the MSTR, MSTX and STRC boxes in WHAT IF as the starting point and assumes MSTR trades at its projected price. "
           + "MSTX is a 2x daily fund. For today's date it is twice the day's move off yesterday's closes, the same formula as WHAT IF. For a later date it is MSTX now x (MSTR ratio) squared, less decay at "+Math.round(vol*100)+"% MSTR vol. "
-          + "A range means rule to convex fit; the convex fit lost to the rule out of sample, so plan on the low end."
+          + "Best estimate: the rule plus today's gap, fading by half every "+halfLife+" days. In tests that halved the rule's error a week out and matched it at a month; past two months the rule alone did as well. High is the capped convex fit."
           + (ops != null ? " Your mNAV is Strategy's own measure, enterprise value over Bitcoin: price = mNAV x Bitcoin per share - $"+ops.toFixed(2)+" of debt and preferred per share"
             + (holdings.prefPct > 0 ? " (preferred "+Math.round(holdings.prefPct)+"% of the Bitcoin, debt "+(holdings.debtPct || 0).toFixed(1)+"%)." : ".") : "")}</More></div>
       </div>; })()}

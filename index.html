@@ -884,7 +884,8 @@ function useLocal(key, initial, fix) {
 const nm = s => { if (s == null) return null;
   const n = parseFloat(String(s).replace(/[^0-9.\-]/g, "")); return isNaN(n) ? null : n; };
 const md = s => String(s||"").slice(5,10).replace(/^0?(\d+)-0?(\d+)$/, "$1/$2") || null;
-const sgn = v => (v >= 0 ? "+" : "") + Math.round(v);
+const mdy = s => { const m = /^(\d{4})-(\d\d)-(\d\d)/.exec(String(s||"")); return m ? (+m[2])+"/"+(+m[3])+"/"+m[1].slice(2) : String(s || UNK); };
+const sgn = v => (v >= 0 ? "+" : "−") + Math.abs(Math.round(v)).toLocaleString("en-US");
 // phase bounds read "through X", "A to B" or "from A"
 const phBnd = s => { const x = String(s||""), m = x.match(/\d{4}-\d{2}-\d{2}/g) || [];
   return /^through/i.test(x) ? [null,m[0]] : /^from/i.test(x) ? [m[0],null] : [m[0],m[1]]; };
@@ -968,7 +969,7 @@ function LeapsCost({ lc }) {
   const path = (k, a, b) => rows.slice(a, b).map((r, i) => r[k] == null ? "" :
     (i && rows[a+i-1][k] != null ? "L" : "M") + xAt(a+i).toFixed(1) + " " + yAt(r[k]).toFixed(1)).join("");
   const li = Math.max(0, rows.findIndex(r => r.d >= lc.long_first_trade));
-  const usd = v => "$" + Math.round(v).toLocaleString("en-US"), k = v => "$" + Math.round(v/1000) + "k";
+  const usd = v => "$" + Math.round(v).toLocaleString("en-US"), k = v => Math.round(v/1000) === 0 ? "$0" : "$" + Math.round(v/1000) + "k";
   const ref = isObj(lc.ref) ? lc.ref : {}, now = ref.today || rows[rows.length-1];
   const cards = [["TODAY","today"],["1 MONTH AGO","month_ago"],["2 MONTHS AGO","two_months_ago"],["LOW","low"]].filter(c => isObj(ref[c[1]]));
   const pick = e => { const b = e.currentTarget.getBoundingClientRect();
@@ -1032,7 +1033,7 @@ function LeapsCost({ lc }) {
               <input type="number" inputMode="decimal" step="0.25" min="1" placeholder={String(mdl.mstx_last)} value={lkPx} onChange={e => setLkPx(e.target.value)} style={IN}/></label>
             <label><div style={{...LAB,marginBottom:4}}>UNITS</div>
               <input type="number" inputMode="numeric" step="10" min="1" placeholder={String(lc.units||200)} value={lkN} onChange={e => setLkN(e.target.value)} style={IN}/></label>
-            <label><div style={{...LAB,marginBottom:4}}>{"OPTION VOL " + (lkVol >= 0 ? "+" : "\u2212") + Math.abs(Math.round(lkVol*100)) + "%"}</div>
+            <label><div style={{...LAB,marginBottom:4}}>{"OPTION VOL " + (Math.round(lkVol*100) === 0 ? "" : lkVol >= 0 ? "+" : "\u2212") + Math.abs(Math.round(lkVol*100)) + "%"}</div>
               <input type="range" min="-0.3" max="0.3" step="0.05" value={lkVol} onChange={e => setLkVol(Number(e.target.value))} style={{width:"100%",marginTop:8,accentColor:"#22d3ee"}}/></label>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(118px,1fr))",gap:8,marginTop:16}}>
@@ -1041,7 +1042,7 @@ function LeapsCost({ lc }) {
               <div style={{fontSize:10,color:"#7a9ab8",marginTop:3}}>{md(lkDate) + " \u00b7 MSTX $" + S.toFixed(2)}</div></div>
             <div style={SC}><div style={{...LAB,marginBottom:5}}>ONE UNIT</div>
               <div style={{fontSize:20,fontWeight:700,color:"#e2e8f0"}}>{"$" + u.toFixed(2)}</div>
-              <div style={{fontSize:10,color:"#7a9ab8",marginTop:3}}>{chg == null ? "" : (chg >= 0 ? "+" : "\u2212") + Math.abs(Math.round(chg*100)) + "% against today"}</div></div>
+              <div style={{fontSize:10,color:"#7a9ab8",marginTop:3}}>{chg == null ? "" : Math.round(chg*100) === 0 ? "same as today" : (chg >= 0 ? "+" : "\u2212") + Math.abs(Math.round(chg*100)) + "% against today"}</div></div>
             <div style={SC}><div style={{...LAB,marginBottom:5}}>WHAT MOVES IT</div>
               <div style={{fontSize:11,color:"#b0c4d8",lineHeight:1.6}}>{"MSTX +$1: " + sg(dS)}<br/>{"one week later: " + sg(dT)}<br/>{"option vol +10%: " + sg(dV)}</div></div>
           </div>
@@ -1129,9 +1130,10 @@ function PlaybookTab({ todayTs, tier, q }) {
   const uSel = uRows.reduce((a,r) => Math.abs(r.S-uV) < Math.abs(a-uV) ? r.S : a,
     uRows.length ? uRows[0].S : 13);
   const uSelR = uRows.find(r => r.S === uSel) || {};
-  const uRead = "At " + String(+uSel.toFixed(2)) + " on settlement: position about "
+  const usdS = v => "$" + (Number.isInteger(v) ? String(v) : v.toFixed(2));
+  const uRead = "At " + usdS(uSel) + " on settlement: position about "
     + (uSelR.pv == null ? UNK : "$" + Math.round(uSelR.pv).toLocaleString("en-US"))
-    + ", unit " + x2(uSelR.up) + ", " + (uSelR.n == null ? UNK : uSelR.n.toFixed(0)) + " LEAPS";
+    + ", unit " + (uSelR.up == null ? UNK : "$" + x2(uSelR.up)) + ", " + (uSelR.n == null ? UNK : uSelR.n.toFixed(0)) + " LEAPS";
 
   // TRIGGER: the weekly bars
   const hR = inp[HIST] || {};
@@ -1191,7 +1193,7 @@ function PlaybookTab({ todayTs, tier, q }) {
               minWidth:"46px",whiteSpace:"nowrap",flexShrink:0}}>{r.k}</span>
             <span style={{fontSize:13,color:"#a0b8cc"}}>{r.legs||UNK}</span>
             <span style={{fontSize:15,fontWeight:700,color:"#f1f5f9"}}>
-              {"debit " + x2(r.mid, " fill")}</span>
+              {"debit " + (r.mid == null ? UNK : "$" + x2(r.mid, " fill"))}</span>
             <span style={{fontSize:13,color:"#a0b8cc"}}>{r.contracts + " contracts · cost " + (r.cost == null ? UNK : fmtFull(r.cost))}</span>
           </div>))}
         {!p1.length && <div style={{...BODY,padding:"7px 0"}}>No spreads in the ledger.</div>}
@@ -1211,8 +1213,8 @@ function PlaybookTab({ todayTs, tier, q }) {
           {["MSTX","POSITION VALUE","UNIT PRICE","LEAPS"].map((h,i) =>
             <div key={h} style={{...LAB,padding:"4px 6px",textAlign:i?"right":"left"}}>{h}</div>)}
           {uRows.map(r => { const hl = r.S === uSel;
-            return [String(+r.S.toFixed(2)),
-              r.pv == null ? UNK : "$" + Math.round(r.pv).toLocaleString("en-US"), x2(r.up),
+            return [usdS(r.S),
+              r.pv == null ? UNK : "$" + Math.round(r.pv).toLocaleString("en-US"), r.up == null ? UNK : "$" + x2(r.up),
               r.n == null ? UNK : r.n.toFixed(0)].map((v,i) =>
               <div key={r.S+"-"+i} style={{padding:"4px 6px",fontSize:12,
                 borderBottom:"1px solid #070f1f",textAlign:i?"right":"left",
@@ -1290,7 +1292,7 @@ function PlaybookTab({ todayTs, tier, q }) {
             </svg>) : <div style={BODY}>Weekly histogram bars unknown.</div>}
           <div style={{fontSize:11,color:"#b0c4d8",marginTop:7}}><More>
             {(rising ? "Rising since " : "Falling since ") + (md(rise)||UNK) + ". Crossed " + (md(xd0)||UNK) + ", "
-              + (isNaN(wkN) ? UNK : wkN) + " weeks ago. Bar: " + (bars.length ? bars[bars.length-1].bar : UNK) + "."}</More></div>
+              + (isNaN(wkN) ? UNK : wkN) + " weeks ago. Last bar " + (bars.length ? (md(bars[bars.length-1].bar) || bars[bars.length-1].bar) : UNK) + "."}</More></div>
         </div>
       </div>
 
@@ -1315,8 +1317,9 @@ const msStrc = s => s >= 97.5 ? 0.90
 const AMB = "#facc15", NEU = "#8aaac8", SUB = "#7a9ab8";
 // cheap is green, rich is red, in between is neutral, at whatever thresholds are configured
 const msGapCol = (g, c, r) => g == null ? NEU : g <= -c ? GRN : g >= r ? RD : NEU;
-const msPct = (v, d) => v == null ? UNK : (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(d == null ? 1 : d) + "%";
-const msUsd = (v, d) => v == null ? UNK : "$" + v.toFixed(d == null ? 2 : d);
+const msPct = (v, d) => { if (v == null) return UNK; const t = Math.abs(v).toFixed(d == null ? 1 : d);   // no sign on a zero
+  return (+t === 0 ? "" : v >= 0 ? "+" : "−") + t + "%"; };
+const msUsd = (v, d) => v == null ? UNK : "$" + v.toLocaleString("en-US", {minimumFractionDigits:d == null ? 2 : d, maximumFractionDigits:d == null ? 2 : d});
 const MS_RAW = "https://raw.githubusercontent.com/Kaim222/btc-monitor/main/";
 const msTs = t => { const x = Date.parse(String(t||"")); return isFinite(x) ? x : 0; };
 // "09/16/2026 07:59 PM" is not a format Date.parse can be trusted with, so read it here
@@ -1355,7 +1358,7 @@ function MstrTab() {
   const [hov, setHov] = useState(null), [det, setDet] = useState(false), [gapRef, setGapRef] = useState("proj");
   const [narrow, setNarrow] = useState(() => window.innerWidth < 560);
   const touched = useRef({});
-  const [lkM, setLkM] = useState("");
+  const [lkM, setLkM] = useState(""), [hist, setHist] = useState(null);
   const [lkBtc, setLkBtc] = useState(""), [lkDay, setLkDay] = useState(() => new Date().toLocaleDateString("en-CA", {timeZone:"America/New_York"}));
   useEffect(() => {
     const resize = () => setNarrow(window.innerWidth < 560);
@@ -1370,6 +1373,7 @@ function MstrTab() {
       .catch(() => { if (on) setErrors(v => [...new Set([...v, file])]); });
     get("data/mstr-model.json", j => { if (!isObj(j)) throw 0; setDat(j); });
     get("data/mstr-config.json", j => { if (!isObj(j)) throw 0; setCfg(j); });
+    get("data/mnav-history.json", j => { if (!isObj(j)) throw 0; setHist(j); });
     const poll = () => {
       setNowTs(Date.now());
       get(MS_RAW + "mstr_state.json", j => { if (!isObj(j)) throw 0; setMon(v => ({...v, st:j})); });
@@ -1425,7 +1429,7 @@ function MstrTab() {
   const evRows = rowsOf(dat && dat.evidence && dat.evidence.lag && dat.evidence.lag.rows);
   const regRead = dat && dat.regime && Array.isArray(dat.regime.read_lines) ? dat.regime.read_lines.slice(0,2) : [];
   const scored = ledAll.filter(r => r.kind === "lag" && r.scored === true && nm(r.rel_60m) != null);
-  const tally = scored.length ? scored.length + " lag alerts scored · " + Math.round(scored.filter(r => nm(r.rel_60m)>0).length/scored.length*100)
+  const tally = scored.length ? scored.length + " lag alert" + (scored.length === 1 ? "" : "s") + " scored · " + Math.round(scored.filter(r => nm(r.rel_60m)>0).length/scored.length*100)
     + "% beat BTC at 60 minutes · mean " + msPct(scored.reduce((sum,r) => sum+nm(r.rel_60m),0)/scored.length,2) : "No lag alerts scored yet.";
   const gate = cfg.regime_gate ? "only with BTC above its 50-day" : "in either regime";
   const rules = "Lag at " + msPct(lagLine) + " MSTX against its own last hour at MSTR's bar " + (cfg.lag_at_low ? "low" : "close")
@@ -1457,9 +1461,10 @@ function MstrTab() {
     : verdict(gap) === "CHEAP" ? "Behind projected. About half of a gap closes in a month." : "";
   const SC = {background:"#070f1f",border:"1px solid #0f2035",borderRadius:6,padding:"12px 14px"};
   const FT = {fontSize:11,color:GRY,lineHeight:1.5,marginTop:9};
+  const labTxt = t => String(t).split("mNAV").flatMap((part,i) => i ? [<span key={i} style={{textTransform:"none"}}>mNAV</span>, part] : [part]);
   const tiles = items => <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(124px,1fr))",gap:10,marginTop:12}}>
     {items.map(([label,value,sub,color]) => <div key={label} style={SC}>
-      <div style={LAB}>{label}</div><div style={{fontSize:label === "MONITOR" || label === "BTC VS 50-DAY" ? 14 : 22,fontWeight:700,color,overflowWrap:"anywhere",marginTop:6}}>{label === "MONITOR" && <span aria-hidden="true" style={{display:"inline-block",width:7,height:7,borderRadius:"50%",marginRight:6,background:heartbeatColor === NEU ? GRN : heartbeatColor}}/>}{value}</div>
+      <div style={LAB}>{labTxt(label)}</div><div style={{fontSize:label === "MONITOR" || label === "BTC VS 50-DAY" ? 14 : 22,fontWeight:700,color,overflowWrap:"anywhere",marginTop:6}}>{label === "MONITOR" && <span aria-hidden="true" style={{display:"inline-block",width:7,height:7,borderRadius:"50%",marginRight:6,background:heartbeatColor === NEU ? GRN : heartbeatColor}}/>}{value}</div>
       <div style={{fontSize:10,color:SUB,marginTop:3}}>{sub}</div></div>)}</div>;
   const eventColor = (r,i,v) => i === 1 ? ({lag:"#22d3ee",rich:RD,cheap:GRN,watch:NEU}[r.kind] || NEU)
     : i >= 3 ? (parseFloat(v) > 0 ? GRN : parseFloat(v.replace("\u2212","-")) < 0 ? RD : NEU) : "#d0dde8";
@@ -1522,7 +1527,7 @@ function MstrTab() {
       <div style={{...ROW,justifyContent:"space-between"}}><div style={HD}>GAP CHART · MSTX</div>
         <div style={{...ROW,gap:6}}>{[["proj","vs projected"],["best","vs best estimate"]].map(([k,label]) =>
           <button key={k} onClick={() => setGapRef(k)} style={{...GST,color:gapRef === k ? "#e2e8f0" : "#4a7a9b",borderColor:gapRef === k ? "#2a5a8a" : "#162840"}}>{label}</button>)}</div></div>
-      <div style={FT}>{ser[selected] ? ser[selected].d+" · gap "+(gapRef === "best" ? "vs best estimate " : "vs projected ")+msPct(gaps[selected]) : "No history available."}</div>
+      <div style={FT}>{ser[selected] ? mdy(ser[selected].d)+" · gap "+(gapRef === "best" ? "vs best estimate " : "vs projected ")+msPct(gaps[selected]) : "No history available."}</div>
       <svg viewBox={"0 0 "+W+" "+H} style={{width:"100%",height:"auto",display:"block",touchAction:"pan-y"}}
         onMouseMove={pick} onMouseLeave={() => setHov(null)} onTouchStart={pick} onTouchMove={pick}>
         <rect x={P.l} y={P.t} width={cw} height={ch} fill="#070f1f" rx="2"/>
@@ -1532,7 +1537,7 @@ function MstrTab() {
         <path d={path} fill="none" stroke="#f1f5f9" strokeWidth="1.2"/>
         {gaps[selected] != null && <circle cx={xAt(selected)} cy={yAt(gaps[selected])} r="3" fill={gapColor(gaps[selected])}/>}
         {[0,ser.length-1].map((i,k) => <text key={k} x={k ? P.l+cw : P.l} y={H-5} fill="#7aa5c8" fontSize="10"
-          textAnchor={k ? "end" : "start"}>{ser[i] && ser[i].d}</text>)}
+          textAnchor={k ? "end" : "start"}>{ser[i] && mdy(ser[i].d)}</text>)}
       </svg>
       <div style={FT}><More>{gapRef === "best" ? "Tap for a day. Each day is measured against the best estimate made five trading days earlier: projected, carrying that day's gap, faded. Same scale as the projected view."
         : "Tap for a day. Dashed lines are Cheap and Rich; the gap scale is stretched near zero."}</More></div>
@@ -1544,7 +1549,7 @@ function MstrTab() {
           <input value={f[k]} inputMode="decimal" onChange={e => { touched.current[k]=true; setF(v => ({...v,[k]:e.target.value.replace(/[^0-9.\-]/g,"")})); }}
             style={{...INP,display:"block",width:"100%",marginTop:5,fontSize:13,padding:"6px 8px"}}/></label>)}
       </div>
-      {tiles([["PROJECTED MSTX",msUsd(whatPrice),"at these inputs","#22d3ee"], ["GAP MSTX",msPct(whatGap),"against projection",gapColor(whatGap)],
+      {tiles([["PROJECTED MSTX",msUsd(whatPrice),"at these inputs","#22d3ee"], ["GAP MSTX",msPct(whatGap),"against projected",gapColor(whatGap)],
         ["VERDICT",verdict(whatGap),"at these inputs",gapColor(whatGap)]])}
       <div style={{...ROW,marginTop:12}}><button style={GST} onClick={() => { touched.current={}; seed(); }}>reset to live</button>
         <a href="https://github.com/Kaim222/btc-quantile-ladder/edit/main/data/mstr-config.json" target="_blank" rel="noopener" style={{fontSize:11,color:"#7ab8d8"}}>edit config</a></div>
@@ -1590,12 +1595,12 @@ function MstrTab() {
           <label style={LAB}>BY THIS DATE
             <input type="date" value={lkDay} min={today} onChange={e => e.target.value && setLkDay(e.target.value)}
               style={{...INP,display:"block",width:"100%",marginTop:5,fontSize:13,padding:"6px 8px",colorScheme:"dark",boxSizing:"border-box"}}/></label>
-          {ops != null && <label style={LAB}>{"YOUR mNAV, DEBT AND PREFERRED INCLUDED" + (mImp ? " (now " + mImp.toFixed(2) + ")" : "")}
+          {ops != null && <label style={LAB}>{labTxt("YOUR mNAV, DEBT AND PREFERRED INCLUDED" + (mImp ? " (now " + mImp.toFixed(2) + ")" : ""))}
             <input value={lkM} inputMode="decimal" placeholder="optional" onChange={e => setLkM(e.target.value.replace(/[^0-9.]/g,""))}
               style={{...INP,display:"block",width:"100%",marginTop:5,fontSize:13,padding:"6px 8px"}}/></label>}
         </div>
         {tiles([["BEST ESTIMATE mNAV",x2(tHeld(B)),"projected "+x2(tLo(B))+" · high "+x2(tHi(B))+" · STRC $"+strcI.toFixed(2),NEU],
-          ["BEST ESTIMATE MSTR",usd0(mstrAt(B,tHeld)),"projected "+usd0(mstrAt(B,tLo))+" \u00b7 high "+usd0(mstrAt(B,tHi))+" \u00b7 carries "+Math.round(wGap*100)+"% of today's "+msPct(gapNow*100)+" gap",AMB],
+          ["BEST ESTIMATE MSTR",usd0(mstrAt(B,tHeld)),"projected "+usd0(mstrAt(B,tLo))+" \u00b7 high "+usd0(mstrAt(B,tHi))+" \u00b7 carries "+Math.round(wGap*100)+"% of today's "+msPct(gapNow*100)+" MSTR gap",AMB],
           ["BEST ESTIMATE MSTX",mstxAt(B,tHeld) == null ? UNK : usd2(mstxAt(B,tHeld)),"projected "+(mstxAt(B,tLo) == null ? UNK : usd2(mstxAt(B,tLo)))+" \u00b7 high "+(mstxAt(B,tHi) == null ? UNK : usd2(mstxAt(B,tHi)))+(yrs > 0 ? " \u00b7 "+Math.round((1-decay)*100)+"% decay by "+md(lkDay) : ""),"#22d3ee"]]
           .concat(tMine ? [["AT YOUR mNAV "+myM.toFixed(2),usd0(mstrAt(B,tMine)),"MSTX "+(mstxAt(B,tMine) == null ? UNK : usd2(mstxAt(B,tMine))),GRN]] : []))}
         <svg viewBox={"0 0 "+W2+" "+H2} style={{width:"100%",height:"auto",display:"block",marginTop:12}}>
@@ -1625,15 +1630,61 @@ function MstrTab() {
           + (ops != null ? " Your mNAV counts debt and preferred: price = mNAV x Bitcoin per share - $"+ops.toFixed(2)+" of debt and preferred per share. Start from the number in the box label; Strategy's own figure runs higher because it counts shares differently"
             + (holdings.prefPct > 0 ? " (preferred "+Math.round(holdings.prefPct)+"% of the Bitcoin, debt "+(holdings.debtPct || 0).toFixed(1)+"%)." : ".") : "")}</More></div>
       </div>; })()}
+    {hist && rowsOf(hist.weekly).length > 10 && (() => {
+      // Two years of mNAV (MSTR over its Bitcoin per share), split by bull and bear market. Built by mstr-mnav-model/build_mnav_history.py.
+      const wk = rowsOf(hist.weekly), all = rowsOf(hist.all), era = rowsOf(hist.era), per = rowsOf(hist.periods);
+      const eraOf = n => era.find(r => r.name === n) || {}, bullE = eraOf("bull"), bearE = eraOf("bear"), allE = eraOf("all");
+      const x2h = v => nm(v) == null ? UNK : nm(v).toFixed(2), pc = v => nm(v) == null ? UNK : nm(v).toFixed(1)+"%";
+      const avg = n => { const v = ser.slice(-n).map(r => nm(r.mnav)).filter(x => x > 0); return v.length >= Math.min(n, 20) ? v.reduce((a,b) => a+b, 0)/v.length : null; };
+      const premNow = bps > 0 && nm(prices.btc) > 0 && nm(prices.mstr) > 0 ? nm(prices.mstr)/(bps*nm(prices.btc)) : nm(hist.now && hist.now.premium);
+      const tgtNow = nm(prices.btc) > 0 && nm(prices.strc) > 0 ? msStrc(nm(prices.strc))+nm(cfg.btc_slope_per_2500)*(nm(prices.btc)-75000)/2500 : null;
+      const W3 = narrow ? 440 : 880, H3 = narrow ? 230 : 210, P3 = {l:narrow ? 26 : 34,r:10,t:12,b:22}, cw3 = W3-P3.l-P3.r, ch3 = H3-P3.t-P3.b;
+      const top3 = Math.max(2, Math.ceil(Math.max(...wk.map(r => nm(r.p) || 0)))), x3 = i => P3.l+cw3*i/(wk.length-1), y3 = v => P3.t+ch3*(1-v/top3), bw3 = cw3/(wk.length-1);
+      const ln = k => wk.map((r,i) => nm(r[k]) == null ? "" : (i && nm(wk[i-1][k]) != null ? "L" : "M")+x3(i).toFixed(1)+","+y3(nm(r[k])).toFixed(1)).join(" ");
+      const strcAt = wk.findIndex(r => nm(r.t) != null), bearShare = allE.days > 0 && bearE.days > 0 ? Math.round(bearE.days/allE.days*100) : null;
+      const tbl = (caption, heads, rows) => <div style={{marginTop:14}}><div style={LAB}>{labTxt(caption)}</div>
+        <div style={{display:"grid",gridTemplateColumns:"1.5fr repeat("+(heads.length-1)+",minmax(0,1fr))",marginTop:6}}>
+          {heads.map(h => <div key={h} style={{...LAB,padding:narrow ? "4px 3px" : "4px 6px"}}>{labTxt(h)}</div>)}
+          {rows.map((r,n) => r.map((v,i) => <div key={n+"-"+i} style={{padding:narrow ? "5px 3px" : "5px 6px",fontSize:narrow ? 11 : 12,
+            color:!i ? (v === "Bull" ? GRN : v === "Bear" ? RD : "#8aaac8") : "#d0dde8",borderBottom:SEP}}>{v}</div>))}</div></div>;
+      return <div style={VIS_CARD}>
+        <div style={HD}>{labTxt("mNAV HISTORY · BULL AND BEAR MARKETS")}</div>
+        <div style={{...BODY,lineHeight:1.5,marginTop:7}}>{"Projected has only been tested since STRC began on "+mdy(hist.strc_from)+": "+(allE.days || UNK)+" days, "+(bearShare == null ? UNK : bearShare+"%")
+          +" of them bear-market days. MSTR ran above projected in both, by "+pc(bullE.bias_projected)+" on bull days and "+pc(bearE.bias_projected)+" on bear days. That is why the best estimate carries the gap."}</div>
+        {tiles([["mNAV NOW",x2h(premNow),"projected "+x2h(tgtNow),"#f1f5f9"], ["30-DAY AVERAGE",x2h(avg(30)),"through "+(md(last.d) || UNK),AMB],
+          ["90-DAY AVERAGE",x2h(avg(90)),"through "+(md(last.d) || UNK),AMB], ["1-YEAR AVERAGE",x2h(avg(250)),"two years "+x2h(hist.now && hist.now.avg_all),AMB]])}
+        <svg viewBox={"0 0 "+W3+" "+H3} style={{width:"100%",height:"auto",display:"block",marginTop:12}}>
+          <rect x={P3.l} y={P3.t} width={cw3} height={ch3} fill="#070f1f" rx="2"/>
+          {wk.map((r,i) => r.bull === false && <rect key={"b"+i} x={Math.max(P3.l, x3(i)-bw3/2)} y={P3.t} width={Math.min(bw3, P3.l+cw3-Math.max(P3.l, x3(i)-bw3/2))} height={ch3} fill={RD} opacity="0.13"/>)}
+          {Array.from({length:top3+1}, (_, n) => n).map(v => <g key={v}>
+            <line x1={P3.l} x2={P3.l+cw3} y1={y3(v)} y2={y3(v)} stroke={v === 1 ? "#2a4a6a" : "#0f2035"} strokeWidth="0.7"/>
+            <text x={P3.l-5} y={y3(v)+3} fill="#7aa5c8" fontSize="9" textAnchor="end">{v.toFixed(1)}</text></g>)}
+          {strcAt > 0 && <g><line x1={x3(strcAt)} x2={x3(strcAt)} y1={P3.t} y2={P3.t+ch3} stroke="#22d3ee" strokeWidth="0.7" strokeDasharray="3,3" opacity="0.7"/>
+            <text x={x3(strcAt)+4} y={P3.t+10} fill="#22d3ee" fontSize="9">STRC starts</text></g>}
+          <path d={ln("a")} fill="none" stroke={AMB} strokeWidth="1.1" opacity="0.9"/>
+          <path d={ln("t")} fill="none" stroke="#22d3ee" strokeWidth="1.3"/>
+          <path d={ln("p")} fill="none" stroke="#f1f5f9" strokeWidth="1.2"/>
+          {[0,wk.length-1].map((i,k) => <text key={k} x={k ? P3.l+cw3 : P3.l} y={H3-6} fill="#7aa5c8" fontSize="9" textAnchor={k ? "end" : "start"}>{mdy(wk[i].d)}</text>)}
+        </svg>
+        <div style={FT}><More>{"White: mNAV, weekly. Amber: its 90-day average. Cyan: projected mNAV. Red shading: bear market, Bitcoin below its 200-day average. "
+          + "mNAV has fallen over time in both kinds of market: "+per.map(q => q.name+" "+x2h(q.median)).join(", ")+". So the bull and bear medians below are partly a before and after. "
+          + "Early levels are approximate: the share count is scaled by one constant. Built through "+mdy(hist.as_of)+"."}</More></div>
+        {tbl("TWO YEARS, "+mdy(hist.from)+" TO "+mdy(hist.as_of), ["MARKET","DAYS","MEDIAN mNAV","MIDDLE HALF"],
+          all.map(r => [r.name === "bull" ? "Bull" : "Bear", String(r.days), x2h(r.median), x2h(r.low)+(narrow ? "–" : " to ")+x2h(r.high)]))}
+        {tbl("SINCE STRC, WHERE PROJECTED IS TESTED · AVERAGE MISS ON MSTR", narrow ? ["MARKET","DAYS","PROJ.","BEST EST."] : ["MARKET","DAYS","PROJECTED","BEST ESTIMATE"],
+          [["Bull",bullE],["Bear",bearE],["All",allE]].map(([n,r]) => [n, String(r.days || UNK), pc(r.err_projected), pc(r.err_best)]))}
+        <div style={FT}><More>{"Bull means Bitcoin closed above its 200-day average. The miss is the average distance between MSTR's close and the estimate, as a share of the price. "
+          + "Best estimate here is the one made five trading days earlier."}</More></div>
+      </div>; })()}
     <div style={VIS_CARD}>
       <button style={{...GST,border:"none",padding:0}} onClick={() => setDet(v => !v)}>{(det ? "▾ " : "▸ ")+"DETAILS"}</button>
       {det && <div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,minmax(0,1fr))",marginTop:10}}>
+        {evRows.length > 0 && <div style={{display:"grid",gridTemplateColumns:"repeat(4,minmax(0,1fr))",marginTop:10}}>
           {["LAG MSTX","SIGNALS","30 MIN MSTR − BTC","60 MIN MSTR − BTC"].map(h => <div key={h} style={{...LAB,padding:4}}>{h}</div>)}
           {evRows.map((r,k) => [msPct(nm(r.mstx)),r.n,msPct(nm(r.m30),2),msPct(nm(r.m60),2)].map((v,i) =>
             <div key={k+"-"+i} style={{padding:4,fontSize:12,color:"#d0dde8",borderBottom:SEP,
               background:nm(r.mstr) === nm(cfg.lag_threshold)*100 ? "#0c2040" : "transparent"}}>{v}</div>))}
-        </div>
+        </div>}
         {regRead.map((line,i) => <div key={i} style={FT}><More>{line}</More></div>)}
       </div>}
     </div>

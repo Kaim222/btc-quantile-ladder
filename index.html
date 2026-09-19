@@ -1506,6 +1506,9 @@ function MstrTab() {
         : mstrI > 0 && mstxI > 0 ? mstxI*Math.pow(mstrAt(b, t)/mstrI, 2)*decay : null;
       const B = nm(lkBtc) > 0 ? nm(lkBtc) : btcI > 0 ? btcI : null;
       if (!B) return null;
+      // MSTR has spent long stretches above the rule, so also show the rule with today's gap carried along
+      const gapNow = btcI > 0 && mstrI > 0 ? mstrI/mstrAt(btcI, tLo)-1 : 0;
+      const tHeld = b => tLo(b)*(1+gapNow);
       const rng = (lo, hi, fmt) => lo == null ? UNK : Math.abs(hi-lo) < 1e-9 ? fmt(lo) : fmt(lo)+" to "+fmt(hi);
       const usd0 = v => "$"+Math.round(v).toLocaleString("en-US"), usd2 = v => "$"+v.toFixed(2), x2 = v => v.toFixed(2);
       const W2 = narrow ? 440 : 880, H2 = narrow ? 230 : 240, P2 = {l:narrow ? 38 : 50,r:12,t:14,b:24}, cw2 = W2-P2.l-P2.r, ch2 = H2-P2.t-P2.b;
@@ -1524,8 +1527,8 @@ function MstrTab() {
               style={{...INP,display:"block",width:"100%",marginTop:5,fontSize:13,padding:"6px 8px",colorScheme:"dark",boxSizing:"border-box"}}/></label>
         </div>
         {tiles([["TARGET mNAV",rng(tLo(B),tHi(B),x2),"STRC $"+strcI.toFixed(2)+" base "+x2(base),NEU],
-          ["PROJECTED MSTR",rng(mstrAt(B,tLo),mstrAt(B,tHi),usd0),"now "+msUsd(mstrI),AMB],
-          ["PROJECTED MSTX",rng(mstxAt(B,tLo),mstxAt(B,tHi),usd2),yrs > 0 ? "after "+Math.round((1-decay)*100)+"% decay by "+md(lkDay) : "if it happened today","#22d3ee"]])}
+          ["PROJECTED MSTR",rng(mstrAt(B,tLo),mstrAt(B,tHi),usd0),"if today's "+msPct(gapNow*100)+" gap holds: "+usd0(mstrAt(B,tHeld)),AMB],
+          ["PROJECTED MSTX",rng(mstxAt(B,tLo),mstxAt(B,tHi),usd2),"if today's gap holds: "+(mstxAt(B,tHeld) == null ? UNK : usd2(mstxAt(B,tHeld)))+(yrs > 0 ? " \u00b7 "+Math.round((1-decay)*100)+"% decay by "+md(lkDay) : ""),"#22d3ee"]])}
         <svg viewBox={"0 0 "+W2+" "+H2} style={{width:"100%",height:"auto",display:"block",marginTop:12}}>
           <rect x={P2.l} y={P2.t} width={cw2} height={ch2} fill="#070f1f" rx="2"/>
           {Array.from({length:Math.floor(top/100)+1}, (_, n) => n*100).map(v => <g key={v}>
@@ -1533,12 +1536,13 @@ function MstrTab() {
             <text x={P2.l-5} y={yb(v)+3} fill="#7aa5c8" fontSize="9" textAnchor="end">{"$"+v}</text></g>)}
           {[60000,80000,100000,120000,140000].map(b => <text key={b} x={xb(b)} y={H2-7} fill="#7aa5c8" fontSize="9" textAnchor="middle">{Math.round(b/1000)+"k"}</text>)}
           <path d={line(tHi)} fill="none" stroke={AMB} strokeWidth="1.1" strokeDasharray="4 3" opacity="0.85"/>
+          {Math.abs(gapNow) > 0.005 && <path d={line(tHeld)} fill="none" stroke="#e2e8f0" strokeWidth="0.9" opacity="0.7"/>}
           <path d={line(tLo)} fill="none" stroke="#22d3ee" strokeWidth="1.6"/>
           {btcI > b0 && btcI < b1 && <line x1={xb(btcI)} x2={xb(btcI)} y1={P2.t} y2={P2.t+ch2} stroke="#e2e8f0" strokeWidth="0.6" opacity="0.45"/>}
           {btcI > b0 && btcI < b1 && mstrI > 0 && mstrI < top && <circle cx={xb(btcI)} cy={yb(mstrI)} r="3" fill="#f1f5f9"/>}
           {B > b0 && B < b1 && <circle cx={xb(B)} cy={yb(mstrAt(B,tLo))} r="3.4" fill="#22d3ee"/>}
         </svg>
-        <div style={FT}>Projected MSTR against Bitcoin. Cyan: the live rule. Amber dashes: the convex fit, the high end. White dot: MSTR now. Cyan dot: your Bitcoin price.</div>
+        <div style={FT}>Projected MSTR against Bitcoin. Cyan: the live rule. White: the rule with the current gap held. Amber dashes: the convex fit, the high end. White dot: MSTR now. Cyan dot: your Bitcoin price.</div>
         <div style={{overflowX:"auto",marginTop:10}}><div style={{display:"grid",gridTemplateColumns:"repeat(4,minmax(0,1fr))",minWidth:narrow ? 0 : 520}}>
           {["BITCOIN","TARGET mNAV","MSTR","MSTX"+(yrs > 0 ? " BY "+md(lkDay) : "")].map(h => <div key={h} style={{...LAB,padding:"4px 6px"}}>{h}</div>)}
           {levels.map((b,n) => [usd0(b), rng(tLo(b),tHi(b),x2), rng(mstrAt(b,tLo),mstrAt(b,tHi),usd0), rng(mstxAt(b,tLo),mstxAt(b,tHi),usd2)].map((v,i) =>

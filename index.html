@@ -906,6 +906,8 @@ function useNyDate() {
 const dayMstx = (projMstr, prev) => { if (!(projMstr > 0 && prev && nm(prev.mstr) > 0 && nm(prev.mstx) > 0)) return null;
   const v = nm(prev.mstx)*(1+2*(projMstr/nm(prev.mstr)-1)); return Number.isFinite(v) && v > 0 ? v : null; };
 const md = s => String(s||"").slice(5,10).replace(/^0?(\d+)-0?(\d+)$/, "$1/$2") || null;
+const grp = s => { const t = String(s == null ? "" : s), neg = t.startsWith("-") ? "-" : "", b = neg ? t.slice(1) : t, k = b.indexOf(".");
+  return neg + (k < 0 ? b : b.slice(0,k)).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (k < 0 ? "" : b.slice(k)); };
 const mdy = s => { const m = /^(\d{4})-(\d\d)-(\d\d)/.exec(String(s||"")); return m ? (+m[2])+"/"+(+m[3])+"/"+m[1].slice(2) : String(s || UNK); };
 const sgn = v => !Number.isFinite(v) ? UNK : (Math.round(Math.abs(v)) === 0 ? "" : v < 0 ? "−" : "+") + Math.round(Math.abs(v)).toLocaleString("en-US");
 // phase bounds read "through X", "A to B" or "from A"
@@ -1591,7 +1593,7 @@ function MstrTab() {
       <div style={{...HD,marginBottom:10}}>WHAT IF</div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(122px,1fr))",gap:10}}>
         {MS_FLD.map(([k,label]) => <label key={k} style={LAB}>{label}
-          <input value={f[k]} inputMode="decimal" onChange={e => { touched.current[k]=true; setF(v => ({...v,[k]:e.target.value.replace(/[^0-9.\-]/g,"")})); }}
+          <input value={grp(f[k])} inputMode="decimal" onChange={e => { touched.current[k]=true; setF(v => ({...v,[k]:e.target.value.replace(/[^0-9.\-]/g,"")})); }}
             style={{...INP,display:"block",width:"100%",marginTop:5,fontSize:13,padding:"6px 8px"}}/></label>)}
       </div>
       {tiles([["PROJECTED MSTX",msUsd(whatPrice),"at these inputs","#22d3ee"], ["GAP MSTX",msPct(whatGap),"against projected",gapColor(whatGap)],
@@ -1634,7 +1636,7 @@ function MstrTab() {
         <div style={{...FT,marginTop:5,marginBottom:10}}>{"Projected is your mNAV formula. Best estimate is projected plus today's gap, fading by half every "+halfLife+" days."}</div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10}}>
           <label style={LAB}>IF BITCOIN IS AT
-            <input value={lkBtc} inputMode="decimal" placeholder={btcI > 0 ? String(Math.round(btcI)) : ""} onChange={e => setLkBtc(e.target.value.replace(/[^0-9.]/g,""))}
+            <input value={grp(lkBtc)} inputMode="decimal" placeholder={btcI > 0 ? grp(Math.round(btcI)) : ""} onChange={e => setLkBtc(e.target.value.replace(/[^0-9.]/g,""))}
               style={{...INP,display:"block",width:"100%",marginTop:5,fontSize:13,padding:"6px 8px"}}/></label>
           <label style={LAB}>BY THIS DATE
             <input type="date" value={lkDay} min={today} onChange={e => e.target.value && setLkDay(e.target.value < today ? today : e.target.value)}
@@ -2070,7 +2072,7 @@ function BTCPowerLaw() {
           <div style={{position:"relative"}}>
             <span style={{position:"absolute",left:"10px",top:"50%",transform:"translateY(-50%)",
               color:"#7a8fa8",fontSize:"16px"}}>$</span>
-            <input aria-label="Bitcoin price" value={priceStr} onChange={e=>{follow.current=false;setPriceStr(e.target.value.replace(/[^0-9]/g,""));}}
+            <input aria-label="Bitcoin price" value={grp(priceStr)} onChange={e=>{follow.current=false;setPriceStr(e.target.value.replace(/[^0-9]/g,""));}}
               style={{background:"#070f1f",border:"1px solid #0f2a42",borderRadius:"4px",
                 color:"#facc15",fontSize:"22px",fontFamily:"inherit",fontWeight:700,
                 padding:"7px 12px 7px 24px",width:"140px",outline:"none"}}/>

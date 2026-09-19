@@ -918,8 +918,17 @@ function LadderRules({ tier }) {
 
 // ── What 200 LEAPS units cost, day by day. Model estimate from tools/leaps_cost.py, checked against the days both legs
 // really traded. Numbers live in data/leaps-cost.json. ──
+// Black-Scholes call, for repricing the LEAPS unit at any date, MSTX price and vol
+const lcNcdf = x => { const t = 1/(1+0.2316419*Math.abs(x)), p = 1-Math.exp(-x*x/2)/Math.sqrt(2*Math.PI)
+  *t*(0.319381530+t*(-0.356563782+t*(1.781477937+t*(-1.821255978+t*1.330274429)))); return x >= 0 ? p : 1-p; };
+const lcCall = (S, K, T, v, r) => { if (!(S > 0)) return 0; if (T <= 0 || !(v > 0)) return Math.max(S-K, 0);
+  const d1 = (Math.log(S/K)+(r+v*v/2)*T)/(v*Math.sqrt(T)); return S*lcNcdf(d1)-K*Math.exp(-r*T)*lcNcdf(d1-v*Math.sqrt(T)); };
+
 function LeapsCost({ lc }) {
   const [hv, setHv] = useState(null);
+  const mdl = lc && isObj(lc.model) && isObj(lc.model.long) && isObj(lc.model.short) ? lc.model : null;
+  const [lkDate, setLkDate] = useState(() => new Date().toLocaleDateString("en-CA", {timeZone:"America/New_York"}));
+  const [lkPx, setLkPx] = useState(""), [lkVol, setLkVol] = useState(0), [lkN, setLkN] = useState("");
   const rows = (lc && Array.isArray(lc.series)) ? lc.series.filter(r => r && typeof r.cost === "number") : [];
   if (rows.length < 5) return null;
   const W = 720, H = 250, P = {l:46, r:10, t:14, b:22}, cw = W - P.l - P.r, ch = H - P.t - P.b;
@@ -972,6 +981,43 @@ function LeapsCost({ lc }) {
               + (key==="today" ? "" : " · today is " + (ch2 >= 0 ? "+" : "") + Math.round(100*ch2) + "%")}</div>
           </div>; })}
       </div>
+      {mdl && (() => {
+        const yrs = (exp, on) => (new Date(exp+"T16:00:00Z") - new Date(on+"T16:00:00Z"))/(365*86400000);
+        const unitAt = (S, on, dv) => lcCall(S, mdl.long.k, yrs(mdl.long.exp, on), mdl.long.iv*(1+dv), mdl.r)
+          - lcCall(S, mdl.short.k, yrs(mdl.short.exp, on), mdl.short.iv*(1+dv), mdl.r);
+        const S = nm(lkPx) > 0 ? nm(lkPx) : nm(mdl.mstx_last), n = nm(lkN) > 0 ? Math.round(nm(lkN)) : (lc.units||200);
+        const u = unitAt(S, lkDate, lkVol), base = unitAt(nm(mdl.mstx_last), mdl.asof, 0), cost = u*100*n, chg = base > 0 ? u/base-1 : null;
+        const wk = new Date(new Date(lkDate+"T16:00:00Z").getTime()+7*86400000).toISOString().slice(0,10);
+        const dS = (unitAt(S+1, lkDate, lkVol)-u)*100*n, dT = (unitAt(S, wk, lkVol)-u)*100*n, dV = (unitAt(S, lkDate, lkVol+0.10)-u)*100*n;
+        const IN = {background:"#070f1f",border:"1px solid #0f2035",borderRadius:6,color:"#facc15",fontSize:13,fontWeight:600,
+          padding:"7px 9px",fontFamily:"inherit",width:"100%",boxSizing:"border-box",colorScheme:"dark"};
+        const sg = v => (v >= 0 ? "+" : "\u2212") + usd(Math.abs(v));
+        return <div style={{marginTop:16}}>
+          <div style={{...HD,marginBottom:8}}>UNIT COST LOOKUP</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:8}}>
+            <label><div style={{...LAB,marginBottom:4}}>DATE</div>
+              <input type="date" value={lkDate} min={mdl.asof} max={mdl.long.exp} onChange={e => e.target.value && setLkDate(e.target.value)} style={IN}/></label>
+            <label><div style={{...LAB,marginBottom:4}}>MSTX PRICE</div>
+              <input type="number" inputMode="decimal" step="0.25" min="1" placeholder={String(mdl.mstx_last)} value={lkPx} onChange={e => setLkPx(e.target.value)} style={IN}/></label>
+            <label><div style={{...LAB,marginBottom:4}}>UNITS</div>
+              <input type="number" inputMode="numeric" step="10" min="1" placeholder={String(lc.units||200)} value={lkN} onChange={e => setLkN(e.target.value)} style={IN}/></label>
+            <label><div style={{...LAB,marginBottom:4}}>{"OPTION VOL " + (lkVol >= 0 ? "+" : "\u2212") + Math.abs(Math.round(lkVol*100)) + "%"}</div>
+              <input type="range" min="-0.3" max="0.3" step="0.05" value={lkVol} onChange={e => setLkVol(Number(e.target.value))} style={{width:"100%",marginTop:8,accentColor:"#22d3ee"}}/></label>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(118px,1fr))",gap:8,marginTop:9}}>
+            <div style={SC}><div style={{...LAB,marginBottom:5}}>{n + " UNITS COST"}</div>
+              <div style={{fontSize:20,fontWeight:700,color:"#22d3ee"}}>{usd(cost)}</div>
+              <div style={{fontSize:10,color:"#7a9ab8",marginTop:3}}>{md(lkDate) + " \u00b7 MSTX $" + S.toFixed(2)}</div></div>
+            <div style={SC}><div style={{...LAB,marginBottom:5}}>ONE UNIT</div>
+              <div style={{fontSize:20,fontWeight:700,color:"#e2e8f0"}}>{"$" + u.toFixed(2)}</div>
+              <div style={{fontSize:10,color:"#7a9ab8",marginTop:3}}>{chg == null ? "" : (chg >= 0 ? "+" : "\u2212") + Math.abs(Math.round(chg*100)) + "% against today"}</div></div>
+            <div style={SC}><div style={{...LAB,marginBottom:5}}>WHAT MOVES IT</div>
+              <div style={{fontSize:11,color:"#b0c4d8",lineHeight:1.6}}>{"MSTX +$1: " + sg(dS)}<br/>{"one week later: " + sg(dT)}<br/>{"option vol +10%: " + sg(dV)}</div></div>
+          </div>
+          <div style={{fontSize:10,color:GRY,letterSpacing:"0.04em",marginTop:8}}>
+            {"Model estimate near the mid: both legs repriced with Black-Scholes at today's fitted vols (long "
+              + Math.round(mdl.long.iv*100) + "%, short " + Math.round(mdl.short.iv*100) + "%). A real fill costs more; the long leg's market is wide."}</div>
+        </div>; })()}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 {
- "updated": "2026-09-18 21:28",
+ "updated": "2026-09-19 13:05",
  "units": 200,
  "unit": "long Dec 15 2028 $33 call, short Jan 21 2028 $60 call",
  "long_first_trade": "2026-09-11",
@@ -7,6 +7,21 @@
  "vol_ratio_long_to_short": 0.88,
  "model_vs_prints_mean_abs_error": 0.17,
  "note": "Model estimate near the mid: Black-Scholes on each day's MSTX close, vol backed out of the short leg's real trades, the long leg's vol scaled from it. Before the long leg first traded the line is hypothetical. A fill costs more than the mid: the long leg's market is several dollars wide.",
+ "model": {
+  "r": 0.04,
+  "mstx_last": 18.73,
+  "asof": "2026-09-18",
+  "long": {
+   "k": 33.0,
+   "exp": "2028-12-15",
+   "iv": 1.1602
+  },
+  "short": {
+   "k": 60.0,
+   "exp": "2028-01-21",
+   "iv": 1.3185
+  }
+ },
  "ref": {
   "today": {
    "d": "2026-09-18",

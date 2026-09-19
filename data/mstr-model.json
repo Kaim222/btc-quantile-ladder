@@ -4,7 +4,7 @@
 "slope": 0.025,
 "share_convention": "assumed diluted (ADSO), per-date filed count rescaled to strategy.com's live ADSO on the last row",
 "target_rule": "STRC-linked base (0.90 at STRC 97.5 and up, sliding down) plus 0.025 per $2,500 of BTC over $75,000",
-"btc_per_share_note": "holdings 845,050 BTC over 450.112M assumed diluted shares, live from strategy.com"
+"btc_per_share_note": "Bitcoin per share 0.0018774 on the last row, live from strategy.com when the row was added"
 },
 "series": [
 {
@@ -621,7 +621,7 @@
 "mnav": 1.3227,
 "target": 1.2303,
 "proj": 264.0,
-"gap": 7.52
+"gap": 7.51
 },
 {
 "d": "2025-10-17",
@@ -819,7 +819,7 @@
 "mnav": 1.1128,
 "target": 1.1773,
 "proj": 244.75,
-"gap": -5.47
+"gap": -5.48
 },
 {
 "d": "2025-11-12",
@@ -896,7 +896,7 @@
 "mnav": 1.0119,
 "target": 0.9662,
 "proj": 169.12,
-"gap": 4.74
+"gap": 4.73
 },
 {
 "d": "2025-11-21",
@@ -1189,7 +1189,7 @@
 "mstr": 151.95,
 "mstx": 38.5,
 "btc": 87532,
-"strc": 98.79,
+"strc": 98.8,
 "mnav": 0.8541,
 "target": 1.0253,
 "proj": 182.42,
@@ -1431,7 +1431,7 @@
 "mstr": 133.26,
 "mstx": 27.3,
 "btc": 76405,
-"strc": 98.46,
+"strc": 98.45,
 "mnav": 0.8834,
 "target": 0.9141,
 "proj": 137.88,
@@ -1849,7 +1849,7 @@
 "mstr": 121.44,
 "mstx": 18.5,
 "btc": 66481,
-"strc": 99.96,
+"strc": 99.97,
 "mnav": 0.9193,
 "target": 0.8148,
 "proj": 107.63,
@@ -2872,7 +2872,7 @@
 "mstr": 94.83,
 "mstx": 8.19,
 "btc": 63351,
-"strc": 95.32,
+"strc": 95.31,
 "mnav": 0.7555,
 "target": 0.7617,
 "proj": 95.61,
@@ -2896,7 +2896,7 @@
 "btc": 62905,
 "strc": 94.78,
 "mnav": 0.7464,
-"target": 0.7518,
+"target": 0.7519,
 "proj": 93.71,
 "gap": -0.72
 },
@@ -3041,7 +3041,7 @@
 "mnav": 0.8485,
 "target": 0.919,
 "proj": 133.43,
-"gap": -7.67
+"gap": -7.68
 },
 {
 "d": "2026-09-03",
@@ -3157,12 +3157,12 @@
 "d": "2026-09-18",
 "mstr": 153.92,
 "mstx": 18.73,
-"btc": 81016,
+"btc": 81096,
 "strc": 98.51,
-"mnav": 1.012,
-"target": 0.9602,
-"proj": 146.04,
-"gap": 5.4
+"mnav": 1.011,
+"target": 0.961,
+"proj": 146.31,
+"gap": 5.2
 }
 ],
 "episodes": [

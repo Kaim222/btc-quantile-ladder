@@ -1086,7 +1086,7 @@ function LeapsCost({ lc }) {
 }
 
 function PlaybookTab({ todayTs, tier, q }) {
-  const [pb, setPb] = useState(null), [plg, setPlg] = useState(null), [lc, setLc] = useState(null);
+  const [pb, setPb] = useState(null), [plg, setPlg] = useState(null), [lc, setLc] = useState(null), [rts, setRts] = useState(null);
   const [failed, setFailed] = useState([]);
   useEffect(() => {
     let on = true;
@@ -1096,7 +1096,7 @@ function PlaybookTab({ todayTs, tier, q }) {
         const j = await r.json(); if (!isObj(j)) throw 0;
         if (on) { ok(j); setFailed(v => v.filter(x => x !== f)); }
       } catch (_) { if (on) setFailed(v => [...new Set([...v,f])]); } finally { pending.delete(f); } };
-    const refresh = () => { get("data/playbook.json",setPb); get("data/paper-ledger.json",setPlg); get("data/leaps-cost.json",setLc); };
+    const refresh = () => { get("data/playbook.json",setPb); get("data/paper-ledger.json",setPlg); get("data/leaps-cost.json",setLc); get("data/routes.json",setRts); };
     const visible = () => { if (document.visibilityState === "visible") refresh(); };
     refresh(); const timer = setInterval(refresh,600000); document.addEventListener("visibilitychange",visible);
     return () => { on = false; clearInterval(timer); document.removeEventListener("visibilitychange",visible); };
@@ -1189,8 +1189,9 @@ function PlaybookTab({ todayTs, tier, q }) {
     + (b.bar === xd0 ? " \u00b7 cross" : "");
 
   // ROUTES: the operator's own calculation
-  const routes = rowsOf(plg && plg.plan && plg.plan.routes);
-  const rNote = String((plg && plg.plan && plg.plan.routes_note) || "");
+  const rLive = rts && rowsOf(rts.routes).length > 0;
+  const routes = rLive ? rowsOf(rts.routes) : rowsOf(plg && plg.plan && plg.plan.routes);
+  const rNote = String(rLive ? (rts.note || "") : ((plg && plg.plan && plg.plan.routes_note) || ""));
   const PNL = {background:tier?tier.darkBg:"#070f1f",border:"1px solid "+AC+"30",
     borderLeft:"3px solid "+AC,borderRadius:"6px",padding:"14px 16px",marginTop:0};
   const FT = {fontSize:10,color:GRY,letterSpacing:"0.04em",marginTop:16};
@@ -1276,7 +1277,7 @@ function PlaybookTab({ todayTs, tier, q }) {
         <LeapsCost lc={lc}/>
       {/* ROUTES */}
       {routes.length > 0 && <div style={{marginTop:16}}>
-        <div style={{...HD,marginBottom:10}}>LEAPS UNITS AT THE END, BY ROUTE</div>
+        <div style={{...HD,marginBottom:10}}>{"LEAPS UNITS AT THE END, BY ROUTE" + (rLive && rts.as_of ? " · " + md(rts.as_of) + " CLOSE" : "")}</div>
         <div style={{overflowX:"auto"}}><div style={{display:"grid",
           gridTemplateColumns:"minmax(0,1fr) 64px 64px"}}>
           {["ROUTE","UNITS, YOUR VIEW","UNITS, MARKET VIEW"].map((h,i) =>

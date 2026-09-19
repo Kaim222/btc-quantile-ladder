@@ -15,14 +15,30 @@
       "legs": "long Oct 9 $16 call, short Oct 2 $16 call",
       "debit": 0.21,
       "contracts": 275,
-      "cost": 5775
+      "cost": 5775,
+      "long": {
+       "exp": "2026-10-09",
+       "k": 16
+      },
+      "short": {
+       "exp": "2026-10-02",
+       "k": 16
+      }
      },
      {
       "key": "Oct 16 18 / Oct 2 18 calendar",
       "legs": "long Oct 16 $18 call, short Oct 2 $18 call",
       "debit": 0.64,
       "contracts": 175,
-      "cost": 11200
+      "cost": 11200,
+      "long": {
+       "exp": "2026-10-16",
+       "k": 18
+      },
+      "short": {
+       "exp": "2026-10-02",
+       "k": 18
+      }
      }
     ],
     "note": "9/18: the $15 longs were rolled up to the $16s for an $11,000 credit in the first six minutes, zero to five cents under the model. The $18 calendar went on at 09:52 at 0.64 with MSTX near 16.70, BTC through 80,000 and the gap at +0.2% to +1.3%, which was his entry rule. The model read 0.64 at that price, so the fill was at fair. Neither calendar can go negative; the floor is the cash.",
@@ -158,22 +174,22 @@
   "unit_price_anchor_mstx": 14,
   "routes": [
    {
-    "route": "Double calendar to Fri 10/2 → Jan/Dec diagonal → LEAPS 12/19",
-    "units_thesis": 49,
-    "units_market": 52
+    "route": "Hold to Fri 10/2, then LEAPS on 10/5",
+    "units_thesis": 32,
+    "units_market": 34
    },
    {
-    "route": "Double calendar to Fri 10/2 → LEAPS straight on 10/5 (count fixed once bought)",
-    "units_thesis": 51,
-    "units_market": 52
+    "route": "Hold to Fri 10/2, then the Jan/Dec diagonal, then LEAPS on 12/21",
+    "units_thesis": 29,
+    "units_market": 31
    },
    {
-    "route": "Close today and buy LEAPS now, after five cents of slippage on 450 calendars (count fixed once bought)",
-    "units_thesis": 57,
-    "units_market": 57
+    "route": "Close now and buy LEAPS, after five cents of slippage on 450 calendars (count fixed once bought)",
+    "units_thesis": 54,
+    "units_market": 54
    }
   ],
-  "routes_note": "Counts run about 15% high: they were built on the earlier unit formula, not the print-based unit price the table above uses. Priced 9/18 1:10 PM ET at MSTX $18.00, no cash carried. Phase 1 is marked at 100% vol at the 10/2 close; at 118% the first two routes read 65 / 69 and 68 / 69, and closing that day read 57 to 75 depending on the vol the calendars were sold at. Your view is the 10/2 and 12/18 odds shifted one dollar up. It lowers the count here, because Phase 1 pays for MSTX sitting between $16 and $18. 200 units needs a $16 to $18 close on 10/2 and a December close of $26 to $30.",
+  "routes_note": "Holding to 10/2 ends with more units than closing now in 30% of history's paths, and in 28% on your view. Model averages, whole units at the model mid, bought the session after each settlement at the settlement close; a real fill buys fewer. Priced at the 9/18 close, MSTX $18.73, unit $3.97, no cash. Market view is MSTX's own history: every 10-session and 54-session move since the fund listed, drift removed. Your view is the same prices one dollar higher. Phase 1 is marked at 100% vol at the 10/2 close, closing now at 135% vol (position about $23,800), Phase 2 at 120% vol off the plan's strikes with 30% held as cash. Averages hide the spread: Phase 1 pays most between $16 and $18 and little outside $15 to $19.",
   "week_of_2026_09_14": {
    "date": "2026-09-16",
    "text": "Week of 9/14 in one line: 656 x 17/17.50 sold 9/14 into the pair (175 x Oct 2 14 / Sep 25 15 + 150 x Oct 9 16 / Sep 25 17, $25,700), hedged and reshaped through 9/15 into 321 x Oct 2 15 / Sep 25 16 + 55 x 16.50/18, then 204 x Sep 25 13.50 / Sep 18 14.50 + 60 x Sep 18 15/16 ($15,084), then on 9/16 (FOMC hike day, MSTX 12.35 to 13.02) 407 x Sep 18 12/12.50 call verticals at 0.29 ($11,803). The round trips cost about $9,700 of basis; the position now fits the $13 tape.",

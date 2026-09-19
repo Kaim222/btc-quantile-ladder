@@ -1,9 +1,10 @@
 name: Refresh site data
 
-# Keeps the Playbook inputs and the LEAPS cost chart current without anyone running a script by hand.
+# Keeps the Playbook inputs, the LEAPS cost chart, the MSTX model files and the route counts current without anyone running a script by hand.
 on:
   schedule:
-    - cron: '25 21 * * 1-5'   # weekdays after the US close
+    - cron: '25 21 * * 1-5'   # weekdays after the US close (5:25 PM New York in summer)
+    - cron: '25 22 * * 1-5'   # the same run an hour later, so winter time also lands after the 4 PM Bitcoin bar closes
     - cron: '10 13 * * 1-5'   # weekdays before the US open
   workflow_dispatch:
 
@@ -26,6 +27,12 @@ jobs:
       - name: LEAPS cost history
         continue-on-error: true
         run: python tools/leaps_cost.py
+      - name: MSTX model and mNAV history
+        continue-on-error: true
+        run: python tools/model_refresh.py
+      - name: Route counts
+        continue-on-error: true
+        run: python tools/routes_refresh.py
       - name: Playbook inputs
         continue-on-error: true
         run: python tools/playbook_refresh.py
@@ -33,7 +40,7 @@ jobs:
         run: |
           git config user.name  "ladder-refresh"
           git config user.email "refresh@noreply"
-          git add data/leaps-cost.json data/playbook.json data/iv-ledger.json
+          git add data/leaps-cost.json data/playbook.json data/iv-ledger.json data/mstr-daily.csv data/mstr-model.json data/mnav-history.json data/routes.json
           if git diff --staged --quiet; then echo "nothing changed"; exit 0; fi
           git commit -q -m "data refresh: $(date -u +%Y-%m-%dT%H:%MZ)"
           for i in 1 2 3; do

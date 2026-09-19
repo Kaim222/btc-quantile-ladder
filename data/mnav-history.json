@@ -52,13 +52,48 @@
   }
  ],
  "now": {
-  "premium": 1.012,
+  "premium": 1.011,
   "avg30": 0.888,
   "avg90": 0.78,
   "avg365": 0.973,
   "avg_all": 1.576,
-  "target": 0.96
+  "target": 0.961
  },
+ "gap_mstx": {
+  "all": 12.5,
+  "bull": 19.6,
+  "bear": 8.0,
+  "last60": -2.7,
+  "rich_share": 54,
+  "rich_share_last60": 10
+ },
+ "periods": [
+  {
+   "name": "late 2024",
+   "median": 2.69,
+   "bull_pct": 79
+  },
+  {
+   "name": "early 2025",
+   "median": 2.08,
+   "bull_pct": 81
+  },
+  {
+   "name": "late 2025",
+   "median": 1.43,
+   "bull_pct": 66
+  },
+  {
+   "name": "early 2026",
+   "median": 0.96,
+   "bull_pct": 0
+  },
+  {
+   "name": "since July 2026",
+   "median": 0.76,
+   "bull_pct": 39
+  }
+ ],
  "weekly": [
   {
    "d": "2024-09-20",
@@ -894,47 +929,12 @@
   },
   {
    "d": "2026-09-18",
-   "p": 1.012,
+   "p": 1.011,
    "a": 0.78,
-   "t": 0.96,
-   "btc": 81016,
+   "t": 0.961,
+   "btc": 81096,
    "bull": true
   }
  ],
- "gap_mstx": {
-  "all": 12.5,
-  "bull": 19.6,
-  "bear": 8.0,
-  "last60": -2.7,
-  "rich_share": 54,
-  "rich_share_last60": 10
- },
- "periods": [
-  {
-   "name": "late 2024",
-   "median": 2.69,
-   "bull_pct": 79
-  },
-  {
-   "name": "early 2025",
-   "median": 2.08,
-   "bull_pct": 81
-  },
-  {
-   "name": "late 2025",
-   "median": 1.43,
-   "bull_pct": 66
-  },
-  {
-   "name": "early 2026",
-   "median": 0.96,
-   "bull_pct": 0
-  },
-  {
-   "name": "since July 2026",
-   "median": 0.76,
-   "bull_pct": 39
-  }
- ],
- "note": "Premium = MSTR close / (Bitcoin close x Bitcoin per share), in the site's share convention (bps_trade scaled so the last row matches 845,050 BTC over 450.112M shares; the scale is constant, so early levels are approximate, the shape is not). Bull = Bitcoin's close above its own 200-day average, bear = below. Projected = the STRC step rule + 0.025 per $2,500 of Bitcoin above 75,000, which only exists from the day STRC started trading. Best estimate = projected carrying the gap from five trading days earlier, faded with a 28-day half-life; both use that day's actual Bitcoin and STRC prices. Averages are calendar-day windows. Writes ../btc-quantile-ladder/data/mnav-history.json."
+ "note": "mNAV = MSTR close / (Bitcoin at 4 PM New York x Bitcoin per share), the site's share convention; levels before mid 2025 are approximate. Bull = Bitcoin above its 200-day average. Best estimate = projected carrying the gap from five sessions earlier, faded with a 28-day half-life; both use that day's actual Bitcoin and STRC prices. Averages are calendar-day windows. Built by tools/model_refresh.py."
 }

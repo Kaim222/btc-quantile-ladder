@@ -79,8 +79,8 @@ out = {"updated": dt.datetime.now().strftime("%Y-%m-%d %H:%M"), "units": N_UNITS
        "vol_ratio_long_to_short": round(ratio, 3), "model_vs_prints_mean_abs_error": round(float(np.mean(err)), 2) if err else None,
        "note": "Model estimate near the mid: Black-Scholes on each day's MSTX close, vol backed out of the short leg's real trades, the long leg's vol scaled from it. Before the long leg first traded the line is hypothetical. A fill costs more than the mid: the long leg's market is several dollars wide.",
        "model": {"r": R, "mstx_last": round(float(px.iloc[-1]), 2), "asof": px.index[-1].strftime("%Y-%m-%d"),
-                 "long": {"k": LONG["k"], "exp": str(LONG["exp"]), "iv": round(float(iv_long.iloc[-1]), 4)},
-                 "short": {"k": SHORT["k"], "exp": str(SHORT["exp"]), "iv": round(float(iv_short.iloc[-1]), 4)}},
+                 "long": {"k": LONG["k"], "exp": str(LONG["exp"]), "iv": round(float(iv_long.iloc[-1]), 8)},
+                 "short": {"k": SHORT["k"], "exp": str(SHORT["exp"]), "iv": round(float(iv_short.iloc[-1]), 8)}},
        "ref": ref, "unit_at": unit_at, "prints": prints, "series": rows}
 json.dump(out, open(OUT, "w"), indent=1, allow_nan=False)
 print("wrote %d days, %s to %s. vol ratio %.3f. prints %d, mean abs error vs prints $%.2f a unit" % (len(rows), rows[0]["d"], last["d"], ratio, len(prints), np.mean(err) if err else float("nan")))

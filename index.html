@@ -49,7 +49,9 @@
     /* Subtle card hover lift */
     .card-hover { transition: border-color 0.2s ease, box-shadow 0.2s ease; }
     .card-hover:hover { border-color: #1a3a5c !important; box-shadow: 0 2px 12px rgba(0,0,0,0.3); }
-  </style>
+    input:focus-visible, button:focus-visible { outline: 2px solid #22d3ee !important; outline-offset: 2px; }
+  @media (max-width:559px) { button[aria-expanded], button[aria-pressed] { min-height:36px; padding-left:8px !important; padding-right:8px !important; } }
+</style>
 </head>
 <body>
   <div id="root"></div>
@@ -308,12 +310,13 @@ function marginStats(m) {
 // ─────────────────────────────────────────────────────────────────────────────
 // FORMATTING
 // ─────────────────────────────────────────────────────────────────────────────
-function fmt(n) {
+function fmt(n) {   // compact: axes, the slider rail and the forward table
+  if (!Number.isFinite(n)) return UNK;
   if (n >= 1e6) return "$" + (n/1e6).toFixed(2) + "M";
   if (n >= 1e3) return "$" + Math.round(n/1e3) + "K";
   return "$" + Math.round(n);
 }
-function fmtFull(n) { return "$" + Math.round(n).toLocaleString(); }
+function fmtFull(n) { return usd0(n); }
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -321,11 +324,11 @@ function fmtFull(n) { return "$" + Math.round(n).toLocaleString(); }
 // held at today's inputs: MSTR = BTC x BTC-per-share x target, target = the STRC base plus
 // the config slope. Helpers (msStrc, msQuote, msOpen) live with the MSTR tab below. ──
 // most of the MSTR ladder lands between $100 and $10,000, where fmt's "$1K" hides the number
-const msFmt = v => (v >= 1000 && v < 1e6) ? "$" + Math.round(v).toLocaleString("en-US") : fmt(v);
+const msFmt = v => (v >= 1000 && v < 1e6) ? usd0(Math.round(v)) : fmt(v);
 const UnitPick = ({units, setUnits}) => (
   <span style={{display:"flex",alignItems:"center",gap:"6px"}}>
     {[["btc","BTC"],["mstr","MSTR"]].map(([k, lab]) => (
-      <button key={k} onClick={() => setUnits(k)} style={{
+      <button key={k} aria-pressed={units === k} onClick={() => setUnits(k)} style={{
         fontSize:"10px",fontFamily:"inherit",fontWeight:700,letterSpacing:"0.06em",
         textTransform:"uppercase",padding:"3px 9px",borderRadius:"4px",cursor:"pointer",
         background:units === k ? "#0c2040" : "transparent",
@@ -342,6 +345,7 @@ function useMstrUnits() {
       .then(r => { if (!r.ok) throw 0; return r.json(); }).catch(() => null);
     const quote = k => msQuote({price: Number(k.price), ts: k.timeStamp,
       ext: k.extendedSession || null}, msOpen(new Date()));
+    const refresh = () => {
     jf("data/mstr-config.json?t=" + Date.now()).then(c => {
       if (!on) return;
       const cfg = isObj(c) ? c : {};
@@ -361,7 +365,10 @@ function useMstrUnits() {
     jf("https://api.strategy.com/btc/mstrKpiData").then(j => { if (!on) return;
       const k = Array.isArray(j) ? j[0] : j; if (!isObj(k)) return;
       const q = quote(k); if (q) setU(v => ({...v, now: q.px})); });
-    return () => { on = false; };
+    };
+    const visible = () => { if (document.visibilityState === "visible") refresh(); };
+    refresh(); const timer = setInterval(refresh,600000); document.addEventListener("visibilitychange",visible);
+    return () => { on = false; clearInterval(timer); document.removeEventListener("visibilitychange",visible); };
   }, []);
   const ready = u.bps != null && u.strc != null && u.slope != null;
   // the slope term rides the row's own BTC price, exactly as the sheet rule is written
@@ -516,7 +523,7 @@ function PriceLookup({ btcPrice, liveHistory, dateStr, setDateStr, units, setUni
       return { label: b.label, price, color: b.color, q: b.q };
     });
     return { bands, daysFromNow, days: Math.round(days), ts: d.getTime() };
-  }, [dateStr, modelA, modelB]);
+  }, [dateStr, modelA, modelB, nyDay()]);
 
   const inputStyle = {
     background:"#070f1f", border:"1px solid #0f2a42", borderRadius:"4px",
@@ -534,7 +541,7 @@ function PriceLookup({ btcPrice, liveHistory, dateStr, setDateStr, units, setUni
           <UnitPick units={units} setUnits={setUnits}/>
           <button onClick={()=>stepOpex(-1)} title="Previous monthly expiration"
             style={{...inputStyle, color:"#7dd3fc", cursor:"pointer", padding:"6px 9px", fontSize:"12px"}}>◀</button>
-          <input type="date" value={dateStr} onChange={e=>setDateStr(e.target.value)}
+          <input aria-label="Ladder lookup date" type="date" value={dateStr} onChange={e=>setDateStr(e.target.value)}
             style={{...inputStyle, colorScheme:"dark"}}/>
           <button onClick={()=>stepOpex(1)} title="Next monthly expiration"
             style={{...inputStyle, color:"#7dd3fc", cursor:"pointer", padding:"6px 9px", fontSize:"12px"}}>▶</button>
@@ -568,7 +575,7 @@ function PriceLookup({ btcPrice, liveHistory, dateStr, setDateStr, units, setUni
           {results.bands.map(r => {
             const shown = units === "mstr" ? mu.conv(r.price) : r.price;
             const ref = units === "mstr" ? mu.now : btcPrice;
-            const aboveBelow = (ref > 0 && shown > 0) ? ((ref / shown - 1) * 100) : null;
+            const aboveBelow = (ref > 0 && shown > 0) ? ((shown / ref - 1) * 100) : null;
             return (
               <div key={r.label} style={{background:"#070f1f",border:`1px solid ${r.color}22`,
                 borderRadius:"5px",padding:"8px 10px",textAlign:"center"}}>
@@ -578,7 +585,7 @@ function PriceLookup({ btcPrice, liveHistory, dateStr, setDateStr, units, setUni
                 {aboveBelow !== null && (
                   <div style={{fontSize:"10px",marginTop:"3px",
                     color:aboveBelow > 0 ? "#22c55e" : "#ef4444"}}>
-                    {aboveBelow > 0 ? "+" : ""}{aboveBelow.toFixed(1)}%
+                    {pctS(aboveBelow)} from today
                   </div>
                 )}
               </div>
@@ -603,7 +610,7 @@ function PriceLookup({ btcPrice, liveHistory, dateStr, setDateStr, units, setUni
               {"TODAY'S " + tq.toFixed(1) + "q HELD TO THIS DATE"}</span>
             <span style={{fontSize:"14px",color:"#d0dde8",fontWeight:600}}>{fmtFull(shown)}</span>
             <span style={{fontSize:"10px",color:chg >= 0 ? "#22c55e" : "#ef4444"}}>
-              {(chg >= 0 ? "+" : "") + chg.toFixed(1) + "% from today's price"}</span>
+              {pctS(chg) + " from today's price"}</span>
           </div>);
       })()}
     </div>
@@ -614,7 +621,6 @@ function PriceLookup({ btcPrice, liveHistory, dateStr, setDateStr, units, setUni
 // POWER LAW CHART (SVG)
 // ─────────────────────────────────────────────────────────────────────────────
 function PowerLawChart({ btcPrice, todayTs, liveHistory, lookupTs, modelA=JV_A, modelB=JV_B }) {
-  const canvasRef = useRef(null);
 
   // Chart dimensions
   const W = 900, H = 420, PAD = {t:30, r:20, b:40, l:65};
@@ -860,7 +866,7 @@ function PowerLawChart({ btcPrice, todayTs, liveHistory, lookupTs, modelA=JV_A, 
 }
 
 // ── PLAYBOOK: action, positions, LEAPS units and weekly MACD. ──
-const UNK = "unknown";
+const UNK = "n/a";
 const HIST = "btc_weekly_macd_8_21_5_hist_rising", CROSS = "btc_weekly_macd_8_21_5_fresh_cross";
 const TCOL = {ENTRY:"#22c55e", HOLD:"#facc15", OFF:"#ef4444", UNKNOWN:"#8aaac8"};
 const GRY = "#5a7fa0", GRN = "#22c55e", RD = "#ef4444", SEP = "1px solid #ffffff10";
@@ -882,35 +888,55 @@ function useLocal(key, initial, fix) {
   useEffect(() => { try { localStorage.setItem(key, JSON.stringify(v)); } catch(_) {} }, [key, v]);
   return [v, setV]; }
 const nm = s => { if (s == null) return null;
-  const n = parseFloat(String(s).replace(/[^0-9.\-]/g, "")); return isNaN(n) ? null : n; };
+  const t = String(s).trim().replace(/[$,]/g, "").replace(/−/g, "-");
+  if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(t)) return null;
+  const n = Number(t); return Number.isFinite(n) ? n : null; };
+const nyDay = (ts = Date.now()) => new Date(ts).toLocaleDateString("en-CA", {timeZone:"America/New_York"});
+const usd0 = v => Number.isFinite(v) ? "$" + v.toLocaleString("en-US", {maximumFractionDigits:0}) : UNK;
+const usd2 = v => Number.isFinite(v) ? "$" + v.toLocaleString("en-US", {minimumFractionDigits:2,maximumFractionDigits:2}) : UNK;
+const pctS = (v, d = 1) => { if (!Number.isFinite(v)) return UNK; const t = Math.abs(v).toFixed(d);
+  return (+t === 0 ? "" : v < 0 ? "−" : "+") + t + "%"; };
+function useNyDate() {
+  const [day, setDay] = useState(nyDay), [value, setValue] = useState(nyDay), touched = useRef(false);
+  useEffect(() => { const roll = () => setDay(nyDay()); const id = setInterval(roll, 60000);
+    document.addEventListener("visibilitychange", roll); return () => { clearInterval(id); document.removeEventListener("visibilitychange", roll); }; }, []);
+  useEffect(() => { if (!touched.current) setValue(day); }, [day]);
+  return [value, v => { touched.current = true; setValue(v); }];
+}
+const dayMstx = (projMstr, prev) => { if (!(projMstr > 0 && prev && nm(prev.mstr) > 0 && nm(prev.mstx) > 0)) return null;
+  const v = nm(prev.mstx)*(1+2*(projMstr/nm(prev.mstr)-1)); return Number.isFinite(v) && v > 0 ? v : null; };
 const md = s => String(s||"").slice(5,10).replace(/^0?(\d+)-0?(\d+)$/, "$1/$2") || null;
 const mdy = s => { const m = /^(\d{4})-(\d\d)-(\d\d)/.exec(String(s||"")); return m ? (+m[2])+"/"+(+m[3])+"/"+m[1].slice(2) : String(s || UNK); };
-const sgn = v => (v >= 0 ? "+" : "−") + Math.abs(Math.round(v)).toLocaleString("en-US");
+const sgn = v => !Number.isFinite(v) ? UNK : (Math.round(Math.abs(v)) === 0 ? "" : v < 0 ? "−" : "+") + Math.round(Math.abs(v)).toLocaleString("en-US");
 // phase bounds read "through X", "A to B" or "from A"
 const phBnd = s => { const x = String(s||""), m = x.match(/\d{4}-\d{2}-\d{2}/g) || [];
   return /^through/i.test(x) ? [null,m[0]] : /^from/i.test(x) ? [m[0],null] : [m[0],m[1]]; };
 
 // THE RULES card on the Ladder tab, from data/ladder-rules.json (the rules agreed 9/17; the monitor's pushes carry the same plays)
 function LadderRules({ tier }) {
-  const [lr, setLr] = useState(null);
+  const [lr, setLr] = useState(null), [lrFailed, setLrFailed] = useState(false);
   useEffect(() => {
     let on = true;
     fetch("data/ladder-rules.json?t=" + Date.now(), {cache:"no-store"})
       .then(r => { if (!r.ok) throw 0; return r.json(); })
-      .then(j => { if (on && j && Array.isArray(j.rules)) setLr(j); }).catch(() => {});
+      .then(j => { if (!isObj(j) || !Array.isArray(j.rules)) throw 0; if (on) { setLr(j); setLrFailed(false); } }).catch(() => { if (on) setLrFailed(true); });
     return () => { on = false; };
   }, []);
-  if (!lr) return null;
+  if (!lr) return lrFailed ? <div style={TBL}>Rules file failed to load.</div> : null;
   const card = {background:"#070f1f",border:"1px solid #0f2035",borderRadius:"6px",padding:"14px 16px"};
   const head = {fontSize:"12px",color:"#7ab8d8",textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:600,marginBottom:"10px"};
   const dim  = {color:"#3a5a78",fontWeight:500,letterSpacing:0,textTransform:"none"};
   return (<>
     <div style={card}>
-      <div style={head}>The rules <span style={dim}>· agreed {lr.as_of}</span></div>
-      {lr.rules.filter(r => ["gate", "entry", "size", "exit"].includes(r.k)).map(r => (
+      <div style={head}>The rules <span style={dim}>· agreed {mdy(lr.as_of)}</span></div>
+      {rowsOf(lr.rules).filter(r => ["gate", "entry", "size", "exit"].includes(r.k)).map(r => (
         <div key={r.k} style={{display:"flex",gap:"12px",padding:"6px 0",borderTop:"1px solid #ffffff08",alignItems:"baseline"}}>
           <span style={{fontSize:"11px",fontWeight:700,letterSpacing:"0.1em",color:tier.color,width:"58px",flex:"none",textTransform:"uppercase"}}>{r.k}</span>
-          <span style={{fontSize:"13px",color:"#c8d8e8",lineHeight:1.45}}>{r.rule}</span>
+          <span style={{fontSize:"13px",color:"#c8d8e8",lineHeight:1.45}}>{r.k === "size" && Array.isArray(lr.sizing) ? (() => {
+            const schedule = rowsOf(lr.sizing).sort((a,b) => a.when.localeCompare(b.when)), day = nyDay();
+            const current = schedule.filter(x => x.when <= day).pop(), future = schedule.filter(x => x.when > day);
+            return current ? current.primary_pct+"% of the sleeve today. "+(future.length ? "Drops to "+future.map(x => x.primary_pct+"% on "+md(x.when)).join(" and ")+". " : "")+(String(r.rule).match(/[^.]+\.\s*$/)?.[0].trim() || "") : r.rule;
+          })() : r.rule}</span>
         </div>
       ))}
     </div>
@@ -959,25 +985,26 @@ const stateCard = color => ({...VIS_CARD,background:color === GRN ? "#071a0f" : 
 function LeapsCost({ lc }) {
   const [hv, setHv] = useState(null);
   const mdl = lc && isObj(lc.model) && isObj(lc.model.long) && isObj(lc.model.short) ? lc.model : null;
-  const [lkDate, setLkDate] = useState(() => new Date().toLocaleDateString("en-CA", {timeZone:"America/New_York"}));
+  const [lkDate, setLkDate] = useNyDate();
   const [lkPx, setLkPx] = useState(""), [lkVol, setLkVol] = useState(0), [lkN, setLkN] = useState("");
-  const rows = (lc && Array.isArray(lc.series)) ? lc.series.filter(r => r && typeof r.cost === "number") : [];
+  const rows = (lc && Array.isArray(lc.series)) ? lc.series.filter(r => r && Number.isFinite(r.cost)) : [];
   if (rows.length < 5) return null;
   const W = 720, H = 250, P = {l:46, r:10, t:14, b:22}, cw = W - P.l - P.r, ch = H - P.t - P.b;
-  const top = Math.ceil(Math.max(...rows.map(r => r.cost)) / 25000) * 25000;
-  const xAt = i => P.l + cw * i / (rows.length - 1), yAt = v => P.t + ch * (1 - v / top);
-  const path = (k, a, b) => rows.slice(a, b).map((r, i) => r[k] == null ? "" :
+  const top = Math.max(25000, Math.ceil(Math.max(0,...rows.flatMap(r => [r.cost,r.avg10]).concat(rowsOf(lc.prints).map(p => p.cost)).filter(Number.isFinite))/25000)*25000);
+  const xAt = i => P.l + cw * i / (rows.length - 1), floor = Math.min(0,...rows.flatMap(r => [r.cost,r.avg10]).concat(rowsOf(lc.prints).map(p => p.cost)).filter(Number.isFinite)),
+    yAt = v => P.t + ch * (1 - (v-floor)/(top-floor));
+  const path = (k, a, b) => rows.slice(a, b).map((r, i) => !Number.isFinite(r[k]) ? "" :
     (i && rows[a+i-1][k] != null ? "L" : "M") + xAt(a+i).toFixed(1) + " " + yAt(r[k]).toFixed(1)).join("");
   const li = Math.max(0, rows.findIndex(r => r.d >= lc.long_first_trade));
-  const usd = v => "$" + Math.round(v).toLocaleString("en-US"), k = v => Math.round(v/1000) === 0 ? "$0" : "$" + Math.round(v/1000) + "k";
+  const usd = usd0, k = v => !Number.isFinite(v) ? UNK : Math.round(v/1000) === 0 ? "$0" : "$" + Math.round(v/1000) + "k";
   const ref = isObj(lc.ref) ? lc.ref : {}, now = ref.today || rows[rows.length-1];
-  const cards = [["TODAY","today"],["1 MONTH AGO","month_ago"],["2 MONTHS AGO","two_months_ago"],["LOW","low"]].filter(c => isObj(ref[c[1]]));
+  const cards = [["LAST CLOSE","today"],["1 MONTH AGO","month_ago"],["2 MONTHS AGO","two_months_ago"],["LOW","low"]].filter(c => isObj(ref[c[1]]));
   const pick = e => { const b = e.currentTarget.getBoundingClientRect();
     const cx = (e.touches && e.touches[0] ? e.touches[0].clientX : e.clientX) - b.left;
     const i = Math.round((cx / b.width * W - P.l) / cw * (rows.length - 1));
     setHv(Math.min(rows.length - 1, Math.max(0, i))); };
   const h = hv == null ? null : rows[hv];
-  const prints = Array.isArray(lc.prints) ? lc.prints.map(p => ({...p, i: rows.findIndex(r => r.d === p.d)})).filter(p => p.i >= 0) : [];
+  const prints = Array.isArray(lc.prints) ? rowsOf(lc.prints).map(p => ({...p, i: rows.findIndex(r => r.d === p.d)})).filter(p => p.i >= 0 && Number.isFinite(p.cost)) : [];
   const SC = {background:"#070f1f",border:"1px solid #0f2035",borderRadius:"6px",padding:"10px 12px"};
   return (
     <div style={{marginTop:16}}>
@@ -992,57 +1019,61 @@ function LeapsCost({ lc }) {
         {li > 0 && <g><line x1={xAt(li)} x2={xAt(li)} y1={P.t} y2={P.t+ch} stroke="#facc15" strokeWidth="0.8"
           strokeDasharray="3 3" opacity="0.6"/>
           <text x={xAt(li)-4} y={P.t+10} fill="#facc15" fontSize="8" textAnchor="end">Dec 2028 $33 first traded</text></g>}
+        <defs><clipPath id="leaps-plot"><rect x={P.l} y={P.t} width={cw} height={ch}/></clipPath></defs>
+        <g clipPath="url(#leaps-plot)">
         {li > 0 && <path d={path("cost", 0, li+1)} fill="none" stroke="#22d3ee" strokeWidth="1.3" strokeDasharray="4 3" opacity="0.55"/>}
         <path d={path("cost", li, rows.length)} fill="none" stroke="#22d3ee" strokeWidth="1.6"/>
         <path d={path("avg10", 0, rows.length)} fill="none" stroke="#facc15" strokeWidth="1.1" opacity="0.8"/>
         {prints.map(p => <circle key={p.d} cx={xAt(p.i)} cy={yAt(p.cost)} r="2.6" fill="#f1f5f9"/>)}
         {h && <g><line x1={xAt(hv)} x2={xAt(hv)} y1={P.t} y2={P.t+ch} stroke="#e2e8f0" strokeWidth="0.6" opacity="0.5"/>
           <circle cx={xAt(hv)} cy={yAt(h.cost)} r="3" fill="#22d3ee"/></g>}
-        <text x={P.l} y={H-6} fill="#7aa5c8" fontSize="9">{md(rows[0].d)}</text>
-        <text x={P.l+cw} y={H-6} fill="#7aa5c8" fontSize="9" textAnchor="end">{md(rows[rows.length-1].d)}</text>
+        </g>
+        <text x={P.l} y={H-6} fill="#7aa5c8" fontSize="9">{mdy(rows[0].d)}</text>
+        <text x={P.l+cw} y={H-6} fill="#7aa5c8" fontSize="9" textAnchor="end">{mdy(rows[rows.length-1].d)}</text>
       </svg>
       <div style={{fontSize:11,color:"#b0c4d8",marginTop:4}}>
-        {h ? h.d + " · MSTX $" + h.mstx.toFixed(2) + " · unit $" + h.unit.toFixed(2) + " · " + (lc.units||200) + " units " + usd(h.cost)
+        {h ? mdy(h.d) + " · MSTX " + usd2(h.mstx) + " · unit " + usd2(h.unit) + " · " + (lc.units||200) + " units " + usd(h.cost)
            : <More>{"Cyan: model cost. Amber: 10-day average. White dots: days both legs really traded. Dashed: before the long leg existed."}</More>}</div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(118px,1fr))",gap:"8px",marginTop:16}}>
         {cards.map(([t, key]) => { const r = ref[key], ch2 = now.cost / r.cost - 1;
           return <div key={key} style={SC}>
             <div style={{...LAB,marginBottom:5}}>{t}</div>
             <div style={{fontSize:18,fontWeight:700,color:key==="today"?"#22d3ee":"#e2e8f0"}}>{usd(r.cost)}</div>
-            <div style={{fontSize:10,color:"#7a9ab8",marginTop:3}}>{md(r.d) + " · MSTX $" + r.mstx.toFixed(2)
-              + (key==="today" ? "" : " · today is " + (ch2 >= 0 ? "+" : "") + Math.round(100*ch2) + "%")}</div>
+            <div style={{fontSize:10,color:"#7a9ab8",marginTop:3}}>{mdy(r.d) + " · MSTX " + usd2(r.mstx)
+              + (key==="today" ? "" : " · last close is " + pctS(100*ch2,0))}</div>
           </div>; })}
       </div>
       {mdl && (() => {
         const yrs = (exp, on) => (new Date(exp+"T16:00:00Z") - new Date(on+"T16:00:00Z"))/(365*86400000);
-        const unitAt = (S, on, dv) => lcCall(S, mdl.long.k, yrs(mdl.long.exp, on), mdl.long.iv*(1+dv), mdl.r)
+        const unitAt = (S, on, dv) => !(S > 0) ? NaN : lcCall(S, mdl.long.k, yrs(mdl.long.exp, on), mdl.long.iv*(1+dv), mdl.r)
           - lcCall(S, mdl.short.k, yrs(mdl.short.exp, on), mdl.short.iv*(1+dv), mdl.r);
         const S = nm(lkPx) > 0 ? nm(lkPx) : nm(mdl.mstx_last), n = nm(lkN) > 0 ? Math.round(nm(lkN)) : (lc.units||200);
-        const u = unitAt(S, lkDate, lkVol), base = unitAt(nm(mdl.mstx_last), mdl.asof, 0), cost = u*100*n, chg = base > 0 ? u/base-1 : null;
-        const wk = new Date(new Date(lkDate+"T16:00:00Z").getTime()+7*86400000).toISOString().slice(0,10);
-        const dS = (unitAt(S+1, lkDate, lkVol)-u)*100*n, dT = (unitAt(S, wk, lkVol)-u)*100*n, dV = (unitAt(S, lkDate, lkVol+0.10)-u)*100*n;
+        const priceDay = lkDate > mdl.short.exp ? mdl.short.exp : lkDate < mdl.asof ? mdl.asof : lkDate;
+        const u = S > 0 ? unitAt(S, priceDay, lkVol) : NaN, base = unitAt(nm(mdl.mstx_last), mdl.asof, 0), cost = u*100*n, chg = base > 0 ? u/base-1 : null;
+        const wk = new Date(new Date(priceDay+"T16:00:00Z").getTime()+7*86400000).toISOString().slice(0,10);
+        const dS = (unitAt(S+1, priceDay, lkVol)-u)*100*n, dT = wk > mdl.short.exp ? NaN : (unitAt(S, wk, lkVol)-u)*100*n, dV = (unitAt(S, priceDay, lkVol+0.10)-u)*100*n;
         const IN = {background:"#070f1f",border:"1px solid #0f2035",borderRadius:6,color:"#facc15",fontSize:13,fontWeight:600,
           padding:"7px 9px",fontFamily:"inherit",width:"100%",boxSizing:"border-box",colorScheme:"dark"};
-        const sg = v => (v >= 0 ? "+" : "\u2212") + usd(Math.abs(v));
+        const sg = v => !Number.isFinite(v) ? UNK : (Math.round(Math.abs(v)) === 0 ? "" : v < 0 ? "−" : "+") + usd0(Math.abs(v));
         return <div style={{marginTop:16}}>
           <div style={{...HD,marginBottom:8}}>UNIT COST LOOKUP</div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:8}}>
             <label><div style={{...LAB,marginBottom:4}}>DATE</div>
-              <input type="date" value={lkDate} min={mdl.asof} max={mdl.long.exp} onChange={e => e.target.value && setLkDate(e.target.value)} style={IN}/></label>
+              <input type="date" value={priceDay} min={mdl.asof} max={mdl.short.exp} onChange={e => e.target.value && setLkDate(e.target.value < mdl.asof ? mdl.asof : e.target.value > mdl.short.exp ? mdl.short.exp : e.target.value)} style={IN}/></label>
             <label><div style={{...LAB,marginBottom:4}}>MSTX PRICE</div>
               <input type="number" inputMode="decimal" step="0.25" min="1" placeholder={String(mdl.mstx_last)} value={lkPx} onChange={e => setLkPx(e.target.value)} style={IN}/></label>
             <label><div style={{...LAB,marginBottom:4}}>UNITS</div>
               <input type="number" inputMode="numeric" step="10" min="1" placeholder={String(lc.units||200)} value={lkN} onChange={e => setLkN(e.target.value)} style={IN}/></label>
-            <label><div style={{...LAB,marginBottom:4}}>{"OPTION VOL " + (Math.round(lkVol*100) === 0 ? "" : lkVol >= 0 ? "+" : "\u2212") + Math.abs(Math.round(lkVol*100)) + "%"}</div>
+            <label><div style={{...LAB,marginBottom:4}}>{"OPTION VOL " + pctS(lkVol*100,0)}</div>
               <input type="range" min="-0.3" max="0.3" step="0.05" value={lkVol} onChange={e => setLkVol(Number(e.target.value))} style={{width:"100%",marginTop:8,accentColor:"#22d3ee"}}/></label>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(118px,1fr))",gap:8,marginTop:16}}>
             <div style={SC}><div style={{...LAB,marginBottom:5}}>{n + " UNITS COST"}</div>
               <div style={{fontSize:20,fontWeight:700,color:"#22d3ee"}}>{usd(cost)}</div>
-              <div style={{fontSize:10,color:"#7a9ab8",marginTop:3}}>{md(lkDate) + " \u00b7 MSTX $" + S.toFixed(2)}</div></div>
+              <div style={{fontSize:10,color:"#7a9ab8",marginTop:3}}>{mdy(priceDay) + " · MSTX " + usd2(S)}</div></div>
             <div style={SC}><div style={{...LAB,marginBottom:5}}>ONE UNIT</div>
-              <div style={{fontSize:20,fontWeight:700,color:"#e2e8f0"}}>{"$" + u.toFixed(2)}</div>
-              <div style={{fontSize:10,color:"#7a9ab8",marginTop:3}}>{chg == null ? "" : Math.round(chg*100) === 0 ? "same as today" : (chg >= 0 ? "+" : "\u2212") + Math.abs(Math.round(chg*100)) + "% against today"}</div></div>
+              <div style={{fontSize:20,fontWeight:700,color:"#e2e8f0"}}>{usd2(u)}</div>
+              <div style={{fontSize:10,color:"#7a9ab8",marginTop:3}}>{chg == null ? "" : Math.round(chg*100) === 0 ? "same as the last close" : pctS(chg*100,0) + " against the last close"}</div></div>
             <div style={SC}><div style={{...LAB,marginBottom:5}}>WHAT MOVES IT</div>
               <div style={{fontSize:11,color:"#b0c4d8",lineHeight:1.6}}>{"MSTX +$1: " + sg(dS)}<br/>{"one week later: " + sg(dT)}<br/>{"option vol +10%: " + sg(dV)}</div></div>
           </div>
@@ -1059,19 +1090,21 @@ function PlaybookTab({ todayTs, tier, q }) {
   const [failed, setFailed] = useState([]);
   useEffect(() => {
     let on = true;
-    const get = (f, ok) => fetch(f + "?t=" + Date.now(), {cache:"no-store"})
-      .then(r => { if (!r.ok) throw 0; return r.json(); })
-      .then(j => { if (!isObj(j)) throw 0; if (on) ok(j); })
-      .catch(() => { if (on) setFailed(v => [...v, f]); });
-    get("data/playbook.json", setPb);
-    get("data/paper-ledger.json", setPlg);
-    get("data/leaps-cost.json", setLc);
-    return () => { on = false; };
+    const pending = new Set();
+    const get = async (f, ok) => { if (pending.has(f)) return; pending.add(f);
+      try { const r = await fetch(f+"?t="+Date.now(), {cache:"no-store"}); if (!r.ok) throw 0;
+        const j = await r.json(); if (!isObj(j)) throw 0;
+        if (on) { ok(j); setFailed(v => v.filter(x => x !== f)); }
+      } catch (_) { if (on) setFailed(v => [...new Set([...v,f])]); } finally { pending.delete(f); } };
+    const refresh = () => { get("data/playbook.json",setPb); get("data/paper-ledger.json",setPlg); get("data/leaps-cost.json",setLc); };
+    const visible = () => { if (document.visibilityState === "visible") refresh(); };
+    refresh(); const timer = setInterval(refresh,600000); document.addEventListener("visibilitychange",visible);
+    return () => { on = false; clearInterval(timer); document.removeEventListener("visibilitychange",visible); };
   }, []);
   const inp = (pb && isObj(pb.inputs)) ? pb.inputs : {};
   const [tip, setTip] = useState(null), [hb, setHb] = useState(null);
   const [uSl, setUSl] = useLocal("bql_pb_mstx", 16.4, v => nm(v) == null ? 16.4 : nm(v));
-  const d0 = new Date(todayTs).toISOString().slice(0,10);
+  const d0 = nyDay(todayTs);
   // one tooltip for the tab: hover, or tap on touch
   const tipAt = (t, e) => { const r = e.currentTarget.getBoundingClientRect();
     const h = Math.min(264, window.innerWidth - 16)/2;
@@ -1115,25 +1148,25 @@ function PlaybookTab({ todayTs, tier, q }) {
   const p1 = rowsOf(ph1 && ph1.spreads).map(s => ({k:String(s.key||UNK), legs:s.legs||null,
     mid:nm(s.debit), contracts:nm(s.contracts), cost:nm(s.cost)}));
   const x2 = (v, s) => v == null ? UNK : v.toFixed(2) + (s||"");
-  // Position values come from the ledger; unit prices come from today's calibrated curve.
-  const curve = rowsOf(lc && lc.unit_at).filter(r => nm(r.mstx) != null && nm(r.unit) > 0);
-  const uRows = rowsOf(ph1 && ph1.units_by_price).filter(r => nm(r.mstx) != null)
-    .map(r => {
-      const nearest = curve.reduce((best, row) => !best || Math.abs(nm(row.mstx)-nm(r.mstx)) < Math.abs(nm(best.mstx)-nm(r.mstx)) ? row : best, null);
-      const unit = nearest ? nm(nearest.unit) : nm(r.unit), dollars = nm(r.dollars);
-      return {S:nm(r.mstx), pv:dollars, up:unit,
-        n:nearest && dollars != null ? dollars / (unit * 100) : nm(r.leaps)};
-    });
+  // Position dollars from the ledger; both legs priced at settlement.
+  const settlement = phBnd(ph1 && ph1.dates)[1] || "2026-10-02";
+  const unitModel = lc && lc.model;
+  const uRows = rowsOf(ph1 && ph1.units_by_price).filter(r => nm(r.mstx) != null).map(r => {
+    const S = nm(r.mstx), dollars = nm(r.dollars);
+    const leg = l => lcCall(S, l.k, (Date.parse(l.exp)-Date.parse(settlement))/86400000/365, l.iv, unitModel.r);
+    const unit = unitModel ? leg(unitModel.long)-leg(unitModel.short) : nm(r.unit);
+    return {S, pv:dollars, up:unit, n:unitModel ? (dollars != null && unit > 0 ? Math.floor(dollars/(unit*100)) : null) : nm(r.leaps)};
+  });
   const uMin = uRows.length ? Math.min(...uRows.map(r => r.S)) : 13;
   const uMax = uRows.length ? Math.max(...uRows.map(r => r.S)) : 19;
   const uV = Math.min(uMax, Math.max(uMin, nm(uSl) == null ? 16.4 : nm(uSl)));
   const uSel = uRows.reduce((a,r) => Math.abs(r.S-uV) < Math.abs(a-uV) ? r.S : a,
     uRows.length ? uRows[0].S : 13);
   const uSelR = uRows.find(r => r.S === uSel) || {};
-  const usdS = v => "$" + (Number.isInteger(v) ? String(v) : v.toFixed(2));
+  const usdS = usd2;
   const uRead = "At " + usdS(uSel) + " on settlement: position about "
-    + (uSelR.pv == null ? UNK : "$" + Math.round(uSelR.pv).toLocaleString("en-US"))
-    + ", unit " + (uSelR.up == null ? UNK : "$" + x2(uSelR.up)) + ", " + (uSelR.n == null ? UNK : uSelR.n.toFixed(0)) + " LEAPS";
+    + (uSelR.pv == null ? UNK : usd0(uSelR.pv))
+    + ", unit " + (uSelR.up == null ? UNK : usd2(uSelR.up)) + ", " + (uSelR.n == null ? UNK : uSelR.n.toFixed(0)) + " LEAPS";
 
   // TRIGGER: the weekly bars
   const hR = inp[HIST] || {};
@@ -1173,7 +1206,7 @@ function PlaybookTab({ todayTs, tier, q }) {
           {genTxt && <span style={{fontSize:10,letterSpacing:"0.06em",
             color:(todayTs-Date.parse(gen))/864e5 > 2 ? RD : genAge >= 1 ? "#facc15" : GRY}}>{genTxt}</span>}</div>
         <div style={{fontSize:"28px",fontWeight:700,color:TCOL[trig],lineHeight:1,letterSpacing:"0.02em"}}>
-          {trig + (ph ? " \u00b7 PHASE " + ph.id : "")}</div>
+          {"ENTRY " + trig}{ph && <span style={{display:"block",fontSize:"13px",letterSpacing:"0.1em",marginTop:6,opacity:0.85}}>{"IN PHASE " + ph.id}</span>}</div>
         {actS.length > 0
           ? actS.slice(0,3).map((t, i) => <div key={i} style={{fontSize:14,color:"#e2e8f0",lineHeight:1.5,
               marginTop:i ? 4 : 10}}><More step>{t}</More></div>)
@@ -1193,28 +1226,28 @@ function PlaybookTab({ todayTs, tier, q }) {
               minWidth:"46px",whiteSpace:"nowrap",flexShrink:0}}>{r.k}</span>
             <span style={{fontSize:13,color:"#a0b8cc"}}>{r.legs||UNK}</span>
             <span style={{fontSize:15,fontWeight:700,color:"#f1f5f9"}}>
-              {"debit " + (r.mid == null ? UNK : "$" + x2(r.mid, " fill"))}</span>
+              {"debit " + (r.mid == null ? UNK : usd2(r.mid) + " fill")}</span>
             <span style={{fontSize:13,color:"#a0b8cc"}}>{r.contracts + " contracts · cost " + (r.cost == null ? UNK : fmtFull(r.cost))}</span>
           </div>))}
         {!p1.length && <div style={{...BODY,padding:"7px 0"}}>No spreads in the ledger.</div>}
         {ph1 && <div style={{...BODY,lineHeight:1.5,marginTop:9}}><More hide>{ph1.positions}</More></div>}
-        {ph1 && <div style={{...BODY,lineHeight:1.5,marginTop:9}}>
-          <More>{"Exits: " + String(ph1.next_action || "") + " " + String(ph1.next_action_detail || "")}</More></div>}
       </div>
 
       {/* UNITS */}
       <div style={VIS_CARD}>
         <div style={{...HD,marginBottom:8}}>LEAPS UNITS</div>
         <div style={{...BODY,marginBottom:16}}><More>{String((plg && plg.plan && plg.plan.objective) || "")}</More></div>
-        <div style={{fontSize:15,color:"#22d3ee",marginBottom:16}}>{"Today’s unit price: " + msUsd(nm(lc && lc.ref && lc.ref.today && lc.ref.today.unit))}</div>
+        <div style={{fontSize:15,color:"#22d3ee",marginBottom:16}}>{"Unit price at the " + (md(lc && lc.model && lc.model.asof) || UNK) + " close: " + msUsd(nm(lc && lc.ref && lc.ref.today && lc.ref.today.unit))}</div>
         <div style={{...HD,marginBottom:10}}>BY MSTX CLOSE ON SETTLEMENT</div>
+        <div style={FT}>At the 10/2 close · no cash · longs at 100% vol · unit priced for 10/2 · whole units</div>
+        {!unitModel && <div style={FT}>Live unit curve unavailable: unit prices are the ledger's 9/19 copy.</div>}
         <div style={{overflowX:"auto"}}><div style={{display:"grid",
           gridTemplateColumns:"repeat(4,minmax(0,1fr))",minWidth:0}}>
           {["MSTX","POSITION VALUE","UNIT PRICE","LEAPS"].map((h,i) =>
             <div key={h} style={{...LAB,padding:"4px 6px",textAlign:i?"right":"left"}}>{h}</div>)}
           {uRows.map(r => { const hl = r.S === uSel;
             return [usdS(r.S),
-              r.pv == null ? UNK : "$" + Math.round(r.pv).toLocaleString("en-US"), r.up == null ? UNK : "$" + x2(r.up),
+              r.pv == null ? UNK : usd0(r.pv), r.up == null ? UNK : usd2(r.up),
               r.n == null ? UNK : r.n.toFixed(0)].map((v,i) =>
               <div key={r.S+"-"+i} style={{padding:"4px 6px",fontSize:12,
                 borderBottom:"1px solid #070f1f",textAlign:i?"right":"left",
@@ -1230,14 +1263,14 @@ function PlaybookTab({ todayTs, tier, q }) {
               background:"#0d1e30",borderRadius:"3px"}}/>
             <div style={{position:"absolute",left:0,width:((uV-uMin)/((uMax-uMin)||1)*100)+"%",height:"3px",
               background:AC,borderRadius:"3px",opacity:0.75}}/>
-            <input type="range" min={uMin} max={uMax} step={0.25} value={uV}
+            <input aria-label="MSTX on settlement" type="range" min={uMin} max={uMax} step={0.25} value={uV}
               onChange={e=>setUSl(parseFloat(e.target.value))}
               style={{position:"absolute",left:0,right:0,width:"100%",appearance:"none",
                 WebkitAppearance:"none",background:"transparent",cursor:"pointer",
                 margin:0,height:"20px"}}/>
           </div>
           <span style={{fontSize:12,fontWeight:700,color:AC,minWidth:"32px",
-            textAlign:"right"}}>{String(+uSel.toFixed(2))}</span>
+            textAlign:"right"}}>{usd2(uSel)}</span>
         </div>
         <div style={{fontSize:11,color:"#b0c4d8",marginTop:7}}>{uRead}</div>
         <LeapsCost lc={lc}/>
@@ -1246,7 +1279,7 @@ function PlaybookTab({ todayTs, tier, q }) {
         <div style={{...HD,marginBottom:10}}>LEAPS UNITS AT THE END, BY ROUTE</div>
         <div style={{overflowX:"auto"}}><div style={{display:"grid",
           gridTemplateColumns:"minmax(0,1fr) 64px 64px"}}>
-          {["ROUTE","YOUR ODDS","MARKET ODDS"].map((h,i) =>
+          {["ROUTE","UNITS, YOUR VIEW","UNITS, MARKET VIEW"].map((h,i) =>
             <div key={h} style={{...LAB,padding:"4px 6px",textAlign:i?"right":"left"}}>{h}</div>)}
           {routes.map((r,n) => [String(r.route||UNK), nm(r.units_thesis), nm(r.units_market)]
             .map((v,i) => <div key={n+"-"+i} style={{padding:"4px 6px",fontSize:12,
@@ -1255,10 +1288,11 @@ function PlaybookTab({ todayTs, tier, q }) {
               fontWeight:i?600:400}}>
               {i === 0 ? v : v == null ? UNK : v.toFixed(0)}</div>))}
         </div></div>
+        <div style={FT}>{rNote.slice(0, rNote.indexOf(".")+1) || rNote}</div>
       </div>}
 
         <div style={FT}><More hide>{[lc ? lc.note : "Using ledger unit prices and LEAPS counts.",
-          lc && ("Updated " + lc.updated + "."), rNote].filter(Boolean).join(" ")}</More></div>
+          lc && ("Updated " + mdy(lc.updated) + "."), ph1 && ph1.units_note, rNote.slice(rNote.indexOf(".")+1)].filter(Boolean).join(" ")}</More></div>
       </div>
 
       {/* TRIGGER */}
@@ -1289,7 +1323,7 @@ function PlaybookTab({ todayTs, tier, q }) {
                 {"LAST " + bars.length + " WEEKS"}</text>
               {bars.map((b,i) => <rect key={"h"+b.bar} x={CP.l+i*bw} y={CP.t} width={bw}
                 height={cht} fill="transparent" style={{cursor:"pointer"}} {...hit(bTip(b), i)}/>)}
-            </svg>) : <div style={BODY}>Weekly histogram bars unknown.</div>}
+            </svg>) : <div style={BODY}>Weekly histogram bars are not available.</div>}
           <div style={{fontSize:11,color:"#b0c4d8",marginTop:7}}><More>
             {(rising ? "Rising since " : "Falling since ") + (md(rise)||UNK) + ". Crossed " + (md(xd0)||UNK) + ", "
               + (isNaN(wkN) ? UNK : wkN) + " weeks ago. Last bar " + (bars.length ? (md(bars[bars.length-1].bar) || bars[bars.length-1].bar) : UNK) + "."}</More></div>
@@ -1316,10 +1350,9 @@ const msStrc = s => s >= 97.5 ? 0.90
   : Math.max(0.775, 0.775 + (s - 77.5) * 0.005);
 const AMB = "#facc15", NEU = "#8aaac8", SUB = "#7a9ab8";
 // cheap is green, rich is red, in between is neutral, at whatever thresholds are configured
-const msGapCol = (g, c, r) => g == null ? NEU : g <= -c ? GRN : g >= r ? RD : NEU;
-const msPct = (v, d) => { if (v == null) return UNK; const t = Math.abs(v).toFixed(d == null ? 1 : d);   // no sign on a zero
-  return (+t === 0 ? "" : v >= 0 ? "+" : "−") + t + "%"; };
-const msUsd = (v, d) => v == null ? UNK : "$" + v.toLocaleString("en-US", {minimumFractionDigits:d == null ? 2 : d, maximumFractionDigits:d == null ? 2 : d});
+const msGapCol = (g, c, r) => !Number.isFinite(g) ? NEU : g <= -c ? GRN : g >= r ? RD : NEU;
+const msPct = pctS;
+const msUsd = (v, d) => d === 0 ? usd0(v) : usd2(v);
 const MS_RAW = "https://raw.githubusercontent.com/Kaim222/btc-monitor/main/";
 const msTs = t => { const x = Date.parse(String(t||"")); return isFinite(x) ? x : 0; };
 // "09/16/2026 07:59 PM" is not a format Date.parse can be trusted with, so read it here
@@ -1345,10 +1378,12 @@ const msOpen = d => { try {
       weekday:"short", hour:"2-digit", minute:"2-digit"}).formatToParts(d);
     const o = {}; for (const x of p) o[x.type] = x.value;
     const m = (+o.hour % 24) * 60 + (+o.minute);
-    return o.weekday !== "Sat" && o.weekday !== "Sun" && m >= 570 && m < 960;
+    const day = nyDay(d), closed = new Set(["2026-01-01","2026-01-19","2026-02-16","2026-04-03","2026-05-25","2026-06-19","2026-07-03","2026-09-07","2026-11-26","2026-12-25","2027-01-01","2027-01-18","2027-02-15","2027-03-26","2027-05-31","2027-06-18","2027-07-05","2027-09-06","2027-11-25","2027-12-24"]);
+    const close = ["2026-11-27","2026-12-24","2027-11-26"].includes(day) ? 780 : 960;
+    return !closed.has(day) && o.weekday !== "Sat" && o.weekday !== "Sun" && m >= 570 && m < close;
   } catch(_) { return null; } };
 const msWhen = t => { const x = typeof t === "number" ? t : msTs(t); return !x ? String(t || UNK)
-  : new Date(x).toLocaleString("en-US", {month:"numeric", day:"numeric",
+  : new Date(x).toLocaleString("en-US", {timeZone:"America/New_York", month:"numeric", day:"numeric",
       hour:"numeric", minute:"2-digit"}); };
 function MstrTab() {
   const [dat, setDat] = useState(null), [cfg, setCfg] = useState(null);
@@ -1359,7 +1394,7 @@ function MstrTab() {
   const [narrow, setNarrow] = useState(() => window.innerWidth < 560);
   const touched = useRef({});
   const [lkM, setLkM] = useState(""), [hist, setHist] = useState(null);
-  const [lkBtc, setLkBtc] = useState(""), [lkDay, setLkDay] = useState(() => new Date().toLocaleDateString("en-CA", {timeZone:"America/New_York"}));
+  const [lkBtc, setLkBtc] = useState(""), [lkDay, setLkDay] = useNyDate();
   useEffect(() => {
     const resize = () => setNarrow(window.innerWidth < 560);
     window.addEventListener("resize", resize);
@@ -1367,13 +1402,19 @@ function MstrTab() {
   }, []);
   useEffect(() => {
     let on = true, timer;
-    const get = (file, accept) => fetch(file + "?t=" + Date.now(), {cache:"no-store"})
-      .then(r => { if (!r.ok) throw 0; return r.json(); })
-      .then(j => { if (on) { accept(j); setErrors(v => v.filter(x => x !== file)); } })
-      .catch(() => { if (on) setErrors(v => [...new Set([...v, file])]); });
-    get("data/mstr-model.json", j => { if (!isObj(j)) throw 0; setDat(j); });
-    get("data/mstr-config.json", j => { if (!isObj(j)) throw 0; setCfg(j); });
-    get("data/mnav-history.json", j => { if (!isObj(j)) throw 0; setHist(j); });
+    const pending = new Set();
+    const get = async (file, accept) => { if (pending.has(file)) return; pending.add(file);
+      try { const r = await fetch(file+"?t="+Date.now(), {cache:"no-store"}); if (!r.ok) throw 0;
+        const j = await r.json(); if (on) { accept(j); setErrors(v => v.filter(x => x !== file)); }
+      } catch (_) { if (on) setErrors(v => [...new Set([...v,file])]); } finally { pending.delete(file); } };
+    const refresh = () => {
+      get("data/mstr-model.json", j => { if (!isObj(j)) throw 0; setDat(j); });
+      get("data/mstr-config.json", j => { if (!isObj(j)) throw 0; setCfg(j); });
+      get("data/mnav-history.json", j => { if (!isObj(j)) throw 0; setHist(j); });
+    };
+    refresh(); const staticTimer = setInterval(refresh,600000);
+    const visible = () => { if (document.visibilityState === "visible") { refresh(); setNowTs(Date.now()); } };
+    document.addEventListener("visibilitychange",visible);
     const poll = () => {
       setNowTs(Date.now());
       get(MS_RAW + "mstr_state.json", j => { if (!isObj(j)) throw 0; setMon(v => ({...v, st:j})); });
@@ -1385,12 +1426,12 @@ function MstrTab() {
         const k = j && j.results, held = k && nm(k.btcHoldings), sats = k && nm(k.satsPerShare);
         if (!(held > 100000) || !(sats > 0)) throw 0;
         const ops = nm(k.btcPerShareUsd) > 0 && nm(k.netBtcPerShareUsd) > 0 ? nm(k.btcPerShareUsd)-nm(k.netBtcPerShareUsd) : null;
-        setHoldings({held, shares:held / (sats / 1e8), ops, mnavEv:nm(k.mNav), prefPct:nm(k.prefByBN), debtPct:nm(k.debtByBN)});
+        setHoldings({held, shares:held / (sats / 1e8), ops, prefPct:nm(k.prefByBN), debtPct:nm(k.debtByBN)});
       });
       timer = setTimeout(poll, msOpen(new Date()) ? 60000 : 300000);
     };
     poll();
-    return () => { on = false; clearTimeout(timer); };
+    return () => { on = false; clearTimeout(timer); clearInterval(staticTimer); document.removeEventListener("visibilitychange",visible); };
   }, []);
   const ser = rowsOf(dat && dat.series), last = ser[ser.length-1] || {}, st = mon.st || {};
   const current = k => nm(st[k]) != null ? nm(st[k]) : nm(last[k]);
@@ -1407,11 +1448,11 @@ function MstrTab() {
     <div style={VIS_CARD}><div style={BODY}>{errors.includes("data/mstr-config.json")
       ? "data/mstr-config.json failed to load." : "Waiting for a complete data/mstr-config.json."}</div></div>);
   const cheap = nm(cfg.cheap_threshold)*200, rich = nm(cfg.rich_threshold)*200, lagLine = nm(cfg.lag_threshold)*200;
-  const verdict = gap => gap == null ? "NO READ" : gap <= cheap ? "CHEAP" : gap >= rich ? "RICH" : "FAIR";
+  const verdict = gap => !Number.isFinite(gap) ? UNK : gap <= cheap ? "CHEAP" : gap >= rich ? "RICH" : "FAIR";
   const gapColor = gap => msGapCol(gap, -cheap, rich);
-  const gap = nm(st.gap_mstx) != null ? nm(st.gap_mstx) : nm(st.gap) != null ? nm(st.gap)*2 : nm(last.gap) == null ? null : nm(last.gap)*2;
-  const projected = nm(st.proj_mstx) != null ? nm(st.proj_mstx)
-    : !nm(last.mstr) || nm(last.mstx) == null || nm(last.proj) == null ? null : nm(last.mstx)*(1+2*(nm(last.proj)/nm(last.mstr)-1));
+  const monitorLevel = nm(st.gap_mstx) != null && nm(st.proj_mstx) > 0;
+  const projected = monitorLevel ? nm(st.proj_mstx) : dayMstx(nm(last.proj), ser[ser.length-2]);
+  const gap = monitorLevel ? (nm(st.mstx) > 0 ? (nm(st.mstx)/nm(st.proj_mstx)-1)*100 : nm(st.gap_mstx)) : projected > 0 && nm(last.mstx) > 0 ? (nm(last.mstx)/projected-1)*100 : null;
   const open = msOpen(new Date(nowTs)), barTs = msTs(st.last_bar);
   const runTs = Math.max(msTs(st.last_run) || 0, msTs(st.last_regime_check) || 0) || null;   // off hours the monitor only stamps the regime check
   const runAge = runTs ? (nowTs-runTs)/60000 : Infinity, barAge = barTs ? (nowTs-barTs)/60000 : Infinity;
@@ -1443,12 +1484,13 @@ function MstrTab() {
   const target = btcI > 0 && strcI > 0 ? msStrc(strcI)+nm(cfg.btc_slope_per_2500)*(btcI-75000)/2500 : null;
   const fair = bps > 0 && target > 0 ? bps*btcI*target : null;
   // the session the quotes belong to, and the completed session before it
-  const nyDay = ts => new Date(ts).toLocaleDateString("en-CA", {timeZone:"America/New_York"});
-  const sessionDay = barTs ? nyDay(barTs) : nyDay(nowTs);
-  const prevRow = ser.slice().reverse().find(r => r.d < sessionDay && nm(r.mstx) > 0 && nm(r.mstr) > 0) || null;
-  const whatPrice = fair > 0 && prevRow ? nm(prevRow.mstx)*(1+2*(fair/nm(prevRow.mstr)-1))
-    : fair > 0 && mstrI > 0 && mstxI > 0 ? mstxI*(1+2*(fair/mstrI-1)) : null;
-  const whatGap = whatPrice > 0 && mstxI > 0 ? (mstxI/whatPrice-1)*100 : fair > 0 && mstrI > 0 ? (mstrI/fair-1)*200 : null;
+  const sessionDay = barTs ? nyDay(barTs) : last.d;
+  // the monitor publishes the closes it mapped from; the model file is the fallback
+  const prevRow = st.prev_day && st.prev_day < sessionDay && nm(st.prev_mstr) > 0 && nm(st.prev_mstx) > 0 && Date.parse(sessionDay)-Date.parse(st.prev_day) <= 5*86400000
+    ? {d:st.prev_day, mstr:nm(st.prev_mstr), mstx:nm(st.prev_mstx)}
+    : ser.slice().reverse().find(r => r.d < sessionDay && Date.parse(sessionDay)-Date.parse(r.d) <= 5*86400000) || null;
+  const whatPrice = dayMstx(fair, prevRow);
+  const whatGap = whatPrice > 0 && mstxI > 0 ? (mstxI/whatPrice-1)*100 : null;
   // Best estimate ahead at live prices and unchanged Bitcoin: the rule carrying today's gap, which fades by half every
   // gap_half_life_days (walk-forward test, 2026-09-19). MSTX = MSTX now x (MSTR ratio) squared, less 2x decay.
   const halfLifeD = nm(cfg.gap_half_life_days) > 0 ? nm(cfg.gap_half_life_days) : 28, volM = nm(cfg.mstr_vol) > 0 ? nm(cfg.mstr_vol) : 0.75;
@@ -1457,34 +1499,35 @@ function MstrTab() {
     const ruleNow = bps*pb*(msStrc(ps)+nm(cfg.btc_slope_per_2500)*(pb-75000)/2500);
     if (!(ruleNow > 0)) return null;
     return px*Math.pow(ruleNow*(1+(pm/ruleNow-1)*Math.pow(0.5, days/halfLifeD))/pm, 2)*Math.exp(-volM*volM*days/365); };
-  const levelRead = verdict(gap) === "RICH" ? "Ahead of projected. Three of five past Rich readings faded and the last two ran 25% and 52%, so it is not a sell on its own. About half of a gap fades in a month."
-    : verdict(gap) === "CHEAP" ? "Behind projected. About half of a gap closes in a month." : "";
+  const levelRead = word === "STALE" ? "Monitor overdue. These are its last numbers." : verdict(gap) === "RICH"
+    ? "Ahead of projected. Six earlier Rich starts: after the four in 2025 MSTX was lower a month later, after the two in 2026 it ran 39% and 44%. Not a sell on its own."
+    : verdict(gap) === "CHEAP" ? "Behind projected. Cheap is the add only with Bitcoin above its 50-day."
+    : verdict(gap) === "FAIR" ? "Between Cheap and Rich. Cheap is under "+usd2(projected*(1+cheap/100))+", Rich is over "+usd2(projected*(1+rich/100))+" at today's projected." : "";
   const SC = {background:"#070f1f",border:"1px solid #0f2035",borderRadius:6,padding:"12px 14px"};
   const FT = {fontSize:11,color:GRY,lineHeight:1.5,marginTop:9};
   const labTxt = t => String(t).split("mNAV").flatMap((part,i) => i ? [<span key={i} style={{textTransform:"none"}}>mNAV</span>, part] : [part]);
   const tiles = items => <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(124px,1fr))",gap:10,marginTop:12}}>
-    {items.map(([label,value,sub,color]) => <div key={label} style={SC}>
+    {items.map(([label,value,sub,color],ti) => <div key={label} style={narrow && items.length % 2 === 1 && ti === items.length-1 ? {...SC,gridColumn:"1 / -1"} : SC}>
       <div style={LAB}>{labTxt(label)}</div><div style={{fontSize:label === "MONITOR" || label === "BTC VS 50-DAY" ? 14 : 22,fontWeight:700,color,overflowWrap:"anywhere",marginTop:6}}>{label === "MONITOR" && <span aria-hidden="true" style={{display:"inline-block",width:7,height:7,borderRadius:"50%",marginRight:6,background:heartbeatColor === NEU ? GRN : heartbeatColor}}/>}{value}</div>
       <div style={{fontSize:10,color:SUB,marginTop:3}}>{sub}</div></div>)}</div>;
   const eventColor = (r,i,v) => i === 1 ? ({lag:"#22d3ee",rich:RD,cheap:GRN,watch:NEU}[r.kind] || NEU)
     : i >= 3 ? (parseFloat(v) > 0 ? GRN : parseFloat(v.replace("\u2212","-")) < 0 ? RD : NEU) : "#d0dde8";
-  const headers = ["WHEN","KIND","LAG MSTX","MSTX AFTER 60 MIN","MSTR − BTC AFTER 60 MIN"];
+  const headers = ["WHEN (ET)","KIND","LAG MSTX","MSTX AFTER 60 MIN","MSTR − BTC AFTER 60 MIN"];
   const eventValues = r => [msWhen(r.time), String(r.kind || UNK)+(r.muted ? " (muted)" : ""), (nm(r.lag) == null ? "n/a" : msPct(nm(r.lag)*2)),
     (!r.scored || nm(r.mstx_60m) == null ? "pending" : msPct(nm(r.mstx_60m))),
     (!r.scored ? "pending" : nm(r.rel_60m) != null ? msPct(nm(r.rel_60m))
       : nm(r.mstr_60m) != null && nm(r.btc_60m) != null ? msPct(nm(r.mstr_60m)-nm(r.btc_60m)) : "pending")];
   // Square-root gap scale, in MSTX terms throughout.
   const W = narrow ? 440 : 880, H = narrow ? 200 : 170, P = {l:narrow ? 34 : 48,r:10,t:16,b:24}, cw = W-P.l-P.r, ch = H-P.t-P.b;   // taller on a phone
-  const gapsProj = ser.map((r,i) => { const y = ser[i-1];
-    if (y && nm(y.mstx) > 0 && nm(y.mstr) > 0 && nm(r.mstx) > 0 && nm(r.proj) > 0)
-      return (nm(r.mstx)/(nm(y.mstx)*(1+2*(nm(r.proj)/nm(y.mstr)-1)))-1)*100;
-    return nm(r.gap) == null ? null : nm(r.gap)*2; });
-  // Against the best estimate made five trading days earlier (the shortest horizon tested): projected that day, carrying
-  // the gap from five days before, faded. Same per-day MSTX formula as above, with the estimate in place of projected.
-  const gapsBest = ser.map((r,i) => { const y = ser[i-1], a = ser[i-5];
-    if (!(y && a && nm(y.mstx) > 0 && nm(y.mstr) > 0 && nm(r.mstx) > 0 && nm(r.proj) > 0 && nm(a.mstr) > 0 && nm(a.proj) > 0)) return null;
-    const days = (new Date(r.d)-new Date(a.d))/86400000, est = nm(r.proj)*(1+(nm(a.mstr)/nm(a.proj)-1)*Math.pow(0.5, days/halfLifeD));
-    return (nm(r.mstx)/(nm(y.mstx)*(1+2*(est/nm(y.mstr)-1)))-1)*100; });
+  const gapsProj = ser.map((r,i) => { const p = dayMstx(nm(r.proj), ser[i-1]);
+    return p > 0 && nm(r.mstx) > 0 ? (nm(r.mstx)/p-1)*100 : null; });
+  // Carry the origin's gap forward, compounding MSTX from that same origin.
+  const gapsBest = ser.map((r,i) => { const a = ser[i-5];
+    if (!(a && nm(a.mstx) > 0 && nm(a.mstr) > 0 && nm(a.proj) > 0 && nm(r.proj) > 0 && nm(r.mstx) > 0)) return null;
+    const days = (Date.parse(r.d)-Date.parse(a.d))/86400000;
+    const est = nm(r.proj)*(1+(nm(a.mstr)/nm(a.proj)-1)*Math.pow(0.5,days/halfLifeD));
+    const px = nm(a.mstx)*Math.pow(est/nm(a.mstr),2)*Math.exp(-volM*volM*days/365);
+    const g = (nm(r.mstx)/px-1)*100; return px > 0 && Number.isFinite(g) ? g : null; });
   const gaps = gapRef === "best" ? gapsBest : gapsProj;
   const extent = Math.max(Math.abs(cheap),Math.abs(rich),...gapsProj.concat(gapsBest).map(v => Math.abs(v || 0))) || 1;   // one scale for both views
   const xAt = i => P.l+(ser.length<2 ? cw/2 : cw*i/(ser.length-1));
@@ -1501,16 +1544,17 @@ function MstrTab() {
       <div style={HD}>MSTX NOW</div>
       <div style={{fontSize:"clamp(32px,6vw,48px)",fontWeight:800,color:word === "BUY" ? GRN : word === "STALE" ? RD : NEU,marginTop:7}}>{word}</div>
       <div style={{...BODY,lineHeight:1.5,marginTop:9}}>{why}</div>
-      {tiles([["MSTX",msUsd(prices.mstx),nm(st.mstx) != null ? "monitor" : "model close "+(last.d || UNK),AMB],
+      {tiles([["MSTX",msUsd(prices.mstx),nm(st.mstx) != null ? "monitor" : "model close "+mdy(last.d),AMB],
         ["LAG VS LAST HOUR",msPct(lag),"MSTX",lag != null && lag <= lagLine ? GRN : NEU],
-        ["MONITOR",runTs ? msWhen(runTs) : "NO RUN",runTs ? "last run · "+Math.max(0,Math.floor(runAge))+" min ago" : "state unavailable",heartbeatColor]])}
+        ["MONITOR",runTs ? msWhen(runTs)+" ET" : "NO RUN",runTs ? "last run · "+Math.max(0,Math.floor(runAge))+" min ago" : "state unavailable",heartbeatColor]])}
     </div>
     <div style={stateCard(gapColor(gap))}>
-      <div style={HD}>LEVEL</div><div style={{fontSize:28,fontWeight:700,color:gapColor(gap),marginTop:6}}>{verdict(gap)}</div>
+      <div style={HD}>LEVEL</div><div style={{fontSize:28,fontWeight:700,color:word === "STALE" ? RD : gapColor(gap),marginTop:6}}>{word === "STALE" ? "STALE READ" : verdict(gap)}</div>
       {levelRead && <div style={{...BODY,lineHeight:1.5,marginTop:7}}>{levelRead}</div>}
-      {tiles([["GAP MSTX",msPct(gap),"against projected",gapColor(gap)], ["PROJECTED MSTX",msUsd(projected),"your mNAV formula · alerts use this","#22d3ee"],
-        ["BEST ESTIMATE, 1 WEEK",msUsd(aheadMstx(7)),"1 month "+msUsd(aheadMstx(28))+" · model, if Bitcoin holds","#e2e8f0"],
-        ["BTC VS 50-DAY",st.regime || UNK,msUsd(prices.btc,0),NEU]])}
+      {tiles([["GAP MSTX",msPct(gap),"against projected · "+(barTs ? new Date(barTs).toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"numeric",minute:"2-digit"})+" ET bar" : UNK),gapColor(gap)], ["PROJECTED MSTX",msUsd(projected),"your mNAV formula · alerts use this","#22d3ee"],
+        ["BEST ESTIMATE, 1 WEEK",msUsd(aheadMstx(7)),"1 month "+msUsd(aheadMstx(28))+" · flat Bitcoin, incl. 2x decay","#e2e8f0"],
+        ["BTC VS 50-DAY",st.regime || UNK,"BTC "+usd0(prices.btc)+" · monitor",NEU]])}
+      {hist && hist.gap_mstx && <div style={FT}>{"Typical gap: "+msPct(hist.gap_mstx.last60)+" over the last 60 sessions, "+msPct(hist.gap_mstx.all)+" since STRC began ("+msPct(hist.gap_mstx.bear)+" in bear markets, "+msPct(hist.gap_mstx.bull)+" in bull). MSTX sat at Rich on "+hist.gap_mstx.rich_share+"% of all days and "+hist.gap_mstx.rich_share_last60+"% of the last 60."}</div>}
     </div>
     <div style={VIS_CARD}>
       <div style={{...HD,marginBottom:9}}>ALERT LOG</div>
@@ -1526,8 +1570,8 @@ function MstrTab() {
     <div style={VIS_CARD}>
       <div style={{...ROW,justifyContent:"space-between"}}><div style={HD}>GAP CHART · MSTX</div>
         <div style={{...ROW,gap:6}}>{[["proj","vs projected"],["best","vs best estimate"]].map(([k,label]) =>
-          <button key={k} onClick={() => setGapRef(k)} style={{...GST,color:gapRef === k ? "#e2e8f0" : "#4a7a9b",borderColor:gapRef === k ? "#2a5a8a" : "#162840"}}>{label}</button>)}</div></div>
-      <div style={FT}>{ser[selected] ? mdy(ser[selected].d)+" · gap "+(gapRef === "best" ? "vs best estimate " : "vs projected ")+msPct(gaps[selected]) : "No history available."}</div>
+          <button key={k} aria-pressed={gapRef === k} onClick={() => setGapRef(k)} style={{...GST,color:gapRef === k ? "#e2e8f0" : "#4a7a9b",borderColor:gapRef === k ? "#2a5a8a" : "#162840"}}>{label}</button>)}</div></div>
+      <div style={FT}>{ser[selected] ? mdy(ser[selected].d)+" · gap "+(gapRef === "best" ? "vs best estimate " : "vs projected at the close ")+msPct(gaps[selected]) : "No history available."}</div>
       <svg viewBox={"0 0 "+W+" "+H} style={{width:"100%",height:"auto",display:"block",touchAction:"pan-y"}}
         onMouseMove={pick} onMouseLeave={() => setHov(null)} onTouchStart={pick} onTouchMove={pick}>
         <rect x={P.l} y={P.t} width={cw} height={ch} fill="#070f1f" rx="2"/>
@@ -1539,7 +1583,7 @@ function MstrTab() {
         {[0,ser.length-1].map((i,k) => <text key={k} x={k ? P.l+cw : P.l} y={H-5} fill="#7aa5c8" fontSize="10"
           textAnchor={k ? "end" : "start"}>{ser[i] && mdy(ser[i].d)}</text>)}
       </svg>
-      <div style={FT}><More>{gapRef === "best" ? "Tap for a day. Each day is measured against the best estimate made five trading days earlier: projected, carrying that day's gap, faded. Same scale as the projected view."
+      <div style={FT}><More>{gapRef === "best" ? "Each day against the best estimate made five trading days earlier, given where Bitcoin and STRC actually went. Same scale as the projected view."
         : "Tap for a day. Dashed lines are Cheap and Rich; the gap scale is stretched near zero."}</More></div>
     </div>
     <div style={VIS_CARD}>
@@ -1552,37 +1596,36 @@ function MstrTab() {
       {tiles([["PROJECTED MSTX",msUsd(whatPrice),"at these inputs","#22d3ee"], ["GAP MSTX",msPct(whatGap),"against projected",gapColor(whatGap)],
         ["VERDICT",verdict(whatGap),"at these inputs",gapColor(whatGap)]])}
       <div style={{...ROW,marginTop:12}}><button style={GST} onClick={() => { touched.current={}; seed(); }}>reset to live</button>
-        <a href="https://github.com/Kaim222/btc-quantile-ladder/edit/main/data/mstr-config.json" target="_blank" rel="noopener" style={{fontSize:11,color:"#7ab8d8"}}>edit config</a></div>
+        </div>
     </div>
     {bps > 0 && strcI > 0 && (() => {
       // Bitcoin price in, MSTR and MSTX out. Low end: the live rule. High end: the convex fit, above 75k only.
       const slope = nm(cfg.btc_slope_per_2500), cx = isObj(cfg.convex_fit) ? cfg.convex_fit : null, vol = nm(cfg.mstr_vol) > 0 ? nm(cfg.mstr_vol) : 0.75;
       const base = msStrc(strcI), xOf = b => (b-75000)/2500;
-      const tLo = b => base+slope*xOf(b);
+      const tLo = b => b > 0 ? Math.min(cap, base+slope*xOf(b)) : null;
       const cap = cx && nm(cx.cap) > 0 ? nm(cx.cap) : 2.0;   // never above the highest premium the STRC era has shown
       const tHi = b => cx && b > 75000 ? Math.max(tLo(b), Math.min(cap, base+nm(cx.b1)*xOf(b)+nm(cx.b2)*xOf(b)*xOf(b))) : tLo(b);
-      const today = nyDay(nowTs), yrs = Math.max(0, (new Date(lkDay+"T16:00:00Z")-new Date(today+"T16:00:00Z"))/(365*86400000));
+      const today = nyDay(nowTs), yrs = lkDay < today ? NaN : (new Date(lkDay+"T16:00:00Z")-new Date(today+"T16:00:00Z"))/(365*86400000);
       const decay = Math.exp(-vol*vol*yrs);
-      const mstrAt = (b, t) => bps*b*t(b);
+      const mstrAt = (b, t) => { const v = t(b); return !(b > 0) || v == null ? null : bps*b*v; };
       // same day: the fund delivers exactly twice the day's move, off yesterday's closes. Later dates: compounding, less decay.
-      const mstxAt = (b, t) => yrs === 0 && prevRow ? nm(prevRow.mstx)*(1+2*(mstrAt(b, t)/nm(prevRow.mstr)-1))
+      const mstxAt = (b, t) => mstrAt(b,t) == null ? null : yrs === 0 ? dayMstx(mstrAt(b,t), prevRow)
         : mstrI > 0 && mstxI > 0 ? mstxI*Math.pow(mstrAt(b, t)/mstrI, 2)*decay : null;
       const B = nm(lkBtc) > 0 ? nm(lkBtc) : btcI > 0 ? btcI : null;
-      if (!B) return null;
       // MSTR has spent long stretches above the rule, so also show the rule with today's gap carried along
-      const gapNow = btcI > 0 && mstrI > 0 ? mstrI/mstrAt(btcI, tLo)-1 : 0;
+      const gapNow = btcI > 0 && mstrI > 0 ? mstrAt(btcI,tLo) > 0 ? mstrI/mstrAt(btcI, tLo)-1 : null : null;
       // best estimate: the rule carrying today's gap, which fades by half about every gap_half_life_days (tested 2026-09-19)
       const halfLife = nm(cfg.gap_half_life_days) > 0 ? nm(cfg.gap_half_life_days) : 28, wGap = Math.pow(0.5, yrs*365/halfLife);
-      const tHeld = b => tLo(b)*(1+gapNow*wGap);
+      const tHeld = b => gapNow == null || tLo(b) == null ? null : tLo(b)*(1+gapNow*wGap);
       // his own view: Strategy's enterprise-value mNAV. Price = mNAV x Bitcoin per share - debt and preferred per share.
-      const ops = holdings && holdings.ops > 0 ? holdings.ops : null, mEv = holdings && holdings.mnavEv > 0 ? holdings.mnavEv : null;
+      const ops = holdings && holdings.ops > 0 ? holdings.ops : null;
       const myM = nm(lkM) > 0 ? nm(lkM) : null;
       const mImp = ops != null && btcI > 0 && mstrI > 0 ? (mstrI+ops)/(bps*btcI) : null;   // the multiple today's price implies on this identity
       const tMine = myM && ops != null ? (b => Math.max(0, myM-ops/(bps*b))) : null;
-      const usd0 = v => "$"+Math.round(v).toLocaleString("en-US"), usd2 = v => "$"+v.toFixed(2), x2 = v => v.toFixed(2);
+      const x2 = v => Number.isFinite(v) ? v.toFixed(2) : UNK;
       const W2 = narrow ? 440 : 880, H2 = narrow ? 230 : 240, P2 = {l:narrow ? 38 : 50,r:12,t:14,b:24}, cw2 = W2-P2.l-P2.r, ch2 = H2-P2.t-P2.b;
       const b0 = 50000, b1 = 160000, grid = Array.from({length:45}, (_, i) => b0+i*2500);
-      const top = Math.ceil(mstrAt(b1, tHi)/100)*100, xb = b => P2.l+cw2*(b-b0)/(b1-b0), yb = v => P2.t+ch2*(1-v/top);
+      const top = Math.max(100, Math.ceil(Math.max(0,...grid.concat([B]).flatMap(b => [tLo,tHi,tHeld,tMine].filter(Boolean).map(t => mstrAt(b,t))).concat([mstrI]).filter(Number.isFinite))/100)*100), xb = b => P2.l+cw2*(b-b0)/(b1-b0), bottom = Math.min(0,...grid.flatMap(b => [tLo,tHi,tHeld,tMine].filter(Boolean).map(t => mstrAt(b,t))).filter(Number.isFinite)), yb = v => P2.t+ch2*(1-(v-bottom)/(top-bottom));
       const line = t => grid.map((b,i) => (i ? "L" : "M")+xb(b).toFixed(1)+","+yb(mstrAt(b, t)).toFixed(1)).join(" ");
       const levels = [60000,70000,80000,90000,100000,110000,120000,133000,150000];
       return <div style={VIS_CARD}>
@@ -1593,32 +1636,35 @@ function MstrTab() {
             <input value={lkBtc} inputMode="decimal" placeholder={btcI > 0 ? String(Math.round(btcI)) : ""} onChange={e => setLkBtc(e.target.value.replace(/[^0-9.]/g,""))}
               style={{...INP,display:"block",width:"100%",marginTop:5,fontSize:13,padding:"6px 8px"}}/></label>
           <label style={LAB}>BY THIS DATE
-            <input type="date" value={lkDay} min={today} onChange={e => e.target.value && setLkDay(e.target.value)}
+            <input type="date" value={lkDay} min={today} onChange={e => e.target.value && setLkDay(e.target.value < today ? today : e.target.value)}
               style={{...INP,display:"block",width:"100%",marginTop:5,fontSize:13,padding:"6px 8px",colorScheme:"dark",boxSizing:"border-box"}}/></label>
-          {ops != null && <label style={LAB}>{labTxt("YOUR mNAV, DEBT AND PREFERRED INCLUDED" + (mImp ? " (now " + mImp.toFixed(2) + ")" : ""))}
-            <input value={lkM} inputMode="decimal" placeholder="optional" onChange={e => setLkM(e.target.value.replace(/[^0-9.]/g,""))}
+          {ops != null && <label style={LAB}>{labTxt("YOUR mNAV INCLUDING DEBT AND PREFERRED · NOW " + x2(mImp))}
+            <input value={lkM} inputMode="decimal" placeholder={mImp == null ? UNK : mImp.toFixed(2)} onChange={e => setLkM(e.target.value.replace(/[^0-9.]/g,""))}
               style={{...INP,display:"block",width:"100%",marginTop:5,fontSize:13,padding:"6px 8px"}}/></label>}
         </div>
-        {tiles([["BEST ESTIMATE mNAV",x2(tHeld(B)),"projected "+x2(tLo(B))+" · high "+x2(tHi(B))+" · STRC $"+strcI.toFixed(2),NEU],
-          ["BEST ESTIMATE MSTR",usd0(mstrAt(B,tHeld)),"projected "+usd0(mstrAt(B,tLo))+" \u00b7 high "+usd0(mstrAt(B,tHi))+" \u00b7 carries "+Math.round(wGap*100)+"% of today's "+msPct(gapNow*100)+" MSTR gap",AMB],
-          ["BEST ESTIMATE MSTX",mstxAt(B,tHeld) == null ? UNK : usd2(mstxAt(B,tHeld)),"projected "+(mstxAt(B,tLo) == null ? UNK : usd2(mstxAt(B,tLo)))+" \u00b7 high "+(mstxAt(B,tHi) == null ? UNK : usd2(mstxAt(B,tHi)))+(yrs > 0 ? " \u00b7 "+Math.round((1-decay)*100)+"% decay by "+md(lkDay) : ""),"#22d3ee"]]
+        {tiles([["BEST ESTIMATE mNAV",x2(tHeld(B)),"projected "+x2(tLo(B))+" · high "+x2(tHi(B))+" · STRC "+usd2(strcI),NEU],
+          ["BEST ESTIMATE MSTR",usd0(mstrAt(B,tHeld)),"projected "+usd0(mstrAt(B,tLo))+" \u00b7 high "+usd0(mstrAt(B,tHi))+" \u00b7 carries "+Math.round(wGap*100)+"% of today's gap: "+msPct(gapNow == null ? null : gapNow*100)+" MSTR, "+msPct(whatGap)+" MSTX",AMB],
+          ["BEST ESTIMATE MSTX",mstxAt(B,tHeld) == null ? UNK : usd2(mstxAt(B,tHeld)),"projected "+(mstxAt(B,tLo) == null ? UNK : usd2(mstxAt(B,tLo)))+" \u00b7 high "+(mstxAt(B,tHi) == null ? UNK : usd2(mstxAt(B,tHi)))+(yrs > 0 ? " \u00b7 "+Math.round((1-decay)*100)+"% decay by "+mdy(lkDay) : ""),"#22d3ee"]]
           .concat(tMine ? [["AT YOUR mNAV "+myM.toFixed(2),usd0(mstrAt(B,tMine)),"MSTX "+(mstxAt(B,tMine) == null ? UNK : usd2(mstxAt(B,tMine))),GRN]] : []))}
         <svg viewBox={"0 0 "+W2+" "+H2} style={{width:"100%",height:"auto",display:"block",marginTop:12}}>
           <rect x={P2.l} y={P2.t} width={cw2} height={ch2} fill="#070f1f" rx="2"/>
           {Array.from({length:Math.floor(top/100)+1}, (_, n) => n*100).map(v => <g key={v}>
             <line x1={P2.l} x2={P2.l+cw2} y1={yb(v)} y2={yb(v)} stroke="#0f2035" strokeWidth="0.7"/>
-            <text x={P2.l-5} y={yb(v)+3} fill="#7aa5c8" fontSize="9" textAnchor="end">{"$"+v}</text></g>)}
+            <text x={P2.l-5} y={yb(v)+3} fill="#7aa5c8" fontSize="9" textAnchor="end">{usd0(v)}</text></g>)}
           {[60000,80000,100000,120000,140000].map(b => <text key={b} x={xb(b)} y={H2-7} fill="#7aa5c8" fontSize="9" textAnchor="middle">{Math.round(b/1000)+"k"}</text>)}
+          <defs><clipPath id="lookup-plot"><rect x={P2.l} y={P2.t} width={cw2} height={ch2}/></clipPath></defs>
+          <g clipPath="url(#lookup-plot)">
           <path d={line(tHi)} fill="none" stroke={AMB} strokeWidth="1.1" strokeDasharray="4 3" opacity="0.85"/>
-          {Math.abs(gapNow) > 0.005 && <path d={line(tHeld)} fill="none" stroke="#e2e8f0" strokeWidth="0.9" opacity="0.7"/>}
+          {gapNow != null && Math.abs(gapNow) > 0.005 && <path d={line(tHeld)} fill="none" stroke="#e2e8f0" strokeWidth="0.9" opacity="0.7"/>}
           {tMine && <path d={line(tMine)} fill="none" stroke={GRN} strokeWidth="1.4"/>}
           <path d={line(tLo)} fill="none" stroke="#22d3ee" strokeWidth="1.6"/>
           {btcI > b0 && btcI < b1 && <line x1={xb(btcI)} x2={xb(btcI)} y1={P2.t} y2={P2.t+ch2} stroke="#e2e8f0" strokeWidth="0.6" opacity="0.45"/>}
           {btcI > b0 && btcI < b1 && mstrI > 0 && mstrI < top && <circle cx={xb(btcI)} cy={yb(mstrI)} r="3" fill="#f1f5f9"/>}
-          {B > b0 && B < b1 && <circle cx={xb(B)} cy={yb(mstrAt(B,tHeld))} r="3.4" fill="#22d3ee"/>}
+          {gapNow != null && B > b0 && B < b1 && <circle cx={xb(B)} cy={yb(mstrAt(B,tHeld))} r="3.4" fill="#22d3ee"/>}
+          </g>
         </svg>
         <div style={FT}><More>Projected MSTR against Bitcoin. Cyan: projected, your mNAV formula. White: the best estimate, projected carrying today's gap. Amber dashes: the convex fit, the high end. Green: your mNAV, if entered. White dot: MSTR now. Cyan dot: the best estimate at your Bitcoin price.</More></div>
-        <div style={{...LAB,marginTop:12}}>{"PROJECTED AND BEST ESTIMATE"+(yrs > 0 ? " · BY "+md(lkDay) : "")}</div>
+        <div style={{...LAB,marginTop:12}}>{"PROJECTED AND BEST ESTIMATE"+(yrs > 0 ? " · BY "+mdy(lkDay) : "")}</div>
         <div style={{overflowX:"auto",marginTop:6}}><div style={{display:"grid",gridTemplateColumns:"repeat(5,minmax(0,1fr))",minWidth:narrow ? 0 : 560}}>
           {(narrow ? ["BTC","MSTR PROJ.","MSTR BEST","MSTX PROJ.","MSTX BEST"] : ["BITCOIN","MSTR PROJECTED","MSTR BEST ESTIMATE","MSTX PROJECTED","MSTX BEST ESTIMATE"]).map(h => <div key={h} style={{...LAB,padding:narrow ? "4px 3px" : "4px 6px"}}>{h}</div>)}
           {levels.map((b,n) => [narrow ? "$"+Math.round(b/1000)+"k" : usd0(b), usd0(mstrAt(b,tLo)), usd0(mstrAt(b,tHeld)), mstxAt(b,tLo) == null ? UNK : usd2(mstxAt(b,tLo)), mstxAt(b,tHeld) == null ? UNK : usd2(mstxAt(b,tHeld))].map((v,i) =>
@@ -1626,8 +1672,8 @@ function MstrTab() {
         </div></div>
         <div style={FT}><More>{"Uses the MSTR, MSTX and STRC boxes in WHAT IF as the starting point. "
           + "MSTX is a 2x daily fund. For today's date it is twice the day's move off yesterday's closes, the same formula as WHAT IF. For a later date it is MSTX now x (MSTR ratio) squared, less decay at "+Math.round(vol*100)+"% MSTR vol. "
-          + "Best estimate: projected plus today's gap, fading by half every "+halfLife+" days. Tested walk-forward, it halved the error of projected alone a week out, cut it by a fifth at one month, and was about even at two months. High is the capped convex fit."
-          + (ops != null ? " Your mNAV counts debt and preferred: price = mNAV x Bitcoin per share - $"+ops.toFixed(2)+" of debt and preferred per share. Start from the number in the box label; Strategy's own figure runs higher because it counts shares differently"
+          + "Best estimate: projected plus today's gap, fading by half every "+halfLife+" days. Tested walk-forward given where Bitcoin and STRC actually went, it halved the error of projected alone a week out, cut it by a fifth at one month, and was about even at two months. The 28-day half-life is an assumption; 42 and 56 days score the same. Projected and high are both capped at mNAV 2.0, the same cap the Ladder tab uses."
+          + (ops != null ? " Your mNAV counts debt and preferred: price = mNAV x Bitcoin per share - "+usd2(ops)+" of debt and preferred per share. Start from the number in the box label; Strategy's own figure runs higher because it counts shares differently"
             + (holdings.prefPct > 0 ? " (preferred "+Math.round(holdings.prefPct)+"% of the Bitcoin, debt "+(holdings.debtPct || 0).toFixed(1)+"%)." : ".") : "")}</More></div>
       </div>; })()}
     {hist && rowsOf(hist.weekly).length > 10 && (() => {
@@ -1635,24 +1681,27 @@ function MstrTab() {
       const wk = rowsOf(hist.weekly), all = rowsOf(hist.all), era = rowsOf(hist.era), per = rowsOf(hist.periods);
       const eraOf = n => era.find(r => r.name === n) || {}, bullE = eraOf("bull"), bearE = eraOf("bear"), allE = eraOf("all");
       const x2h = v => nm(v) == null ? UNK : nm(v).toFixed(2), pc = v => nm(v) == null ? UNK : nm(v).toFixed(1)+"%";
-      const avg = n => { const v = ser.slice(-n).map(r => nm(r.mnav)).filter(x => x > 0); return v.length >= Math.min(n, 20) ? v.reduce((a,b) => a+b, 0)/v.length : null; };
+      const avg = n => { const end = Date.parse(last.d), start = end-(n-1)*86400000;
+        if (!ser.length || Date.parse(ser[0].d) > start) return null;
+        const v = ser.filter(r => Date.parse(r.d) >= start && Date.parse(r.d) <= end).map(r => nm(r.mnav)).filter(x => x > 0);
+        return v.length ? v.reduce((a,b) => a+b,0)/v.length : null; };
       const premNow = bps > 0 && nm(prices.btc) > 0 && nm(prices.mstr) > 0 ? nm(prices.mstr)/(bps*nm(prices.btc)) : nm(hist.now && hist.now.premium);
       const tgtNow = nm(prices.btc) > 0 && nm(prices.strc) > 0 ? msStrc(nm(prices.strc))+nm(cfg.btc_slope_per_2500)*(nm(prices.btc)-75000)/2500 : null;
       const W3 = narrow ? 440 : 880, H3 = narrow ? 230 : 210, P3 = {l:narrow ? 26 : 34,r:10,t:12,b:22}, cw3 = W3-P3.l-P3.r, ch3 = H3-P3.t-P3.b;
-      const top3 = Math.max(2, Math.ceil(Math.max(...wk.map(r => nm(r.p) || 0)))), x3 = i => P3.l+cw3*i/(wk.length-1), y3 = v => P3.t+ch3*(1-v/top3), bw3 = cw3/(wk.length-1);
+      const top3 = Math.max(2, Math.ceil(Math.max(...wk.flatMap(r => [nm(r.p) || 0,nm(r.a) || 0,nm(r.t) || 0])))), x3 = i => P3.l+cw3*i/(wk.length-1), y3 = v => P3.t+ch3*(1-v/top3), bw3 = cw3/(wk.length-1);
       const ln = k => wk.map((r,i) => nm(r[k]) == null ? "" : (i && nm(wk[i-1][k]) != null ? "L" : "M")+x3(i).toFixed(1)+","+y3(nm(r[k])).toFixed(1)).join(" ");
       const strcAt = wk.findIndex(r => nm(r.t) != null), bearShare = allE.days > 0 && bearE.days > 0 ? Math.round(bearE.days/allE.days*100) : null;
       const tbl = (caption, heads, rows) => <div style={{marginTop:14}}><div style={LAB}>{labTxt(caption)}</div>
-        <div style={{display:"grid",gridTemplateColumns:"1.5fr repeat("+(heads.length-1)+",minmax(0,1fr))",marginTop:6}}>
+        <div style={{display:"grid",gridTemplateColumns:(narrow ? "1fr 0.9fr 1.1fr 1.5fr" : "1.5fr repeat("+(heads.length-1)+",minmax(0,1fr))"),marginTop:6}}>
           {heads.map(h => <div key={h} style={{...LAB,padding:narrow ? "4px 3px" : "4px 6px"}}>{labTxt(h)}</div>)}
           {rows.map((r,n) => r.map((v,i) => <div key={n+"-"+i} style={{padding:narrow ? "5px 3px" : "5px 6px",fontSize:narrow ? 11 : 12,
-            color:!i ? (v === "Bull" ? GRN : v === "Bear" ? RD : "#8aaac8") : "#d0dde8",borderBottom:SEP}}>{v}</div>))}</div></div>;
+            color:!i ? (v === "Bull" ? GRN : v === "Bear" ? RD : "#8aaac8") : "#d0dde8",borderBottom:SEP,whiteSpace:"nowrap"}}>{v}</div>))}</div></div>;
       return <div style={VIS_CARD}>
         <div style={HD}>{labTxt("mNAV HISTORY · BULL AND BEAR MARKETS")}</div>
         <div style={{...BODY,lineHeight:1.5,marginTop:7}}>{"Projected has only been tested since STRC began on "+mdy(hist.strc_from)+": "+(allE.days || UNK)+" days, "+(bearShare == null ? UNK : bearShare+"%")
           +" of them bear-market days. MSTR ran above projected in both, by "+pc(bullE.bias_projected)+" on bull days and "+pc(bearE.bias_projected)+" on bear days. That is why the best estimate carries the gap."}</div>
-        {tiles([["mNAV NOW",x2h(premNow),"projected "+x2h(tgtNow),"#f1f5f9"], ["30-DAY AVERAGE",x2h(avg(30)),"through "+(md(last.d) || UNK),AMB],
-          ["90-DAY AVERAGE",x2h(avg(90)),"through "+(md(last.d) || UNK),AMB], ["1-YEAR AVERAGE",x2h(avg(250)),"two years "+x2h(hist.now && hist.now.avg_all),AMB]])}
+        {tiles([["mNAV NOW",x2h(premNow),"projected "+x2h(tgtNow),"#f1f5f9"], ["30-DAY AVERAGE",x2h(avg(30)),"through "+mdy(last.d),AMB],
+          ["90-DAY AVERAGE",x2h(avg(90)),"through "+mdy(last.d),AMB], ["1-YEAR AVERAGE",x2h(avg(365)),"two years "+x2h(hist.now && hist.now.avg_all),AMB]])}
         <svg viewBox={"0 0 "+W3+" "+H3} style={{width:"100%",height:"auto",display:"block",marginTop:12}}>
           <rect x={P3.l} y={P3.t} width={cw3} height={ch3} fill="#070f1f" rx="2"/>
           {wk.map((r,i) => r.bull === false && <rect key={"b"+i} x={Math.max(P3.l, x3(i)-bw3/2)} y={P3.t} width={Math.min(bw3, P3.l+cw3-Math.max(P3.l, x3(i)-bw3/2))} height={ch3} fill={RD} opacity="0.13"/>)}
@@ -1672,13 +1721,13 @@ function MstrTab() {
         {tbl("TWO YEARS, "+mdy(hist.from)+" TO "+mdy(hist.as_of), ["MARKET","DAYS","MEDIAN mNAV","MIDDLE HALF"],
           all.map(r => [r.name === "bull" ? "Bull" : "Bear", String(r.days), x2h(r.median), x2h(r.low)+(narrow ? "–" : " to ")+x2h(r.high)]))}
         {tbl("SINCE STRC, WHERE PROJECTED IS TESTED · AVERAGE MISS ON MSTR", narrow ? ["MARKET","DAYS","PROJ.","BEST EST."] : ["MARKET","DAYS","PROJECTED","BEST ESTIMATE"],
-          [["Bull",bullE],["Bear",bearE],["All",allE]].map(([n,r]) => [n, String(r.days || UNK), pc(r.err_projected), pc(r.err_best)]))}
-        <div style={FT}><More>{"Bull means Bitcoin closed above its 200-day average. The miss is the average distance between MSTR's close and the estimate, as a share of the price. "
-          + "Best estimate here is the one made five trading days earlier."}</More></div>
+          [["Bull",bullE],["Bear",bearE],["All",allE]].map(([n,r]) => [n, String(r.scored ?? UNK), pc(r.err_projected), pc(r.err_best)]))}
+        <div style={FT}><More>{"The miss is the average distance between MSTR's close and the estimate, as a share of the price, on days that have both estimates, given where Bitcoin and STRC actually went."}</More></div>
       </div>; })()}
     <div style={VIS_CARD}>
-      <button style={{...GST,border:"none",padding:0}} onClick={() => setDet(v => !v)}>{(det ? "▾ " : "▸ ")+"DETAILS"}</button>
+      <button aria-expanded={det} style={{...GST,border:"none",padding:0}} onClick={() => setDet(v => !v)}>{(det ? "▾ " : "▸ ")+"DETAILS"}</button>
       {det && <div>
+        <a href="https://github.com/Kaim222/btc-quantile-ladder/edit/main/data/mstr-config.json" target="_blank" rel="noopener" style={{fontSize:11,color:"#7ab8d8"}}>edit config</a>
         {evRows.length > 0 && <div style={{display:"grid",gridTemplateColumns:"repeat(4,minmax(0,1fr))",marginTop:10}}>
           {["LAG MSTX","SIGNALS","30 MIN MSTR − BTC","60 MIN MSTR − BTC"].map(h => <div key={h} style={{...LAB,padding:4}}>{h}</div>)}
           {evRows.map((r,k) => [msPct(nm(r.mstx)),r.n,msPct(nm(r.m30),2),msPct(nm(r.m60),2)].map((v,i) =>
@@ -1726,8 +1775,10 @@ function BTCPowerLaw() {
 
   // Fetch live BTC price + history
   useEffect(()=>{
-    let on = true, id = null;
+    let on = true, id = null, pricePending = false;
     async function fetchPrice(){
+      if (pricePending) return; pricePending = true;
+      try {
       const apply = (p) => {
         if(!on) return;
         setLivePrice(p);
@@ -1751,8 +1802,9 @@ function BTCPowerLaw() {
         if(p) { apply(p); return; }
         throw new Error();
       } catch(_){
-        setLiveFetch("unavailable");
+        if (on) setLiveFetch("unavailable");
       }
+      } finally { pricePending = false; }
     }
     let histDay = null;   // the UTC day of the last good history fetch
     async function fetchHistory(){
@@ -1817,7 +1869,6 @@ function BTCPowerLaw() {
       /* Alt row #050d1c */
       #root [style*="background: rgb(5, 13, 28)"]        { background: #d8e2ed !important; }
       /* Stat card bg fallback */
-      #root [style*="background: rgb(7, 15, 31)"]        { background: #e4ecf4 !important; }
       /* Scrollbar */
       ::-webkit-scrollbar-track                          { background: #f0f4f8 !important; }
       ::-webkit-scrollbar-thumb                          { background: #b0c4d8 !important; }
@@ -1882,14 +1933,16 @@ function BTCPowerLaw() {
       /* Chart: SVG light theme (CSS beats presentation attrs) */
       #root svg rect[fill="#070f1f"]   { fill: #f2f6fa; }
       #root svg line[stroke="#0d1e30"] { stroke: #d5e0ea; }
-      #root svg path[stroke="#f1f5f9"] { stroke: #1e293b; }
+      #root svg path[stroke="#f1f5f9"], #root svg path[stroke="#e2e8f0"], #root svg line[stroke="#e2e8f0"] { stroke: #1e293b; }
+      #root svg circle[fill="#f1f5f9"], #root svg circle[fill="white"] { fill: #1e293b; }
+      #root input[type="date"] { color-scheme: light !important; }
       #root svg text[fill="#7aa5c8"]   { fill: #3d5a78; }
       #root svg text[fill="#22d3ee"]   { fill: #0a8ca8; }
       #root svg circle[stroke="#020817"] { stroke: #f2f6fa; }
       #root svg rect[fill="#020817"]   { fill: #1a2a3a; }
       /* Playbook */
       #root [style*="border: 1px solid rgb(22, 40, 64)"] { border-color: #b8cce0 !important; }
-      #root [style*="rgba(255, 255, 255, 0.063)"] { border-top-color: #cdd9e6 !important; }
+      #root [style*="rgba(255, 255, 255, 0.063)"] { border-top-color: #cdd9e6 !important; border-bottom-color: #cdd9e6 !important; }
       #root [style*="border-bottom: 1px solid rgb(7, 15, 31)"] { border-bottom-color: #cdd9e6 !important; }
       #root svg text[fill="#5a7fa0"]   { fill: #4a6a8a; }
       #root svg text[fill="#facc15"]   { fill: #946f00; }
@@ -1928,11 +1981,11 @@ function BTCPowerLaw() {
               background:(liveFetch==="live" && follow.current)?"#052e16":"#1c1700",
               color:(liveFetch==="live" && follow.current)?"#22c55e":"#eab308",
               border:`1px solid ${(liveFetch==="live" && follow.current)?"#14532d":"#3d2e00"}`}}>
-              {(liveFetch==="live" && follow.current)?"● LIVE PRICE":"⚠ PRICE MANUAL"}
+              {!follow.current ? "⚠ PRICE MANUAL" : liveFetch === "live" ? "● LIVE PRICE" : liveFetch === "unavailable" ? "⚠ PRICE FEED DOWN" : "… LOADING PRICE"}
             </span>
             {liveUpdatedAt && (
               <span style={{fontSize:"10px",color:"#5a7fa0",letterSpacing:"0.04em"}}>
-                {liveUpdatedAt.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})}
+                {liveUpdatedAt.toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"numeric",minute:"2-digit"})+" ET"}
               </span>
             )}
             <span style={{fontSize:"12px",color:"#8ac0d8"}}>
@@ -1944,7 +1997,7 @@ function BTCPowerLaw() {
         {/* EMA MODEL SELECTOR */}
         <div style={{marginTop:"10px",display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap"}}>          <span style={{fontSize:"11px",color:"#94b8d0",textTransform:"uppercase",letterSpacing:"0.1em",marginRight:"2px"}}>Model</span>
           {[["standard",0],["weighted",isJV?3:halfLifeYears]].map(([label,val])=>(
-            <button key={label} onClick={()=>setHalfLifeYears(val)} style={{
+            <button key={label} aria-pressed={label === "standard" ? isJV : !isJV} onClick={()=>setHalfLifeYears(val)} style={{
               fontSize:"11px",fontFamily:"inherit",fontWeight:700,letterSpacing:"0.06em",
               textTransform:"uppercase",padding:"4px 10px",borderRadius:"4px",cursor:"pointer",
               background:(label==="standard"?isJV:!isJV)?"#0c2040":"transparent",
@@ -1967,7 +2020,7 @@ function BTCPowerLaw() {
                   <div style={{position:"absolute",left:0,
                     width:`${((halfLifeYears-1)/16)*100}%`,
                     height:"3px",background:"#22d3ee",borderRadius:"3px",opacity:0.75}}/>
-                  <input type="range" min="1" max="17" step="1" value={halfLifeYears}
+                  <input aria-label="Model half-life" type="range" min="1" max="17" step="1" value={halfLifeYears}
                     onChange={e=>setHalfLifeYears(parseInt(e.target.value))}
                     style={{position:"absolute",left:0,right:0,width:"100%",
                       appearance:"none",WebkitAppearance:"none",
@@ -1981,7 +2034,7 @@ function BTCPowerLaw() {
               </div>
             </div>
           )}
-          {/* Alert bell + theme toggle */}
+          {/* Theme toggle */}
           <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:"4px"}}>
             <button onClick={()=>setLightMode(m=>!m)}
               title={lightMode?"Switch to dark mode":"Switch to light mode"}
@@ -2016,7 +2069,7 @@ function BTCPowerLaw() {
           <div style={{position:"relative"}}>
             <span style={{position:"absolute",left:"10px",top:"50%",transform:"translateY(-50%)",
               color:"#7a8fa8",fontSize:"16px"}}>$</span>
-            <input value={priceStr} onChange={e=>{follow.current=false;setPriceStr(e.target.value.replace(/[^0-9]/g,""));}}
+            <input aria-label="Bitcoin price" value={priceStr} onChange={e=>{follow.current=false;setPriceStr(e.target.value.replace(/[^0-9]/g,""));}}
               style={{background:"#070f1f",border:"1px solid #0f2a42",borderRadius:"4px",
                 color:"#facc15",fontSize:"22px",fontFamily:"inherit",fontWeight:700,
                 padding:"7px 12px 7px 24px",width:"140px",outline:"none"}}/>
@@ -2027,7 +2080,8 @@ function BTCPowerLaw() {
               color:"#8aaac8",fontSize:"15px",fontFamily:"inherit",fontWeight:700,
               padding:"6px 12px",cursor:"pointer",lineHeight:1}}>+5K</button>
           {livePrice&&(
-            <button onClick={()=>{follow.current=true;setPriceStr(Math.round(livePrice).toString());}} style={{
+            <button disabled={liveFetch !== "live"} onClick={()=>{follow.current=true;setPriceStr(Math.round(livePrice).toString());}} style={{
+              opacity:liveFetch === "live" ? 1 : 0.5, filter:liveFetch === "live" ? "none" : "grayscale(1)",
               background:"#052e16",border:"1px solid #14532d",borderRadius:"3px",
               color:"#22c55e",fontSize:"12px",fontFamily:"inherit",padding:"6px 10px",cursor:"pointer"}}>
               ● Live {fmt(livePrice)}
@@ -2056,7 +2110,7 @@ function BTCPowerLaw() {
             {[
               {label:"price", value:fmtFull(price||0),                              color:"#facc15"},
               {label:"fair value",value:fmtFull(fv),                                    color:"#22d3ee"},
-              {label:"vs fair value", value:`${parseFloat(devPct)>0?"+":""}${devPct}%`,      color:parseFloat(devPct)>0?"#ef4444":"#22c55e"},
+              {label:"vs fair value", value:pctS(Number(devPct)),      color:parseFloat(devPct)>0?"#ef4444":"#22c55e"},
               {label:"quantile",      value:`${q.toFixed(1)}%`,                             color:q<15?"#22c55e":q>85?"#ef4444":"#facc15"},
             ].map(s=>(
               <div key={s.label} style={{
@@ -2205,7 +2259,7 @@ function BTCPowerLaw() {
                   {[
                     { label:"Leverage",     val:`${tier.margin.leverage}×` },
                     { label:"Net carry",    val:`~${(ms.carry*100).toFixed(1)}%`, hint:"on equity" },
-                    { label:"Margin call",  val:`−${(ms.callDD*100).toFixed(0)}%`, hint:`STRC ≈ $${ms.callPx.toFixed(0)}` },
+                    { label:"Margin call",  val:pctS(-ms.callDD*100,0), hint:`STRC ≈ ${usd0(ms.callPx)}` },
                     { label:"Maintenance",  val:`${(tier.margin.maint*100).toFixed(0)}%` },
                   ].map(x=>(
                     <div key={x.label}>
@@ -2278,7 +2332,7 @@ function BTCPowerLaw() {
           <div style={{textAlign:"center"}}>
             <div style={{fontSize:"11px",color:"#5a8fc0",textTransform:"uppercase",
               letterSpacing:"0.18em",marginBottom:"32px",fontWeight:600}}>BTC Quantile Ladder</div>
-            <input type="password" maxLength={10} placeholder="····" value={pin}
+            <input aria-label="PIN" type="password" maxLength={10} placeholder="····" value={pin}
               onChange={e => setPin(e.target.value)}
               onKeyDown={e => e.key === "Enter" && attempt()}
               style={{background:"#070f1f",border:"1px solid #0f2a42",borderRadius:"6px",
@@ -2329,7 +2383,7 @@ function BTCPowerLaw() {
         #root [style*="flex-wrap: wrap"][style*="gap: 4px"]::-webkit-scrollbar { display: none !important; }
         /* Header row: stack on mobile */
         #root [style*="justify-content: space-between"][style*="gap: 8px"] { flex-wrap: wrap !important; }
-        /* Tier card: stack text above circles */
+        /* Tier card: stack its text on mobile */
         #root [style*="justify-content: space-between"][style*="gap: 16px"] { 
           flex-direction: column !important; align-items: flex-start !important; 
         }

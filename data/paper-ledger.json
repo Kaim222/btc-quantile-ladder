@@ -113,7 +113,7 @@
      "Tripwire: a daily close above 20 or under 15 closes the position the next morning. Checkpoint Fri 9/25: outside 15 to 19, close; inside, hold the final week.",
      "On 10/2 close both as spread orders in the afternoon and work the limits. Close the shorts before the bell if either strike is in play."
     ],
-    "next_action_detail": "Proposed, not yet decided: skip Phase 2 and convert everything to LEAPS units on the first day the gap is at or under zero, or on 10/2 at the latest. Never while Rich is on.",
+    "next_action_detail": "Proposed for Mon 9/21, not yet decided: sell both calendars 20 to 30 minutes after the open and buy LEAPS units in thirds. One third Monday, one third when the gap is at or under zero or on 10/2, one third on a Cheap alert or on 10/16. No Phase 2.",
     "dates_note": "9/18: long rolled up to the Oct 9 $16, then the Oct 16 / Oct 2 $18 calendar added. Decision date unchanged at 10/2."
    },
    {

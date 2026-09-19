@@ -12,5 +12,12 @@
   "lag_at_low": true,
   "lag_watch": -0.01,
   "lag_slope": 0.0125,
-  "rich_gate": false
+  "rich_gate": false,
+  "convex_fit": {
+    "b1": 0.0123,
+    "b2": 0.0014,
+    "cap": 2.0
+  },
+  "mstr_vol": 0.75,
+  "lookup_note": "convex_fit is the HIGH end for the Bitcoin price lookup only: target = STRC base + b1*x + b2*x^2 with x = (BTC - 75,000) / 2,500, fitted in sample over the STRC era on 2026-09-19. Out of sample it lost to the straight rule (see mstr-mnav-model/2026-09-19-mnav-shape.md), so signals never use it. mstr_vol 0.75 is the annual MSTR vol used for MSTX's 2x decay over time: MSTX = MSTX now x (MSTR ratio)^2 x exp(-vol^2 x years)."
 }

@@ -1723,7 +1723,8 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
             <input value={lkM} inputMode="decimal" placeholder={mImp == null ? UNK : mImp.toFixed(2)} onChange={e => setLkM(e.target.value.replace(/[^0-9.]/g,""))}
               style={{...INP,display:"block",width:"100%",marginTop:5}}/></label>}
         </div>
-        {tiles([["BEST ESTIMATE mNAV",x2(tHeld(B)),"projected "+x2(tLo(B)),NEU],
+        {(touched.current.btc || touched.current.mstr) && <div style={{...FT,marginTop:8}}><Sentences>{"Today's gap uses your WHAT IF numbers with Bitcoin at "+usd0(btcI)+". Press reset to live to use live prices."}</Sentences></div>}
+        {tiles([["BEST ESTIMATE mNAV",x2(tHeld(B)),(gapBtc > 0 && mstrI > 0 ? "now "+x2(mstrI/(bps*gapBtc))+" · " : "")+"projected "+x2(tLo(B)),NEU],
           ["BEST ESTIMATE MSTR",usd0(mstrAt(B,tHeld)),(chg(mstrAt(B,tHeld),mstrI) ? chg(mstrAt(B,tHeld),mstrI)+" · " : "")+"projected "+usd0(mstrAt(B,tLo)),AMB],
           ["BEST ESTIMATE MSTX",mstxAt(B,tHeld) == null ? UNK : usd2(mstxAt(B,tHeld)),(chg(mstxAt(B,tHeld),mstxI) ? chg(mstxAt(B,tHeld),mstxI)+" · " : "")+"projected "+(mstxAt(B,tLo) == null ? UNK : usd2(mstxAt(B,tLo))),"#22d3ee"]]
           .concat(tMine ? [["AT ENTERPRISE mNAV "+myM.toFixed(2),usd0(mstrAt(B,tMine)),"MSTX "+(mstxAt(B,tMine) == null ? UNK : usd2(mstxAt(B,tMine))),GRN]] : []))}

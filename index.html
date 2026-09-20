@@ -1465,6 +1465,7 @@ function MstrTab({ liveBtc }) {
   const touched = useRef({});
   const [lkM, setLkM] = useState(""), [hist, setHist] = useState(null), [evd, setEvd] = useState(null);
   const [fade, setFade] = useLocal("bql_gap_fade", "measured", v => ["measured","slow","never"].includes(v) ? v : "measured");
+  const [lkView, setLkView] = useLocal("bql_lk_view", "auto", v => ["auto","price","pct","both"].includes(v) ? v : "auto");
   const [dec, setDec] = useLocal("bql_mstx_decay", "measured", v => ["measured","calm","none"].includes(v) ? v : "measured");
   const [lkBtc, setLkBtc] = useState(""), [lkDay, setLkDay] = useNyDate("bql_lk_day");
   useEffect(() => {
@@ -1726,6 +1727,10 @@ function MstrTab({ liveBtc }) {
       const b0 = 50000, b1 = 160000, grid = Array.from({length:45}, (_, i) => b0+i*2500);
       const top = Math.max(100, Math.ceil(Math.max(0,...grid.concat([B]).flatMap(b => [tLo,tHi,tHeld,tMine].filter(Boolean).map(t => mstrAt(b,t))).concat([mstrI]).filter(Number.isFinite))/100)*100), xb = b => P2.l+cw2*(b-b0)/(b1-b0), bottom = Math.min(0,...grid.flatMap(b => [tLo,tHi,tHeld,tMine].filter(Boolean).map(t => mstrAt(b,t))).filter(Number.isFinite)), yb = v => P2.t+ch2*(1-(v-bottom)/(top-bottom));
       const line = t => grid.map((b,i) => (i ? "L" : "M")+xb(b).toFixed(1)+","+yb(mstrAt(b, t)).toFixed(1)).join(" ");
+      const view = lkView === "auto" || (narrow && lkView === "both") ? (narrow ? "price" : "both") : lkView;
+      const liveB = btcI > 0 ? btcI : null;
+      // change from today: Bitcoin against the live price, MSTR and MSTX against their current prices
+      const chg = (v, base) => v > 0 && base > 0 ? msPct((v/base-1)*100, Math.abs(v/base-1) >= 1 ? 0 : 1) : "";
       const levels = Array.from({length:19}, (_, i) => 60000+i*5000);   // $60k to $150k in $5k steps
       return <div style={VIS_CARD}>
         <div style={HD}>BITCOIN PRICE LOOKUP</div>
@@ -1755,8 +1760,8 @@ function MstrTab({ liveBtc }) {
               style={{...INP,display:"block",width:"100%",marginTop:5}}/></label>}
         </div>
         {tiles([["BEST ESTIMATE mNAV",x2(tHeld(B)),"projected "+x2(tLo(B)),NEU],
-          ["BEST ESTIMATE MSTR",usd0(mstrAt(B,tHeld)),"projected "+usd0(mstrAt(B,tLo)),AMB],
-          ["BEST ESTIMATE MSTX",mstxAt(B,tHeld) == null ? UNK : usd2(mstxAt(B,tHeld)),"projected "+(mstxAt(B,tLo) == null ? UNK : usd2(mstxAt(B,tLo))),"#22d3ee"]]
+          ["BEST ESTIMATE MSTR",usd0(mstrAt(B,tHeld)),(chg(mstrAt(B,tHeld),mstrI) ? chg(mstrAt(B,tHeld),mstrI)+" · " : "")+"projected "+usd0(mstrAt(B,tLo)),AMB],
+          ["BEST ESTIMATE MSTX",mstxAt(B,tHeld) == null ? UNK : usd2(mstxAt(B,tHeld)),(chg(mstxAt(B,tHeld),mstxI) ? chg(mstxAt(B,tHeld),mstxI)+" · " : "")+"projected "+(mstxAt(B,tLo) == null ? UNK : usd2(mstxAt(B,tLo))),"#22d3ee"]]
           .concat(tMine ? [["AT YOUR mNAV "+myM.toFixed(2),usd0(mstrAt(B,tMine)),"MSTX "+(mstxAt(B,tMine) == null ? UNK : usd2(mstxAt(B,tMine))),GRN]] : []))}
         <svg viewBox={"0 0 "+W2+" "+H2} style={{width:"100%",height:"auto",minHeight:window.innerWidth < 560 ? 180 : 200,display:"block",marginTop:12}}>
           <rect x={P2.l} y={P2.t} width={cw2} height={ch2} fill="#070f1f" rx="2"/>
@@ -1775,11 +1780,20 @@ function MstrTab({ liveBtc }) {
           {gapNow != null && B > b0 && B < b1 && <circle cx={xb(B)} cy={yb(mstrAt(B,tHeld))} r="3.4" fill="#22d3ee"/>}
           </g>
         </svg>
-        <div style={{...LAB,marginTop:12}}>{"PROJECTED AND BEST ESTIMATE"+(yrs > 0 ? " · BY "+mdy(lkDay) : "")}</div>
+        <div style={{...ROW,justifyContent:"space-between",marginTop:12}}>
+          <div style={LAB}>{"PROJECTED AND BEST ESTIMATE"+(yrs > 0 ? " · BY "+mdy(lkDay) : "")}</div>
+          <div style={{...ROW,gap:6}}>{(narrow ? [["price","prices"],["pct","% from today"]] : [["both","both"],["price","prices"],["pct","% from today"]]).map(([k,label]) =>
+            <button key={k} aria-pressed={view === k} onClick={() => setLkView(k)} style={{...GST,color:view === k ? "#e2e8f0" : "#4a7a9b",borderColor:view === k ? "#2a5a8a" : "#162840"}}>{label}</button>)}</div>
+        </div>
         <div style={{overflowX:"auto",marginTop:6}}><div style={{display:"grid",gridTemplateColumns:narrow ? "0.7fr repeat(4,minmax(0,1fr))" : "repeat(5,minmax(0,1fr))",minWidth:0}}>
           {(narrow ? ["BTC","MSTR PROJ","MSTR BEST","MSTX PROJ","MSTX BEST"] : ["BITCOIN","MSTR PROJECTED","MSTR BEST ESTIMATE","MSTX PROJECTED","MSTX BEST ESTIMATE"]).map(h => <div key={h} style={{...LAB,fontSize:TYPE.label,fontWeight:400,padding:narrow ? "4px 3px" : "4px 6px"}}>{h}</div>)}
-          {[B].concat(levels).map((b,n) => [n === 0 ? (narrow ? "$"+(b/1000).toFixed(1)+"K" : usd0(Math.round(b))+(nm(lkBtc) > 0 ? " · yours" : " · now")) : narrow ? "$"+Math.round(b/1000)+"K" : usd0(b), usd0(mstrAt(b,tLo)), usd0(mstrAt(b,tHeld)), mstxAt(b,tLo) == null ? UNK : usd2(mstxAt(b,tLo)), mstxAt(b,tHeld) == null ? UNK : usd2(mstxAt(b,tHeld))].map((v,i) =>
-            <div key={n+"-"+i} style={{padding:narrow ? "5px 3px" : "5px 6px",fontSize:TYPE.secondary,color:!i ? "#8aaac8" : i%2 ? "#22d3ee" : "#e2e8f0",borderBottom:SEP,fontWeight:n === 0 ? 600 : 400,background:n === 0 ? "#0c2040" : (n%2 ? "transparent" : "#050d1c")}}>{v}</div>))}
+          {[B].concat(levels).map((b,n) => [
+              [n === 0 ? (narrow ? "$"+(b/1000).toFixed(1)+"K" : usd0(Math.round(b))+(nm(lkBtc) > 0 ? " · yours" : " · now")) : narrow ? "$"+Math.round(b/1000)+"K" : usd0(b), chg(b, liveB)],
+              [usd0(mstrAt(b,tLo)), chg(mstrAt(b,tLo), mstrI)], [usd0(mstrAt(b,tHeld)), chg(mstrAt(b,tHeld), mstrI)],
+              [mstxAt(b,tLo) == null ? UNK : usd2(mstxAt(b,tLo)), chg(mstxAt(b,tLo), mstxI)], [mstxAt(b,tHeld) == null ? UNK : usd2(mstxAt(b,tHeld)), chg(mstxAt(b,tHeld), mstxI)]].map(([v,pc],i) =>
+            <div key={n+"-"+i} style={{padding:narrow ? "5px 3px" : "5px 6px",fontSize:TYPE.secondary,color:!i ? "#8aaac8" : i%2 ? "#22d3ee" : "#e2e8f0",borderBottom:SEP,fontWeight:n === 0 ? 600 : 400,whiteSpace:"nowrap",background:n === 0 ? "#0c2040" : (n%2 ? "transparent" : "#050d1c")}}>
+              {view === "pct" && !(i === 0) ? (pc || UNK) : v}{view === "both" && pc && <span style={{color:pc.startsWith("+") ? GRN : pc.startsWith("\u2212") ? RD : GRY,marginLeft:8,fontWeight:400}}>{pc}</span>}
+              {view === "pct" && i === 0 && pc && !narrow && <span style={{color:GRY,marginLeft:6,fontWeight:400}}>{pc}</span>}</div>))}
         </div></div>
         <div style={FT}><More hide>{(yrs > 0 ? "Decay takes "+Math.round((1-decay)*100)+"% off MSTX by "+mdy(lkDay)+". " : "")
           + "MSTX is a 2x daily fund, so over time it moves with MSTR squared. "

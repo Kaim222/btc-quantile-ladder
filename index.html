@@ -1716,7 +1716,8 @@ function MstrTab() {
       const b0 = 50000, b1 = 160000, grid = Array.from({length:45}, (_, i) => b0+i*2500);
       const top = Math.max(100, Math.ceil(Math.max(0,...grid.concat([B]).flatMap(b => [tLo,tHi,tHeld,tMine].filter(Boolean).map(t => mstrAt(b,t))).concat([mstrI]).filter(Number.isFinite))/100)*100), xb = b => P2.l+cw2*(b-b0)/(b1-b0), bottom = Math.min(0,...grid.flatMap(b => [tLo,tHi,tHeld,tMine].filter(Boolean).map(t => mstrAt(b,t))).filter(Number.isFinite)), yb = v => P2.t+ch2*(1-(v-bottom)/(top-bottom));
       const line = t => grid.map((b,i) => (i ? "L" : "M")+xb(b).toFixed(1)+","+yb(mstrAt(b, t)).toFixed(1)).join(" ");
-      const levels = [60000,70000,80000,90000,100000,110000,120000,133000,150000];
+      const levels = Array.from({length:19}, (_, i) => 60000+i*5000);   // $60k to $150k in $5k steps
+      const nearLevel = btcI > 0 ? levels.reduce((a, b) => Math.abs(b-btcI) < Math.abs(a-btcI) ? b : a) : null;
       return <div style={VIS_CARD}>
         <div style={HD}>BITCOIN PRICE LOOKUP</div>
         <Legend items={[["#22d3ee","Projected price"],["#e2e8f0","Best estimate"],[AMB,"High convex fit","dash"],[GRN,"Your mNAV"],["#f1f5f9","MSTR now","dot"],["#22d3ee","Selected best estimate","dot"]]}/>
@@ -1757,21 +1758,17 @@ function MstrTab() {
           {gapNow != null && B > b0 && B < b1 && <circle cx={xb(B)} cy={yb(mstrAt(B,tHeld))} r="3.4" fill="#22d3ee"/>}
           </g>
         </svg>
-        <div style={FT}><More hide>The chart reads projected MSTR against Bitcoin. The high end is the convex fit. Green shows your mNAV if entered. The white dot is MSTR now. The cyan dot is the best estimate at your Bitcoin price.</More></div>
         <div style={{...LAB,marginTop:12}}>{"PROJECTED AND BEST ESTIMATE"+(yrs > 0 ? " · BY "+mdy(lkDay) : "")}</div>
         <div style={{overflowX:"auto",marginTop:6}}><div style={{display:"grid",gridTemplateColumns:narrow ? "0.7fr repeat(4,minmax(0,1fr))" : "repeat(5,minmax(0,1fr))",minWidth:0}}>
           {(narrow ? ["BTC","MSTR PROJ","MSTR BEST","MSTX PROJ","MSTX BEST"] : ["BITCOIN","MSTR PROJECTED","MSTR BEST ESTIMATE","MSTX PROJECTED","MSTX BEST ESTIMATE"]).map(h => <div key={h} style={{...LAB,fontSize:TYPE.label,fontWeight:400,padding:narrow ? "4px 3px" : "4px 6px"}}>{h}</div>)}
           {levels.map((b,n) => [narrow ? "$"+Math.round(b/1000)+"K" : usd0(b), usd0(mstrAt(b,tLo)), usd0(mstrAt(b,tHeld)), mstxAt(b,tLo) == null ? UNK : usd2(mstxAt(b,tLo)), mstxAt(b,tHeld) == null ? UNK : usd2(mstxAt(b,tHeld))].map((v,i) =>
-            <div key={n+"-"+i} style={{padding:narrow ? "5px 3px" : "5px 6px",fontSize:TYPE.secondary,color:!i ? "#8aaac8" : i%2 ? "#22d3ee" : "#e2e8f0",borderBottom:SEP,background:n%2 ? "transparent" : "#050d1c"}}>{v}</div>))}
+            <div key={n+"-"+i} style={{padding:narrow ? "5px 3px" : "5px 6px",fontSize:TYPE.secondary,color:!i ? "#8aaac8" : i%2 ? "#22d3ee" : "#e2e8f0",borderBottom:SEP,background:b === nearLevel ? "#0c2040" : (n%2 ? "transparent" : "#050d1c")}}>{v}</div>))}
         </div></div>
-        <div style={FT}><More hide>{"High mNAV is "+x2(tHi(B))+" with STRC at "+usd2(strcI)+". High MSTR is "+usd0(mstrAt(B,tHi))+". High MSTX is "+(mstxAt(B,tHi) == null ? UNK : usd2(mstxAt(B,tHi)))+". "
-          + "Best estimate carries "+Math.round(wGap*100)+"% of today's gap. MSTR gap is "+msPct(gapNow == null ? null : gapNow*100)+". MSTX gap is "+msPct(whatGap)+". "
-          + (yrs > 0 ? "Decay is "+Math.round((1-decay)*100)+"% by "+mdy(lkDay)+". " : "")
-          + "Uses the MSTR, MSTX and STRC boxes in WHAT IF as the starting point. "
-          + "MSTX is a 2x daily fund. Today uses twice the move from yesterday's closes. WHAT IF uses the same formula. For a later date it is MSTX now times the MSTR ratio squared. Decay uses "+Math.round(vol*100)+"% MSTR vol. "
-          + "Best estimate is projected plus today's gap. " + fadeLine + " The walk forward test used where Bitcoin and STRC actually went. It halved the error of projected alone a week out. It cut error by a fifth at one month and was about even at two months. The 28 day half life is an assumption. 42 and 56 days score the same. Projected and high are both capped at mNAV 2.0, the same cap the Ladder tab uses."
-          + (ops != null ? " Your mNAV counts debt and preferred. Price = mNAV x Bitcoin per share − "+usd2(ops)+" of debt and preferred per share. Start from the number in the box label. Strategy's own figure runs higher because it counts shares differently"
-            + (holdings.prefPct > 0 ? ". Preferred is "+Math.round(holdings.prefPct)+"% of the Bitcoin and debt is "+(holdings.debtPct || 0).toFixed(1)+"%." : ".") : "")}</More></div>
+        <div style={FT}><More hide>{(yrs > 0 ? "Decay takes "+Math.round((1-decay)*100)+"% off MSTX by "+mdy(lkDay)+". " : "")
+          + "MSTX is a 2x daily fund, so over time it moves with MSTR squared. "
+          + "Starting prices come from the WHAT IF boxes. "
+          + "High is a steeper curve fitted to 2025 and it tested worse than projected."
+          + (ops != null ? " Your mNAV counts "+usd2(ops)+" of debt and preferred per share." : "")}</More></div>
       </div>; })()}
     {hist && rowsOf(hist.weekly).length > 10 && (() => {
       // Two years of mNAV (MSTR over its Bitcoin per share), split by bull and bear market. Built by mstr-mnav-model/build_mnav_history.py.

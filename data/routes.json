@@ -13,9 +13,9 @@
    "units_market": 34
   },
   {
-   "route": "Hold to 10/2 · Jan/Dec diagonal · LEAPS 12/21",
-   "units_thesis": 29,
-   "units_market": 31
+   "route": "Hold to 10/2 · Mar/Dec diagonal · LEAPS 12/21",
+   "units_thesis": 30,
+   "units_market": 32
   },
   {
    "route": "Close now · buy LEAPS",
@@ -27,7 +27,7 @@
   "say": "CLOSE",
   "hold_wins_pct": 30,
   "hold_units": 34,
-  "phase2_units": 31,
+  "phase2_units": 32,
   "close_units": 54,
   "settle": "10/2"
  },

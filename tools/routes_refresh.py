@@ -8,9 +8,9 @@ Writes data/routes.json, which the Playbook's route table reads. Everything here
     listed, with the average taken out (no drift). "Market view" is that. "Your view" is the same prices one dollar higher.
   - Route A: hold Phase 1 to the settlement close (shorts at intrinsic, longs at 100% vol), then buy units the next session
     at that close (the move over the weekend is not modelled).
-  - Route B: as A, but the proceeds go into Phase 2 first: 70% into a Jan 15 2027 long one strike above the close against
-    a Dec 18 2026 short at about 1.67x the close (the plan's strike map), 30% cash, all at 120% vol; on Dec 18 the short
-    settles at intrinsic, the long keeps 28 days, and the total buys units the next session at that close. The short
+  - Route B: as A, but the proceeds go into Phase 2 first: 70% into a Mar 19 2027 long at the money against
+    a Dec 18 2026 $30 short (his plan of 9/20), 30% cash, all at 120% vol; on Dec 18 the short
+    settles at intrinsic, the long keeps 91 days, and the total buys units the next session at that close. The short
     strike is never set at or below the long strike.
   - Route C: close today at the model mark (135% vol, the vol that matched his broker's quote on 9/18) less five cents a
     share of slippage on every calendar, and buy units at today's price. The count is fixed once bought.
@@ -22,7 +22,7 @@ import numpy as np
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LEDGER, LEAPS, OUT = (os.path.join(ROOT, "data", f) for f in ("paper-ledger.json", "leaps-cost.json", "routes.json"))
 R, VOL_SETTLE, VOL_NOW, VOL_P2, SLIP, P2_SHARE, N_DRAWS = 0.04, 1.00, 1.35, 1.20, 0.05, 0.70, 40000
-P2_LONG, P2_SHORT = dt.date(2027, 1, 15), dt.date(2026, 12, 18)
+P2_LONG, P2_SHORT, P2_SHORT_K = dt.date(2027, 3, 19), dt.date(2026, 12, 18), 30.0
 HOLIDAYS = ["2026-11-26", "2026-12-25", "2027-01-01"]
 
 
@@ -105,13 +105,13 @@ def main():
         ua = units(V1, S1, buy_a)
         out["a_" + view], out["a_beats_" + view] = float(ua.mean()), float((ua > c_units).mean())
         # Phase 2 off the strike map
-        KL = np.floor(S1 + 0.5) + 1.0
-        KS = np.maximum(np.round(1.67 * S1), KL + 1.0)
+        KL = np.maximum(np.round(S1), 1.0)                      # long at the money on the day it opens
+        KS = np.maximum(P2_SHORT_K, KL + 5.0)                   # short $30, never within five dollars of the long
         debit = call(S1, KL, yrs(settle, P2_LONG), VOL_P2) - call(S1, KS, yrs(settle, P2_SHORT), VOL_P2)
         n2 = np.floor(P2_SHARE * V1 / (np.maximum(debit, 0.05) * 100.0))
         cash = V1 - n2 * debit * 100.0
         S2 = (S1 - bump) * np.exp(r2) + bump
-        V2 = cash + n2 * 100.0 * (call(S2, KL, yrs(P2_SHORT, P2_LONG), VOL_P2) - np.maximum(S2 - KS, 0.0))
+        V2 = cash + n2 * 100.0 * (call(S2, KL, yrs(P2_SHORT, P2_LONG), VOL_P2) - np.maximum(S2 - KS, 0.0))   # the long keeps its days to March
         ub = units(V2, S2, buy_b)
         out["b_" + view], out["b_beats_" + view] = float(ub.mean()), float((ub > c_units).mean())
 
@@ -120,7 +120,7 @@ def main():
            "sessions_to_settle": h1, "sessions_phase2": h2, "history_rows": int(len(px)),
            "routes": [
                {"route": "Hold to %s · LEAPS %s" % (md(settle), md(buy_a)), "units_thesis": int(round(out["a_thesis"])), "units_market": int(round(out["a_market"]))},
-               {"route": "Hold to %s · Jan/Dec diagonal · LEAPS %s" % (md(settle), md(buy_b)), "units_thesis": int(round(out["b_thesis"])), "units_market": int(round(out["b_market"]))},
+               {"route": "Hold to %s · Mar/Dec diagonal · LEAPS %s" % (md(settle), md(buy_b)), "units_thesis": int(round(out["b_thesis"])), "units_market": int(round(out["b_market"]))},
                {"route": "Close now · buy LEAPS", "units_thesis": int(c_units), "units_market": int(c_units)}],
            "verdict": {"say": "HOLD" if out["a_beats_market"] >= 0.5 else "CLOSE", "hold_wins_pct": int(round(100 * out["a_beats_market"])),
                        "hold_units": int(round(out["a_market"])), "phase2_units": int(round(out["b_market"])), "close_units": int(c_units), "settle": md(settle)},

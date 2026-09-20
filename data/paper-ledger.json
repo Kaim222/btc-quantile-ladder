@@ -135,8 +135,8 @@
    {
     "id": 2,
     "dates": "2026-09-26 to 2026-12-18",
-    "structure": "January 2027 call long against Dec 18 call short, 70% of the sleeve; long one strike above the 9/25 close, short about 1.67x the close ($15 close: Jan 16 / Dec 25)",
-    "next_action": "Phase 1 proceeds into the Jan long / Dec 18 short off the strike map (long one strike above the close, short about 1.67x), 70% of the sleeve, on the settlement day: Friday 9/18 from the vertical (70% of $20,350 is $14,245, about 75 to 85 contracts), or 9/25 if Thursday's switch happens. Re-quote on the broker first.",
+    "structure": "March 2027 call long at the money on the day it opens, against a Dec 18 $30 call short. Working plan as of 9/20, not yet opened.",
+    "next_action": "Priced 9/18 at the mids with a $20 long. Debit $3.65, break-even near $17.64 on Dec 18, best near $30, which is Bitcoin near $100,000.",
     "roll_rules": "none; sold as one ticket on 12/18 or 12/19 into Phase 3",
     "strike_map": {
      "12": "Jan 13 / Dec 20",
@@ -151,10 +151,10 @@
      "20": "Jan 21 / Dec 33"
     },
     "next_action_steps": [
-     "On settlement day put 70% of the sleeve on. Jan long one strike above the close, Dec 18 short at about 1.67x.",
-     "Fri 9/18 from the vertical, 70% of $20,350 buys about 75 to 85. Or 9/25 if Thursday's switch happens."
+     "Long March 2027 at the money. Short Dec 18 $30.",
+     "Break-even near $17.64 on Dec 18 at a $20 long and a $3.65 debit."
     ],
-    "next_action_detail": "Re-quote on the broker first."
+    "next_action_detail": ""
    },
    {
     "id": 3,
@@ -179,7 +179,7 @@
     "units_market": 34
    },
    {
-    "route": "Hold to 10/2 · Jan/Dec diagonal · LEAPS 12/21",
+    "route": "Hold to 10/2 · Mar/Dec diagonal · LEAPS 12/21",
     "units_thesis": 29,
     "units_market": 31
    },

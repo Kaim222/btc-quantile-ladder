@@ -82,7 +82,9 @@ out = {"updated": dt.datetime.now().strftime("%Y-%m-%d %H:%M"), "units": N_UNITS
                  "long": {"k": LONG["k"], "exp": str(LONG["exp"]), "iv": round(float(iv_long.iloc[-1]), 8)},
                  "short": {"k": SHORT["k"], "exp": str(SHORT["exp"]), "iv": round(float(iv_short.iloc[-1]), 8)}},
        "ref": ref, "unit_at": unit_at, "prints": prints, "series": rows}
-json.dump(out, open(OUT, "w"), indent=1, allow_nan=False)
+tmp = OUT + ".tmp"          # write whole, then swap, so a crash never leaves half a file for the workflow to commit
+with open(tmp, "w") as fh: json.dump(out, fh, indent=1, allow_nan=False)
+os.replace(tmp, OUT)
 print("wrote %d days, %s to %s. vol ratio %.3f. prints %d, mean abs error vs prints $%.2f a unit" % (len(rows), rows[0]["d"], last["d"], ratio, len(prints), np.mean(err) if err else float("nan")))
 for k, r in ref.items(): print("  %-17s %s  MSTX %6.2f  unit $%5.2f  200 units $%s" % (k, r["d"], r["mstx"], r["unit"], format(r["cost"], ",")))
 for p in prints:

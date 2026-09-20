@@ -22,7 +22,7 @@ def rewrite(path, pattern, text, flags=re.S):
 
 js_bands = ",\n".join('  { q:%s, label:"%s", kind:"%s", p:[%s] }' % (("%g" % b["q"]), b["label"], b["kind"], ", ".join(repr(float(x)) if x else "0" for x in b["p"])) for b in M["bands"])
 rewrite(os.path.join(ROOT, "index.html"), r"const MODEL_V2 = \{.*?\] \};",
-        'const MODEL_V2 = { name:"v2", clock:"%s", A:%r, B:%r, minDays:0, centreOnMedian:true, bands:[\n%s ] };' % (M["clock_start"], M["slope"], M["intercept"], js_bands))
+        'const MODEL_V2 = { name:"v2", clock:"%s", A:%r, B:%r, bands:[\n%s ] };' % (M["clock_start"], M["slope"], M["intercept"], js_bands))
 
 py_bands = ", ".join("(%s, %r, %s)" % (("%g" % b["q"]), float(b["p"][0]), repr(float(b["p"][1])) if len(b["p"]) > 1 else "None") for b in M["bands"])
 rewrite(os.path.join(ROOT, "tools", "playbook_refresh.py"), r"LADDER2_CLOCK = datetime\(.*?\r?\n\r?\n",

@@ -45,7 +45,7 @@ v2.3 also replaced the tier chip row and band dial with a quantile rail:
 full-width 0-100 bar, four band segments, needle at current quantile.
 
 ### Revert
-`index_v6tier_backup.html` (this repo) and `monitor_v6tier_backup.py`
+`consider-deleting/index_v6tier_backup.html` (this repo) and `monitor_v6tier_backup.py`
 (btc-monitor repo) — copy back over index.html / monitor.py.
 
 ### Price feeds

@@ -9,6 +9,7 @@
     "roll_rules": "none",
     "status": "LIVE. Hold 275 Oct 9 $16 / Oct 2 $16 calendars. Hold 175 Oct 16 $18 / Oct 2 $18 calendars. MSTX closed 9/18 at $18.73 on the upper strike.",
     "panel_title": "PHASE 1 · SETTLES FRI OCT 2",
+    "break_evens": [14.94, 19.57],
     "spreads": [
      {
       "key": "Oct 9 16 / Oct 2 16 calendar",

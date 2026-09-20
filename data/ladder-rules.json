@@ -2,13 +2,13 @@
  "as_of": "2026-09-17",
  "note": "The ladder rules agreed the morning of 9/17. The Ladder tab renders this file; the monitor's pushes carry the same plays. Edit here, not in index.html.",
  "rules": [
-  {"k": "gate", "rule": "BTC daily close against its 50 day. Above it long structures are allowed, below it no new money and open positions run their own exits."},
-  {"k": "band", "rule": "Ladder quantile on the monthly close. Under 15 MSTX, 15 to 50 MSTR, 50 to 85 IBIT, 85 and up is the sell zone. Rotate when a monthly close crosses a line, never on a touch."},
-  {"k": "time", "rule": "Long leg 12 months. Short leg 90 days, rolled."},
-  {"k": "strikes", "rule": "Long at 0.75 delta. Short at the band ceiling carried to the short's expiry (the 15 line in the MSTX band). Enter that BTC price and the short's expiry in BITCOIN PRICE LOOKUP on the MSTX tab for the strike."},
-  {"k": "entry", "rule": "Gap at or under zero, and Cheap is the add. Never open a primary while Rich is on."},
-  {"k": "size", "rule": "The primary takes 80% of the sleeve on 9/17, 70% on 9/26, 60% at the LEAPS and after. The rest is the two 10% gap sleeves and a cash floor that grows with each phase."},
-  {"k": "exit", "rule": "The band crossing on the monthly close is the exit, with the short strike as the trigger. When the gate flips down, roll the short call down and closer to 30 to 45 days. Keep the long. At the 85 line sell the BTC beta into it and rotate down."}
+  {"k": "gate", "rule": "New longs only with BTC's daily close above its 50 day. Below it no new money enters. Open positions keep their own exits."},
+  {"k": "band", "rule": "Rotate bands only on monthly closes. Under 15 uses MSTX. 15 to 50 uses MSTR. 50 to 85 uses IBIT. 85 and up is the sell zone. A touch does not trigger rotation."},
+  {"k": "time", "rule": "Buy 12 months and sell 90 days. Roll the short leg."},
+  {"k": "strikes", "rule": "Buy 0.75 delta and sell the band ceiling. Carry the ceiling to the short expiry. MSTX uses the 15 line. Enter that BTC price in BITCOIN PRICE LOOKUP. Set the short expiry to get the strike."},
+  {"k": "entry", "rule": "Enter at zero gap or below while Rich is off. Cheap is the add. Never open a primary while Rich is on."},
+  {"k": "size", "rule": "Size the primary by phase. Use 80% of the sleeve on 9/17. Use 70% on 9/26. Use 60% at LEAPS and after. Keep two 10% gap sleeves and a growing cash floor."},
+  {"k": "exit", "rule": "Exit when the monthly close crosses the band. The short strike is the trigger. When the gate flips down roll the short call lower and closer. Use 30 to 45 days. Keep the long. At the 85 line sell the BTC beta and rotate down."}
  ],
  "sizing": [
   {"when": "2026-09-17", "primary_pct": 80},

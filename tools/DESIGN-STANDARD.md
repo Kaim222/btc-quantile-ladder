@@ -10,3 +10,9 @@ Alex reads this on a desktop and a phone. Anything that breaks these rules reads
 6. Numbers carry commas, dollar signs and a true minus sign. A rounded zero has no sign. Input boxes show commas too. Big numbers on chart axes, the price rail and the forward table stay compact, for example $100K.
 7. Tables have aligned columns and a header row. No orphan tile alone on a desktop row. No text wraps in the middle of a word. No sideways scroll at 390px.
 8. The Ladder tab is liked as it is. Fix clear inconsistencies there and nothing else.
+9. No helper text under a label, tile or heading unless it carries a fact the reader needs and cannot get from the heading. This is the house writing skill's rule for UI copy. A tile is a label and a number. A sub line earns its place only with a needed fact, such as a time stamp or a comparison value.
+10. Every sentence has one thought, under 20 words and at most one comma. Each visible sentence sits on its own line on a desktop. At 1280px no text wraps to a second line in the default state. At 390px no label, tile value, tile sub line, table header or table cell wraps, and body sentences take at most two lines.
+11. Every input box that holds dollars shows a "$" inside the box. Chart axes that show dollars carry the "$" too.
+12. A price typed into the Ladder tab is a what-if. The instrument and structure cards show the rung for that price and say the live band is unchanged.
+
+Acceptance test. `tools/measure_ui.js` runs in a Playwright page against a local server and lists every wrapped text node, every sentence over 20 words or with two or more commas, and every dollar input without a "$", on all three tabs at 1280px and 390px. A change is done when the desktop lists are empty and the phone lists hold body sentences only.

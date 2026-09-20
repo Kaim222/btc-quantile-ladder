@@ -1724,7 +1724,6 @@ function MstrTab({ liveBtc }) {
       const top = Math.max(100, Math.ceil(Math.max(0,...grid.concat([B]).flatMap(b => [tLo,tHi,tHeld,tMine].filter(Boolean).map(t => mstrAt(b,t))).concat([mstrI]).filter(Number.isFinite))/100)*100), xb = b => P2.l+cw2*(b-b0)/(b1-b0), bottom = Math.min(0,...grid.flatMap(b => [tLo,tHi,tHeld,tMine].filter(Boolean).map(t => mstrAt(b,t))).filter(Number.isFinite)), yb = v => P2.t+ch2*(1-(v-bottom)/(top-bottom));
       const line = t => grid.map((b,i) => (i ? "L" : "M")+xb(b).toFixed(1)+","+yb(mstrAt(b, t)).toFixed(1)).join(" ");
       const levels = Array.from({length:19}, (_, i) => 60000+i*5000);   // $60k to $150k in $5k steps
-      const nearLevel = btcI > 0 ? levels.reduce((a, b) => Math.abs(b-btcI) < Math.abs(a-btcI) ? b : a) : null;
       return <div style={VIS_CARD}>
         <div style={HD}>BITCOIN PRICE LOOKUP</div>
         <Legend items={[["#22d3ee","Projected price"],["#e2e8f0","Best estimate"],[AMB,"High convex fit","dash"],[GRN,"Your mNAV"],["#f1f5f9","MSTR now","dot"],["#22d3ee","Selected best estimate","dot"]]}/>
@@ -1768,8 +1767,8 @@ function MstrTab({ liveBtc }) {
         <div style={{...LAB,marginTop:12}}>{"PROJECTED AND BEST ESTIMATE"+(yrs > 0 ? " · BY "+mdy(lkDay) : "")}</div>
         <div style={{overflowX:"auto",marginTop:6}}><div style={{display:"grid",gridTemplateColumns:narrow ? "0.7fr repeat(4,minmax(0,1fr))" : "repeat(5,minmax(0,1fr))",minWidth:0}}>
           {(narrow ? ["BTC","MSTR PROJ","MSTR BEST","MSTX PROJ","MSTX BEST"] : ["BITCOIN","MSTR PROJECTED","MSTR BEST ESTIMATE","MSTX PROJECTED","MSTX BEST ESTIMATE"]).map(h => <div key={h} style={{...LAB,fontSize:TYPE.label,fontWeight:400,padding:narrow ? "4px 3px" : "4px 6px"}}>{h}</div>)}
-          {levels.map((b,n) => [narrow ? "$"+Math.round(b/1000)+"K" : usd0(b), usd0(mstrAt(b,tLo)), usd0(mstrAt(b,tHeld)), mstxAt(b,tLo) == null ? UNK : usd2(mstxAt(b,tLo)), mstxAt(b,tHeld) == null ? UNK : usd2(mstxAt(b,tHeld))].map((v,i) =>
-            <div key={n+"-"+i} style={{padding:narrow ? "5px 3px" : "5px 6px",fontSize:TYPE.secondary,color:!i ? "#8aaac8" : i%2 ? "#22d3ee" : "#e2e8f0",borderBottom:SEP,background:b === nearLevel ? "#0c2040" : (n%2 ? "transparent" : "#050d1c")}}>{v}</div>))}
+          {[B].concat(levels).map((b,n) => [n === 0 ? (narrow ? "$"+(b/1000).toFixed(1)+"K" : usd0(Math.round(b))+(nm(lkBtc) > 0 ? " · yours" : " · now")) : narrow ? "$"+Math.round(b/1000)+"K" : usd0(b), usd0(mstrAt(b,tLo)), usd0(mstrAt(b,tHeld)), mstxAt(b,tLo) == null ? UNK : usd2(mstxAt(b,tLo)), mstxAt(b,tHeld) == null ? UNK : usd2(mstxAt(b,tHeld))].map((v,i) =>
+            <div key={n+"-"+i} style={{padding:narrow ? "5px 3px" : "5px 6px",fontSize:TYPE.secondary,color:!i ? "#8aaac8" : i%2 ? "#22d3ee" : "#e2e8f0",borderBottom:SEP,fontWeight:n === 0 ? 600 : 400,background:n === 0 ? "#0c2040" : (n%2 ? "transparent" : "#050d1c")}}>{v}</div>))}
         </div></div>
         <div style={FT}><More hide>{(yrs > 0 ? "Decay takes "+Math.round((1-decay)*100)+"% off MSTX by "+mdy(lkDay)+". " : "")
           + "MSTX is a 2x daily fund, so over time it moves with MSTR squared. "

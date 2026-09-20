@@ -1455,7 +1455,7 @@ const msOpen = d => { try {
 const msWhen = t => { const x = typeof t === "number" ? t : msTs(t); return !x ? String(t || UNK)
   : new Date(x).toLocaleString("en-US", {timeZone:"America/New_York", month:"numeric", day:"numeric",
       hour:"numeric", minute:"2-digit"}); };
-function MstrTab({ liveBtc }) {
+function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
   const [dat, setDat] = useState(null), [cfg, setCfg] = useState(null);
   const [mon, setMon] = useState({st:null, led:[]}), [errors, setErrors] = useState([]);
   const [f, setF] = useState({btc:"", mstr:"", mstx:"", strc:""});
@@ -1731,6 +1731,9 @@ function MstrTab({ liveBtc }) {
       const liveB = btcI > 0 ? btcI : null;
       // change from today: Bitcoin against the live price, MSTR and MSTX against their current prices
       const chg = (v, base) => v > 0 && base > 0 ? msPct((v/base-1)*100, Math.abs(v/base-1) >= 1 ? 0 : 1) : "";
+      const qTs = Date.parse(lkDay+"T12:00:00Z");
+      const qCell = b => { const q = b > 0 && !isNaN(qTs) ? priceToQuantile(b, qTs, modelA, modelB) : null;
+        return Number.isFinite(q) ? {txt:(q < 10 ? q.toFixed(1) : Math.round(q))+"q", color:getTier(q).tier.color} : {txt:UNK, color:GRY}; };
       const levels = Array.from({length:19}, (_, i) => 60000+i*5000);   // $60k to $150k in $5k steps
       return <div style={VIS_CARD}>
         <div style={HD}>BITCOIN PRICE LOOKUP</div>
@@ -1785,14 +1788,15 @@ function MstrTab({ liveBtc }) {
           <div style={{...ROW,gap:6}}>{(narrow ? [["price","prices"],["pct","% from today"]] : [["both","both"],["price","prices"],["pct","% from today"]]).map(([k,label]) =>
             <button key={k} aria-pressed={view === k} onClick={() => setLkView(k)} style={{...GST,color:view === k ? "#e2e8f0" : "#4a7a9b",borderColor:view === k ? "#2a5a8a" : "#162840"}}>{label}</button>)}</div>
         </div>
-        <div style={{overflowX:"auto",marginTop:6}}><div style={{display:"grid",gridTemplateColumns:narrow ? "0.7fr repeat(4,minmax(0,1fr))" : "repeat(5,minmax(0,1fr))",minWidth:0}}>
-          {(narrow ? ["BTC","MSTR PROJ","MSTR BEST","MSTX PROJ","MSTX BEST"] : ["BITCOIN","MSTR PROJECTED","MSTR BEST ESTIMATE","MSTX PROJECTED","MSTX BEST ESTIMATE"]).map(h => <div key={h} style={{...LAB,fontSize:TYPE.label,fontWeight:400,padding:narrow ? "4px 3px" : "4px 6px"}}>{h}</div>)}
+        <div style={{overflowX:"auto",marginTop:6}}><div style={{display:"grid",gridTemplateColumns:narrow ? "0.75fr 0.5fr repeat(4,minmax(0,1fr))" : "1.25fr 0.55fr repeat(4,minmax(0,1fr))",minWidth:0}}>
+          {(narrow ? ["BTC","Q","MSTR PROJ","MSTR BEST","MSTX PROJ","MSTX BEST"] : ["BITCOIN","QUANTILE","MSTR PROJECTED","MSTR BEST ESTIMATE","MSTX PROJECTED","MSTX BEST ESTIMATE"]).map(h => <div key={h} style={{...LAB,fontSize:TYPE.label,fontWeight:400,padding:narrow ? "4px 3px" : "4px 6px"}}>{h}</div>)}
           {[B].concat(levels).map((b,n) => [
               [n === 0 ? (narrow ? "$"+(b/1000).toFixed(1)+"K" : usd0(Math.round(b))+(nm(lkBtc) > 0 ? " · yours" : " · now")) : narrow ? "$"+Math.round(b/1000)+"K" : usd0(b), chg(b, liveB)],
+              [qCell(b).txt, "", qCell(b).color],
               [usd0(mstrAt(b,tLo)), chg(mstrAt(b,tLo), mstrI)], [usd0(mstrAt(b,tHeld)), chg(mstrAt(b,tHeld), mstrI)],
-              [mstxAt(b,tLo) == null ? UNK : usd2(mstxAt(b,tLo)), chg(mstxAt(b,tLo), mstxI)], [mstxAt(b,tHeld) == null ? UNK : usd2(mstxAt(b,tHeld)), chg(mstxAt(b,tHeld), mstxI)]].map(([v,pc],i) =>
-            <div key={n+"-"+i} style={{padding:narrow ? "5px 3px" : "5px 6px",fontSize:TYPE.secondary,color:!i ? "#8aaac8" : i%2 ? "#22d3ee" : "#e2e8f0",borderBottom:SEP,fontWeight:n === 0 ? 600 : 400,whiteSpace:"nowrap",background:n === 0 ? "#0c2040" : (n%2 ? "transparent" : "#050d1c")}}>
-              {view === "pct" && !(i === 0) ? (pc || UNK) : v}{view === "both" && pc && <span style={{color:pc.startsWith("+") ? GRN : pc.startsWith("\u2212") ? RD : GRY,marginLeft:8,fontWeight:400}}>{pc}</span>}
+              [mstxAt(b,tLo) == null ? UNK : usd2(mstxAt(b,tLo)), chg(mstxAt(b,tLo), mstxI)], [mstxAt(b,tHeld) == null ? UNK : usd2(mstxAt(b,tHeld)), chg(mstxAt(b,tHeld), mstxI)]].map(([v,pc,qc],i) =>
+            <div key={n+"-"+i} style={{padding:narrow ? "5px 3px" : "5px 6px",fontSize:TYPE.secondary,color:!i ? "#8aaac8" : i === 1 ? qc : i%2 === 0 ? "#22d3ee" : "#e2e8f0",borderBottom:SEP,fontWeight:n === 0 ? 600 : 400,whiteSpace:"nowrap",background:n === 0 ? "#0c2040" : (n%2 ? "transparent" : "#050d1c")}}>
+              {view === "pct" && i > 1 ? (pc || UNK) : v}{view === "both" && pc && <span style={{color:pc.startsWith("+") ? GRN : pc.startsWith("\u2212") ? RD : GRY,marginLeft:8,fontWeight:400}}>{pc}</span>}
               {view === "pct" && i === 0 && pc && !narrow && <span style={{color:GRY,marginLeft:6,fontWeight:400}}>{pc}</span>}</div>))}
         </div></div>
         <div style={FT}><More hide>{(yrs > 0 ? "Decay takes "+Math.round((1-decay)*100)+"% off MSTX by "+mdy(lkDay)+". " : "")
@@ -2402,7 +2406,7 @@ function BTCPowerLaw() {
 
       {tab === "playbook" && <PlaybookTab todayTs={todayTs} tier={tier} q={q}/>}
 
-      <div hidden={tab !== "mstr"}><MstrTab liveBtc={liveFetch === "live" ? livePrice : null}/></div>
+      <div hidden={tab !== "mstr"}><MstrTab liveBtc={liveFetch === "live" ? livePrice : null} modelA={modelA} modelB={modelB}/></div>
     </div>
   );
 }

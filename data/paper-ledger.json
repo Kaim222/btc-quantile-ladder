@@ -45,86 +45,21 @@
     "note": "On 9/18 the $15 longs rolled to $16 for an $11,000 credit in the first six minutes. Execution was zero to five cents under the model. The $18 calendar opened at 09:52 for $0.64. MSTX was near $16.70 and BTC passed $80,000. The gap was +0.2% to +1.3% and met his entry rule. The model read $0.64 so the fill was fair. Neither calendar can go negative. Cash is the floor.",
     "positions": "MSTX closed 9/18 at $18.73. The calendars model near $23,800 at 135% vol. That vol matched your 9/18 quote. Calendar cost was $16,975. Break evens at the 10/2 close are about $14.94 and $19.57 at 100% vol. The best stretch runs from $16 to $18.",
     "units_by_price": [
-     {
-      "mstx": 13,
-      "dollars": 2697,
-      "unit": 2.75,
-      "leaps": 9
-     },
-     {
-      "mstx": 14,
-      "dollars": 7724,
-      "unit": 2.99,
-      "leaps": 25
-     },
-     {
-      "mstx": 15,
-      "dollars": 17786,
-      "unit": 3.22,
-      "leaps": 55
-     },
-     {
-      "mstx": 15.5,
-      "dollars": 25198,
-      "unit": 3.33,
-      "leaps": 75
-     },
-     {
-      "mstx": 16,
-      "dollars": 34330,
-      "unit": 3.44,
-      "leaps": 99
-     },
-     {
-      "mstx": 16.5,
-      "dollars": 31432,
-      "unit": 3.55,
-      "leaps": 88
-     },
-     {
-      "mstx": 17,
-      "dollars": 30189,
-      "unit": 3.66,
-      "leaps": 82
-     },
-     {
-      "mstx": 17.5,
-      "dollars": 30480,
-      "unit": 3.77,
-      "leaps": 80
-     },
-     {
-      "mstx": 18,
-      "dollars": 32151,
-      "unit": 3.88,
-      "leaps": 82
-     },
-     {
-      "mstx": 18.5,
-      "dollars": 26281,
-      "unit": 3.99,
-      "leaps": 65
-     },
-     {
-      "mstx": 19,
-      "dollars": 21449,
-      "unit": 4.1,
-      "leaps": 52
-     },
-     {
-      "mstx": 20,
-      "dollars": 14267,
-      "unit": 4.31,
-      "leaps": 33
-     },
-     {
-      "mstx": 22,
-      "dollars": 6397,
-      "unit": 4.72,
-      "leaps": 13
-     }
+     {"mstx": 13, "dollars": 2697, "unit": 12.69, "leaps": 2},
+     {"mstx": 14, "dollars": 7724, "unit": 13.6, "leaps": 5},
+     {"mstx": 15, "dollars": 17786, "unit": 14.48, "leaps": 12},
+     {"mstx": 15.5, "dollars": 25198, "unit": 14.91, "leaps": 16},
+     {"mstx": 16, "dollars": 34330, "unit": 15.34, "leaps": 22},
+     {"mstx": 16.5, "dollars": 31432, "unit": 15.77, "leaps": 19},
+     {"mstx": 17, "dollars": 30189, "unit": 16.19, "leaps": 18},
+     {"mstx": 17.5, "dollars": 30480, "unit": 16.6, "leaps": 18},
+     {"mstx": 18, "dollars": 32151, "unit": 17.01, "leaps": 18},
+     {"mstx": 18.5, "dollars": 26281, "unit": 17.42, "leaps": 15},
+     {"mstx": 19, "dollars": 21449, "unit": 17.82, "leaps": 12},
+     {"mstx": 20, "dollars": 14267, "unit": 18.62, "leaps": 7},
+     {"mstx": 22, "dollars": 6397, "unit": 20.16, "leaps": 3}
     ],
-    "units_note": "At the Oct 2 close with no cash. Both shorts settle at intrinsic value. The Oct 9 $16 long has 7 days left. The Oct 16 $18 long has 14. Both use 100% vol. Real option prints in data/leaps-cost.json price the unit for Oct 2. The count rounds down to whole units.",
+    "units_note": "At the Oct 2 close with no cash. Both shorts settle at intrinsic value. The Oct 9 $16 long has 7 days left. The Oct 16 $18 long has 14. Both use 100% vol. Real option prints in data/leaps-cost.json price the MSTR unit for Oct 2. Each MSTX close maps to the MSTR level it implies. The count rounds down to whole units.",
     "next_action_steps": [
      "A daily close above $20 or under $15 closes the position the next morning.",
      "On Fri 9/25 a close outside $15 to $19 closes it.",
@@ -171,26 +106,26 @@
     ]
    }
   ],
-  "objective": "The plan counts LEAPS units. Each unit pairs a MSTX Dec 2028 $33 call with a Jan 2028 $60 short call. Settlement proceeds buy units at that day's price. Real option prints estimate the unit price daily.",
+  "objective": "The plan counts LEAPS units. Each unit pairs a MSTR Jun 2028 $345 call with a Jan 2028 $500 short call. The goal is 50 units. Settlement proceeds buy units at that day's price. Real option prints estimate the unit price daily.",
   "unit_price_anchor_mstx": 14,
   "routes": [
    {
     "route": "Hold to 10/2 · LEAPS 10/5",
-    "units_thesis": 32,
-    "units_market": 34
+    "units_thesis": 7,
+    "units_market": 7
    },
    {
     "route": "Hold to 10/2 · Mar/Dec diagonal · LEAPS 12/21",
-    "units_thesis": 29,
-    "units_market": 31
+    "units_thesis": 6,
+    "units_market": 6
    },
    {
     "route": "Close now · buy LEAPS",
-    "units_thesis": 54,
-    "units_market": 54
+    "units_thesis": 12,
+    "units_market": 12
    }
   ],
-  "routes_note": "Holding to 10/2 ends with more units than closing now in 30% of history's paths. On your view it wins in 28%. Model averages count whole units at the model mid. Units are bought the session after each settlement at the settlement close. A real fill buys fewer. Priced at the 9/18 close. MSTX $18.73 and unit $3.97. No cash is counted. Market view is MSTX's own history. It uses every 10 session and 54 session move since listing. Drift is removed. Your view is the same prices one dollar higher. Phase 1 is marked at 100% vol at the 10/2 close. Closing now uses 135% vol, with the position about $23,800. Phase 2 uses 120% vol off the plan's strikes with 30% held as cash. Averages hide the spread. Phase 1 pays most between $16 and $18. It pays little outside $15 to $19. Closing deducts five cents across 450 calendars and fixes the unit count.",
+  "routes_note": "Holding to 10/2 wins more units in 28% of market paths. On your view it wins in 26%. Model averages count whole units at the model mid. Units are bought the session after each settlement at the settlement close. A real fill buys fewer. Priced at the 9/18 close. MSTX $18.73 and unit $17.11. No cash is counted. Market view is MSTX's own history. It uses every 10 session and 54 session move since listing. Drift is removed. Your view is the same prices one dollar higher. Phase 1 is marked at 100% vol at the 10/2 close. Closing now uses 135% vol, with the position about $23,800. Phase 2 uses 120% vol off the plan's strikes with 30% held as cash. Averages hide the spread. Phase 1 pays most between $16 and $18. It pays little outside $15 to $19. Closing deducts five cents across 450 calendars and fixes the unit count.",
   "week_of_2026_09_14": {
    "date": "2026-09-16",
    "text": "Week of 9/14 in one line: 656 x 17/17.50 sold 9/14 into the pair (175 x Oct 2 14 / Sep 25 15 + 150 x Oct 9 16 / Sep 25 17, $25,700), hedged and reshaped through 9/15 into 321 x Oct 2 15 / Sep 25 16 + 55 x 16.50/18, then 204 x Sep 25 13.50 / Sep 18 14.50 + 60 x Sep 18 15/16 ($15,084), then on 9/16 (FOMC hike day, MSTX 12.35 to 13.02) 407 x Sep 18 12/12.50 call verticals at 0.29 ($11,803). The round trips cost about $9,700 of basis; the position now fits the $13 tape.",

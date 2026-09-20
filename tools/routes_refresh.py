@@ -2,8 +2,10 @@
 
 Writes data/routes.json, which the Playbook's route table reads. Everything here is MODEL, stated on the page:
   - Position: the Phase 1 spreads in data/paper-ledger.json (each spread carries machine-readable legs). No cash.
-  - Unit: long Dec 15 2028 $33 call less short Jan 21 2028 $60 call, Black-Scholes at the vols fitted to real prints
-    (data/leaps-cost.json), priced for the day the units are bought. Whole units, at the model mid.
+  - Unit: the legs in data/leaps-cost.json (since 2026-09-20 long MSTR Jun 16 2028 $345, short MSTR Jan 21 2028 $500),
+    Black-Scholes at the vols fitted to real prints, priced for the day the units are bought. Whole units, at the model mid.
+    The paths are MSTX paths because Phase 1 is an MSTX position. An MSTX level maps to an MSTR level by undoing the 2x fund:
+    MSTR = MSTR now x sqrt(MSTX / MSTX now x exp(drag x years)).
   - MSTX paths: MSTX's own history. For a horizon of h sessions, every overlapping h-session log return since the fund
     listed, with the average taken out (no drift). "Market view" is that. "Your view" is the same prices one dollar higher.
   - Route A: hold Phase 1 to the settlement close (shorts at intrinsic, longs at 100% vol), then buy units the next session
@@ -65,8 +67,16 @@ def main():
         return 0
     Lg, Sh = m["long"], m["short"]
 
+    on_mstr = m.get("underlying") == "MSTR"
+
+    def under(S, day):
+        """The unit's underlying at an MSTX level S on a day. The old MSTX unit needs no mapping."""
+        if not on_mstr: return np.asarray(S, dtype=float)
+        return float(m["mstr_last"]) * np.sqrt(np.asarray(S, dtype=float) / S0 * math.exp(float(m.get("drag_k", 0.98)) * max(0.0, (day - today).days / 365.0)))
+
     def unit(S, day):
-        return call(S, Lg["k"], yrs(day, dt.date.fromisoformat(Lg["exp"])), Lg["iv"]) - call(S, Sh["k"], yrs(day, dt.date.fromisoformat(Sh["exp"])), Sh["iv"])
+        U = under(S, day)
+        return call(U, Lg["k"], yrs(day, dt.date.fromisoformat(Lg["exp"])), Lg["iv"]) - call(U, Sh["k"], yrs(day, dt.date.fromisoformat(Sh["exp"])), Sh["iv"])
 
     def units(dollars, S, day):
         return np.floor(np.maximum(dollars, 0.0) / (unit(S, day) * 100.0))

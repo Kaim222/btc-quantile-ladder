@@ -937,9 +937,9 @@ function LadderRules({ tier }) {
   </>);
 }
 
-// ── What 200 LEAPS units cost, day by day. Model estimate from tools/leaps_cost.py, checked against the days both legs
+// ── What the target number of LEAPS units costs, day by day. Model estimate from tools/leaps_cost.py, checked against the days both legs
 // really traded. Numbers live in data/leaps-cost.json. ──
-// Black-Scholes call, for repricing the LEAPS unit at any date, MSTX price and vol
+// Black-Scholes call, for repricing the LEAPS unit at any date, underlying price and vol
 const lcNcdf = x => { const t = 1/(1+0.2316419*Math.abs(x)), p = 1-Math.exp(-x*x/2)/Math.sqrt(2*Math.PI)
   *t*(0.319381530+t*(-0.356563782+t*(1.781477937+t*(-1.821255978+t*1.330274429)))); return x >= 0 ? p : 1-p; };
 const lcCall = (S, K, T, v, r) => { if (!(S > 0)) return 0; if (T <= 0 || !(v > 0)) return Math.max(S-K, 0);
@@ -1012,6 +1012,7 @@ function Legend({ items }) {
 function LeapsCost({ lc }) {
   const [hv, setHv] = useState(null);
   const mdl = lc && isObj(lc.model) && isObj(lc.model.long) && isObj(lc.model.short) ? lc.model : null;
+  const UND = String((lc && lc.underlying) || "MSTX"), pxLast = mdl ? (nm(mdl.px_last) != null ? nm(mdl.px_last) : nm(mdl.mstx_last)) : null;
   const [lkDate, setLkDate] = useNyDate();
   const [lkPx, setLkPx] = useState(""), [lkVol, setLkVol] = useState(0), [lkN, setLkN] = useState("");
   const rows = (lc && Array.isArray(lc.series)) ? lc.series.filter(r => r && Number.isFinite(r.cost)) : [];
@@ -1046,7 +1047,7 @@ function LeapsCost({ lc }) {
           <text x={P.l-5} y={yAt(v)+3} fill="#7aa5c8" fontSize={TYPE.label} textAnchor="end">{k(v)}</text></g>)}
         {li > 0 && <g><line x1={xAt(li)} x2={xAt(li)} y1={P.t} y2={P.t+ch} stroke="#facc15" strokeWidth="0.8"
           strokeDasharray="3 3" opacity="0.6"/>
-          <text x={xAt(li)-4} y={P.t+10} fill="#facc15" fontSize={TYPE.label} textAnchor="end">Dec 2028 $33 first traded</text></g>}
+          <text x={xAt(li)-4} y={P.t+10} fill="#facc15" fontSize={TYPE.label} textAnchor="end">{(mdl ? new Date(mdl.long.exp+"T12:00:00Z").toLocaleDateString("en-US",{month:"short",year:"numeric",timeZone:"UTC"})+" $"+grp(mdl.long.k) : "Long leg")+" first traded"}</text></g>}
         <defs><clipPath id="leaps-plot"><rect x={P.l} y={P.t} width={cw} height={ch}/></clipPath></defs>
         <g clipPath="url(#leaps-plot)">
         {li > 0 && <path d={path("cost", 0, li+1)} fill="none" stroke="#22d3ee" strokeWidth="1.3" strokeDasharray="4 3" opacity="0.55"/>}
@@ -1060,14 +1061,14 @@ function LeapsCost({ lc }) {
         <text x={P.l+cw} y={H-6} fill="#7aa5c8" fontSize={TYPE.label} textAnchor="end">{mdy(rows[rows.length-1].d)}</text>
       </svg>
       <div style={{fontSize:TYPE.secondary,color:"#b0c4d8",marginTop:4}}>
-        {h ? mdy(h.d) + " · MSTX " + usd2(h.mstx) + " · unit " + usd2(h.unit) + " · " + (lc.units||200) + " units " + usd(h.cost)
+        {h ? mdy(h.d) + " · " + UND + " " + usd2(nm(h.px) != null ? h.px : h.mstx) + " · unit " + usd2(h.unit) + " · " + (lc.units||200) + " units " + usd(h.cost)
            : ""}</div>
       <div style={{display:"grid",gridTemplateColumns:window.innerWidth < 560 ? "minmax(0,1fr)" : "repeat(2,minmax(0,1fr))",gap:"8px",marginTop:16}}>
         {cards.map(([t, key]) => { const r = ref[key], ch2 = now.cost / r.cost - 1;
           return <div key={key} style={SC}>
             <div style={{...LAB,marginBottom:5}}>{(lc.long_first_trade && r.d < lc.long_first_trade ? "MODELLED " : "") + t + " · " + md(r.d)}</div>
             <div style={{fontSize:TYPE.tile,fontWeight:700,color:key==="today"?"#22d3ee":"#e2e8f0"}}>{usd(r.cost)}</div>
-            <div style={{fontSize:TYPE.secondary,color:"#7a9ab8",marginTop:3}}>{"MSTX " + usd2(r.mstx)
+            <div style={{fontSize:TYPE.secondary,color:"#7a9ab8",marginTop:3}}>{UND + " " + usd2(nm(r.px) != null ? r.px : r.mstx)
               + (key==="today" ? "" : " · now " + pctS(100*ch2,0))}</div>
           </div>; })}
       </div>
@@ -1075,9 +1076,9 @@ function LeapsCost({ lc }) {
         const yrs = (exp, on) => (new Date(exp+"T16:00:00Z") - new Date(on+"T16:00:00Z"))/(365*86400000);
         const unitAt = (S, on, dv) => !(S > 0) ? NaN : lcCall(S, mdl.long.k, yrs(mdl.long.exp, on), mdl.long.iv*(1+dv), mdl.r)
           - lcCall(S, mdl.short.k, yrs(mdl.short.exp, on), mdl.short.iv*(1+dv), mdl.r);
-        const S = nm(lkPx) > 0 ? nm(lkPx) : nm(mdl.mstx_last), n = nm(lkN) > 0 ? Math.round(nm(lkN)) : (lc.units||200);
+        const S = nm(lkPx) > 0 ? nm(lkPx) : pxLast, n = nm(lkN) > 0 ? Math.round(nm(lkN)) : (lc.units||200);
         const priceDay = lkDate > mdl.short.exp ? mdl.short.exp : lkDate < mdl.asof ? mdl.asof : lkDate;
-        const u = S > 0 ? unitAt(S, priceDay, lkVol) : NaN, base = unitAt(nm(mdl.mstx_last), mdl.asof, 0), cost = u*100*n, chg = base > 0 ? u/base-1 : null;
+        const u = S > 0 ? unitAt(S, priceDay, lkVol) : NaN, base = unitAt(pxLast, mdl.asof, 0), cost = u*100*n, chg = base > 0 ? u/base-1 : null;
         const wk = new Date(new Date(priceDay+"T16:00:00Z").getTime()+7*86400000).toISOString().slice(0,10);
         const dS = (unitAt(S+1, priceDay, lkVol)-u)*100*n, dT = wk > mdl.short.exp ? NaN : (unitAt(S, wk, lkVol)-u)*100*n, dV = (unitAt(S, priceDay, lkVol+0.10)-u)*100*n;
         const IN = {background:"#070f1f",border:"1px solid #0f2a42",borderRadius:4,color:"#facc15",fontSize:TYPE.body,fontWeight:600,
@@ -1088,8 +1089,8 @@ function LeapsCost({ lc }) {
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:8}}>
             <label><div style={{...LAB,marginBottom:4}}>DATE</div>
               <input type="date" value={priceDay} min={mdl.asof} max={mdl.short.exp} onChange={e => e.target.value && setLkDate(e.target.value < mdl.asof ? mdl.asof : e.target.value > mdl.short.exp ? mdl.short.exp : e.target.value)} style={IN}/></label>
-            <label><div style={{...LAB,marginBottom:4}}>MSTX PRICE</div>
-              <DollarInput type="number" inputMode="decimal" step="0.25" min="1" placeholder={String(mdl.mstx_last)} value={lkPx} onChange={e => setLkPx(e.target.value)} style={IN}/></label>
+            <label><div style={{...LAB,marginBottom:4}}>{UND + " PRICE"}</div>
+              <DollarInput type="number" inputMode="decimal" step={UND === "MSTX" ? "0.25" : "1"} min="1" placeholder={String(pxLast)} value={lkPx} onChange={e => setLkPx(e.target.value)} style={IN}/></label>
             <label><div style={{...LAB,marginBottom:4}}>UNITS</div>
               <input type="number" inputMode="numeric" step="10" min="1" placeholder={String(lc.units||200)} value={lkN} onChange={e => setLkN(e.target.value)} style={IN}/></label>
             <label><div style={{...LAB,marginBottom:4}}>{"VOL SHIFT " + pctS(lkVol*100,0)}</div>
@@ -1098,12 +1099,12 @@ function LeapsCost({ lc }) {
           <div style={{display:"grid",gridTemplateColumns:window.innerWidth < 560 ? "repeat(2,minmax(0,1fr))" : "repeat(3,minmax(0,1fr))",gap:8,marginTop:16}}>
             <div style={SC}><div style={{...LAB,marginBottom:5}}>{n + " UNITS COST"}</div>
               <div style={{fontSize:TYPE.tile,fontWeight:700,color:"#22d3ee"}}>{usd(cost)}</div>
-              <div style={{fontSize:TYPE.secondary,color:"#7a9ab8",marginTop:3}}>{md(priceDay) + " · MSTX " + usd2(S)}</div></div>
+              <div style={{fontSize:TYPE.secondary,color:"#7a9ab8",marginTop:3}}>{md(priceDay) + " · " + UND + " " + usd2(S)}</div></div>
             <div style={SC}><div style={{...LAB,marginBottom:5}}>ONE UNIT</div>
               <div style={{fontSize:TYPE.tile,fontWeight:700,color:"#e2e8f0"}}>{usd2(u)}</div>
               <div style={{fontSize:TYPE.secondary,color:"#7a9ab8",marginTop:3}}>{chg == null ? "" : Math.round(chg*100) === 0 ? "same as last close" : pctS(chg*100,0) + " vs last close"}</div></div>
             <div style={{...SC,gridColumn:window.innerWidth < 560 ? "1 / -1" : "auto"}}><div style={{...LAB,marginBottom:5}}>WHAT MOVES IT</div>
-              <div style={{fontSize:TYPE.secondary,color:"#b0c4d8",lineHeight:1.6}}>{[["MSTX +$1",sg(dS)],["one week later",sg(dT)],["option vol +10%",sg(dV)]].map(([a,b]) => <div key={a} style={{display:"flex",justifyContent:"space-between",gap:8}}><span>{a}</span><span>{b}</span></div>)}</div></div>
+              <div style={{fontSize:TYPE.secondary,color:"#b0c4d8",lineHeight:1.6}}>{[[UND+" +$1",sg(dS)],["one week later",sg(dT)],["option vol +10%",sg(dV)]].map(([a,b]) => <div key={a} style={{display:"flex",justifyContent:"space-between",gap:8}}><span>{a}</span><span>{b}</span></div>)}</div></div>
           </div>
           <div style={{fontSize:TYPE.secondary,color:GRY,letterSpacing:"0.04em",marginTop:16}}><More hide>
             {"Both legs use Black Scholes with today's fitted vols, long "
@@ -1172,12 +1173,15 @@ function PlaybookTab({ todayTs, tier, q }) {
   const x2 = (v, s) => v == null ? UNK : v.toFixed(2) + (s||"");
   // Position dollars from the ledger; both legs priced at settlement.
   const settlement = phBnd(ph1 && ph1.dates)[1] || "2026-10-02";
-  const unitModel = lc && lc.model;
+  const unitModel = lc && isObj(lc.model) && lc.model.underlying ? lc.model : null;   // an old-shape cost file falls back to the ledger's own unit prices
   const uRows = rowsOf(ph1 && ph1.units_by_price).filter(r => nm(r.mstx) != null).map(r => {
     const S = nm(r.mstx), dollars = nm(r.dollars);
-    const leg = l => lcCall(S, l.k, (Date.parse(l.exp)-Date.parse(settlement))/86400000/365, l.iv, unitModel.r);
+    const onMstr = unitModel && unitModel.underlying === "MSTR" && nm(unitModel.mstr_last) > 0 && nm(unitModel.mstx_last) > 0;
+    const yrsTo = Math.max(0, (Date.parse(settlement)-Date.parse(unitModel ? unitModel.asof : settlement))/86400000/365);
+    const U = onMstr ? nm(unitModel.mstr_last)*Math.sqrt(S/nm(unitModel.mstx_last)*Math.exp((nm(unitModel.drag_k) > 0 ? nm(unitModel.drag_k) : 0.98)*yrsTo)) : S;
+    const leg = l => lcCall(U, l.k, (Date.parse(l.exp)-Date.parse(settlement))/86400000/365, l.iv, unitModel.r);
     const unit = unitModel ? leg(unitModel.long)-leg(unitModel.short) : nm(r.unit);
-    return {S, pv:dollars, up:unit, n:unitModel ? (dollars != null && unit > 0 ? Math.floor(dollars/(unit*100)) : null) : nm(r.leaps)};
+    return {S, U:onMstr ? U : null, pv:dollars, up:unit, n:unitModel ? (dollars != null && unit > 0 ? Math.floor(dollars/(unit*100)) : null) : nm(r.leaps)};
   });
   const uMin = uRows.length ? Math.min(...uRows.map(r => r.S)) : 13;
   const uMax = uRows.length ? Math.max(...uRows.map(r => r.S)) : 19;
@@ -1188,7 +1192,7 @@ function PlaybookTab({ todayTs, tier, q }) {
   const usdS = usd2;
   const uRead = usdS(uSel) + " close · "
     + (uSelR.pv == null ? UNK : usd0(uSelR.pv))
-    + " · unit " + (uSelR.up == null ? UNK : usd2(uSelR.up)) + " · " + (uSelR.n == null ? UNK : uSelR.n.toFixed(0)) + " LEAPS";
+    + " · unit " + (uSelR.up == null ? UNK : usd2(uSelR.up)) + " · " + (uSelR.n == null ? UNK : uSelR.n.toFixed(0)) + " units";
 
   // TRIGGER: the weekly bars
   const hR = inp[HIST] || {};
@@ -1294,7 +1298,7 @@ function PlaybookTab({ todayTs, tier, q }) {
         {!unitModel && <div style={FT}>Live unit curve unavailable. Unit prices are the ledger's 9/19 copy.</div>}
         <div style={{overflowX:"auto"}}><div style={{display:"grid",
           gridTemplateColumns:"minmax(64px,1fr) minmax(96px,1fr) minmax(76px,1fr) minmax(56px,1fr)",minWidth:292}}>
-          {(window.innerWidth < 560 ? ["MSTX","VALUE","UNIT","LEAPS"] : ["MSTX","POSITION VALUE","UNIT PRICE","LEAPS"]).map((h,i) =>
+          {(window.innerWidth < 560 ? ["MSTX","VALUE","UNIT","UNITS"] : ["MSTX","POSITION VALUE","UNIT PRICE","UNITS"]).map((h,i) =>
             <div key={h} style={{...LAB,fontSize:TYPE.label,fontWeight:400,padding:"4px 6px",textAlign:i?"right":"left"}}>{h}</div>)}
           {uRows.map(r => { const hl = r.S === uSel;
             return [usdS(r.S),

@@ -187,14 +187,14 @@ def price_to_quantile(price: float, when, today_days: float | None = None) -> fl
 
 
 def ladder_band_label(q: float) -> str:
-    """The four bands the 9/13 research scores, in its own words."""
-    if q < 15.0:
-        return "below 15"
-    if q < 50.0:
-        return "15 to 50"
-    if q < 85.0:
-        return "50 to 85"
-    return "above 85"
+    """The ladder's four rungs as moved on 2026-09-20 (10, 60, 75). Not the fitted chart bands."""
+    if q < 10.0:
+        return "below 10"
+    if q < 60.0:
+        return "10 to 60"
+    if q < 75.0:
+        return "60 to 75"
+    return "above 75"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -964,9 +964,9 @@ def self_test() -> list[str]:
     # 2026-09-12, which is what pins this port to the page's own formula.
     qq = price_to_quantile(77200.0078125, date(2026, 9, 12), ladder_days(date(2026, 9, 12)))
     assert abs(qq - 9.303) < 0.01, f"ladder port read {qq:.3f}, the site read 9.303"
-    assert ladder_band_label(qq) == "below 15", f"9.3 labelled {ladder_band_label(qq)}"
-    assert ladder_band_label(90.0) == "above 85" and ladder_band_label(60.0) == "50 to 85"
-    checks.append("ladder port: 77,200 on 2026-09-12 reads 9.303q, below 15")
+    assert ladder_band_label(qq) == "below 10", f"9.3 labelled {ladder_band_label(qq)}"
+    assert ladder_band_label(90.0) == "above 75" and ladder_band_label(65.0) == "60 to 75" and ladder_band_label(10.7) == "10 to 60"
+    checks.append("ladder port: 77,200 on 2026-09-12 reads 9.303q, below 10")
 
     # ledger normalization: a Yahoo entry no longer blocks the AlphaQuery
     # observation on the same date.
@@ -1130,7 +1130,7 @@ def main() -> int:
                     "the page's own priceToQuantile, ported into this script. Fair value is "
                     "10 ** (5.82 * log10(days since 2009-01-03) - 17.029), bands are offsets in "
                     "log10(price / fair value), and the decaying bands cap their slope term at "
-                    "the run date. Passes when the quantile is not above the 85th band."
+                    "the run date. Passes when the quantile is not above the 85th fitted band. That is the 9/13 research's own line, not the ladder's 75 sell line."
                 ),
             )
         except Exception as exc:

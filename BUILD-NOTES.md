@@ -13,10 +13,10 @@
 
 | Band | Position | Long anchor | Short anchor |
 |---|---|---|---|
-| 0–15q | MSTX PMCC | 0.1q @ ~6 mo | 15q @ ~3 mo |
-| 15–50q | MSTR PMCC | 15q @ ~9 mo | 50q @ ~6 mo |
-| 50–85q | IBIT PMCC | 50q @ ~12 mo | 85q @ ~9 mo |
-| 85–100q | STRC on 1.5× margin | — | — |
+| 0–10q | MSTX PMCC | 0.1q @ 12 mo | 10q @ 90 d |
+| 10–60q | MSTR PMCC | 10q @ 12 mo | 60q @ 90 d |
+| 60–75q | IBIT PMCC | 60q @ 12 mo | 75q @ 90 d |
+| 75–100q | STRC on 1.5× margin | — | — |
 
 One position per band — no intra-band sizing. Strikes are quantile-anchored:
 long = band floor projected on the power-law curve at the long expiry, short =
@@ -65,8 +65,8 @@ Position
 MSTR PMCC
 
 Structure
-Long 15q · May 2027 · ~$108K BTC
-Short 50q · Feb 2027 · ~$162K BTC
+Long 10q · May 2027
+Short 60q · Feb 2027
 ```
 
 ## v3 (Sep 2026) · Playbook tab
@@ -85,7 +85,7 @@ rank first, then the ledger-window rank labelled with its window length, then
 known event, each with a short phrase under the value. The regime tile is tinted
 with the tier colour the way the ladder's quantile card is. Under the tiles sits
 one action sentence in a tier-card callout with a left accent in the trigger
-colour, chosen in a fixed order: above the 85th band it says STRC per the ladder,
+colour, chosen in a fixed order: above the 75 line it says STRC per the ladder,
 an unknown IV rank stops the day, OFF and HOLD say what not to open, and ENTRY
 with fewer than three verticals open and no red expiry inside the last ten
 trading days prices a paper call, halved when a known event falls inside two

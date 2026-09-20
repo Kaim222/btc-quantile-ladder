@@ -1,7 +1,7 @@
 """ladder_bands_study.py: where should the ladder's rungs start and stop?
 
-The ladder picks its instrument from Bitcoin's power-law quantile: MSTX under 15, MSTR 15 to 50, IBIT 50 to 85, sell
-above 85. This asks the record what happened after Bitcoin sat in each part of the band, and which underlying that favoured.
+When this ran (2026-09-20) the ladder picked its instrument at MSTX under 15, MSTR 15 to 50, IBIT 50 to 85, sell above 85.
+The lines moved to 10, 60 and 75 later that day. This asks the record what happened after Bitcoin sat in each part of the band, and which underlying that favoured.
 
 Method. Bitcoin daily closes (Yahoo, from Sep 2014) get the site's own quantile (same A, B and band offsets). For every
 day, the forward Bitcoin log return r over 90, 180 and 365 days is mapped to each underlying:
@@ -38,7 +38,7 @@ def main():
     print("\nShare of all days spent in each part of the band:")
     share = d["bucket"].value_counts(normalize=True).reindex(labels)
     print("  " + "  ".join("%s: %.0f%%" % (l, 100 * share[l]) for l in labels))
-    print("  current rungs: under 15 %.0f%% | 15 to 50 %.0f%% | 50 to 85 %.0f%% | over 85 %.0f%%" % tuple(100 * ((d.q >= a) & (d.q < b)).mean() for a, b in ((0, 15), (15, 50), (50, 85), (85, 101))))
+    print("  the rungs when this ran: under 15 %.0f%% | 15 to 50 %.0f%% | 50 to 85 %.0f%% | over 85 %.0f%%" % tuple(100 * ((d.q >= a) & (d.q < b)).mean() for a, b in ((0, 15), (15, 50), (50, 85), (85, 101))))
     K = 1.0
     for beta in (1.8, 1.5):
         for H in (90, 365):

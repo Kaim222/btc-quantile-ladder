@@ -78,10 +78,10 @@
     {
       "id": "ladder_quantile",
       "input": "ladder_quantile",
-      "label": "Ladder quantile not above the 85th band",
+      "label": "Quantile not above the 85th fitted band",
       "status": "PROMISING",
       "adopted": false,
-      "note": "the 9/13 research's other leg, the ladder not in its top band. The hit-rate gradient across bands is mostly a fitting artifact and collapses on a causal refit, but the drawdown gradient survives: the chance of a 10% drop inside two weeks runs 13% below the 15th band against 34% above the 85th. Pairing it with the weekly leg cut that chance from 24% to 14%. Cleared the adoption bar nowhere. Paper only."
+      "note": "the 9/13 research's other leg, the quantile not above the 85th fitted band. The ladder's sell line moved to 75 on 2026-09-20 and this leg stays at 85 until the research is rerun. The hit-rate gradient across bands is mostly a fitting artifact and collapses on a causal refit, but the drawdown gradient survives: the chance of a 10% drop inside two weeks runs 13% below the 15th band against 34% above the 85th. Pairing it with the weekly leg cut that chance from 24% to 14%. Cleared the adoption bar nowhere. Paper only."
     }
   ],
   "paper_trigger": {
@@ -91,7 +91,7 @@
     ],
     "rule": "all pass",
     "status": "PROMISING",
-    "note": "the 9/13 research's closest candidate: BTC weekly MACD(8,21,5) histogram positive and rising, plus the ladder not in its top band. Beat its complement by 9 points on BTC 14-day and 16 on MSTR 10-day, cut the chance of a 10% drop inside two weeks from 24% to 14%, and cleared the adoption bar nowhere. Paper only."
+    "note": "the 9/13 research's closest candidate: BTC weekly MACD(8,21,5) histogram positive and rising, plus the quantile not above the 85th fitted band. Beat its complement by 9 points on BTC 14-day and 16 on MSTR 10-day, cut the chance of a 10% drop inside two weeks from 24% to 14%, and cleared the adoption bar nowhere. Paper only."
   },
   "paper_trigger_previous": {
     "components": [

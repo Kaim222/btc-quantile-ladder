@@ -251,26 +251,26 @@ function fmtMonth(ts) { return new Date(ts).toLocaleDateString("en-US", { month:
 // rotation happens on the monthly close (see monthlyClose below); there is no daily buffer
 
 const LADDER = [
-  { name:"STRC Margin", color:"#22c55e", darkBg:"#071a0f", qMin:85, qMax:100.01, kind:"margin",
+  { name:"STRC Margin", color:"#22c55e", darkBg:"#071a0f", qMin:75, qMax:100.01, kind:"margin",
     debt:"under 3%",
-    desc:"Sell zone above the 85 line. Sell the BTC beta into STRC at 12% on $100 par with no BTC beta. The last monthly close here was March 2022. The 2024 top peaked at quantile 81 and never reached the 85 line.",
+    desc:"Sell zone at 75 and above. Sell the BTC beta into STRC at 12% on $100 par with no BTC beta. November 2024 and January 2025 closed in this zone.",
     typeNote:"sell · proceeds to STRC · 1.5× margin",
     margin:{ leverage:1.5, yield:0.12, rate:0.0475, maint:0.50 } },
-  { name:"IBIT PMCC", color:"#22d3ee", darkBg:"#0c1e26", qMin:50, qMax:85, kind:"pmcc",
+  { name:"IBIT PMCC", color:"#22d3ee", darkBg:"#0c1e26", qMin:60, qMax:75, kind:"pmcc",
     debt:"under 6%",
-    desc:"Spot BTC ETF diagonal with about 2× beta on the long leg. A repeat of 2024 would put the upper cycle here. Rich readings here are the sell.",
+    desc:"Spot BTC ETF diagonal with about 2× beta on the long leg. Visits have lasted one month at the median. The longest ran five months. Rich readings here are the sell.",
     typeNote:"long 12 mo · short 90 d, rolled",
-    longQ:50, longMo:12, shortQ:85, shortDays:90 },
-  { name:"MSTR PMCC", color:"#f97316", darkBg:"#1c0e00", qMin:15, qMax:50, kind:"pmcc",
+    longQ:60, longMo:12, shortQ:75, shortDays:90 },
+  { name:"MSTR PMCC", color:"#f97316", darkBg:"#1c0e00", qMin:10, qMax:60, kind:"pmcc",
     debt:"under 9%",
-    desc:"Strategy diagonal. About 4× beta on the long leg.",
+    desc:"Strategy diagonal. About 4× beta on the long leg. The widest band. Runs here have lasted up to 14 months. That is the case for the 12 month long.",
     typeNote:"long 12 mo · short 90 d, rolled",
-    longQ:15, longMo:12, shortQ:50, shortDays:90 },
-  { name:"MSTX PMCC", color:"#ef4444", darkBg:"#1c0505", qMin:0, qMax:15, kind:"pmcc",
+    longQ:10, longMo:12, shortQ:60, shortDays:90 },
+  { name:"MSTX PMCC", color:"#ef4444", darkBg:"#1c0505", qMin:0, qMax:10, kind:"pmcc",
     debt:"under 12%",
-    desc:"2× levered MSTR ETF diagonal with about 8× beta on the long leg. Bottom visits are short. Bottom episodes ran 13 to 16 months. Buy the 12 months.",
+    desc:"2× levered MSTR ETF diagonal with about 8× beta on the long leg. Visits under 10 have lasted two months at most. Buy the 12 months.",
     typeNote:"long 12 mo · short 90 d, rolled",
-    longQ:0.1, longMo:12, shortQ:15, shortDays:90 },
+    longQ:0.1, longMo:12, shortQ:10, shortDays:90 },
 ];
 
 // The band is read on the monthly close. The lines get crossed about three times a year on the daily; a touch is not a rotation.
@@ -664,19 +664,15 @@ function PowerLawChart({ btcPrice, todayTs, liveHistory, lookupTs, modelA=JV_A, 
   // Band fill areas (between adjacent bands)
   const bandFills = useMemo(() => {
     const fills = [];
-    const bandPairs = [
-      { upper: BAND_DEFS[2], lower: BAND_DEFS[3], color: "#22d3ee", opacity: 0.07 },  // 50-85  IBIT
-      { upper: BAND_DEFS[3], lower: BAND_DEFS[4], color: "#f97316", opacity: 0.07 },  // 15-50  MSTR
-      { upper: BAND_DEFS[4], lower: BAND_DEFS[5], color: "#ef4444", opacity: 0.07 },  // 0.1-15 MSTX
-      { upper: BAND_DEFS[1], lower: BAND_DEFS[2], color: "#22c55e", opacity: 0.05 },  // 85-95  STRC
-    ];
+    // shading marks the instrument ladder, read from LADDER; the drawn lines stay the fitted model bands
+    const bandPairs = LADDER.map(t => ({ upper: t.kind === "margin" ? 95 : t.qMax, lower: Math.max(t.qMin, 0.1), color: t.color, opacity: t.kind === "margin" ? 0.05 : 0.07 }));
     for (const {upper, lower, color, opacity} of bandPairs) {
       let pathUp = "", pathDn = "";
       for (let i = 0; i < months.length; i++) {
         const ts = months[i];
-        const pU = bandPriceAt(ts, upper, modelA, modelB);
-        const pL = bandPriceAt(ts, lower, modelA, modelB);
-        if (pU <= 0 || pL <= 0) continue;
+        const pU = quantileToPrice(upper, ts, modelA, modelB);
+        const pL = quantileToPrice(lower, ts, modelA, modelB);
+        if (!(pU > 0) || !(pL > 0)) continue;
         const x = tx(ts);
         const yU = ty(Math.log10(Math.min(pU, 1e6)));
         const yL = ty(Math.log10(pL));
@@ -787,7 +783,7 @@ function PowerLawChart({ btcPrice, todayTs, liveHistory, lookupTs, modelA=JV_A, 
           ))}
         </div>
       </div>
-      <div style={{fontSize:TYPE.secondary,color:"#7a9ab8",marginBottom:8}}><Sentences>The 50% band is fair value.</Sentences></div>
+      <div style={{fontSize:TYPE.secondary,color:"#7a9ab8",marginBottom:8}}><Sentences>The 50% band is fair value. Lines mark the model bands. Shading marks the ladder zones.</Sentences></div>
       <div style={{overflowX:"auto"}}>
         <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",maxWidth:`${W}px`,height:"auto",display:"block"}}>
           {/* Background */}
@@ -949,7 +945,7 @@ function LadderRules({ tier }) {
   return (<>
     <div style={card}>
       <div style={head}>The rules <span style={dim}>· agreed {mdy(lr.as_of)}</span></div>
-      {rowsOf(lr.rules).filter(r => ["gate", "entry", "size", "exit"].includes(r.k)).map(r => (
+      {rowsOf(lr.rules).filter(r => ["gate", "band", "entry", "size", "exit"].includes(r.k)).map(r => (
         <div key={r.k} style={{display:"flex",gap:"12px",padding:"6px 0",borderTop:"1px solid #ffffff08",alignItems:"baseline"}}>
           <span style={{fontSize:TYPE.label,fontWeight:600,letterSpacing:"0.12em",color:tier.color,width:"58px",flex:"none",textTransform:"uppercase"}}>{r.k}</span>
           <span style={{fontSize:TYPE.body,color:"#c8d8e8",lineHeight:1.45,minWidth:0}}><More step>{r.k === "size" && Array.isArray(lr.sizing) ? (() => {
@@ -1187,9 +1183,9 @@ function PlaybookTab({ todayTs, tier, q }) {
 
   const eff = id => { const r = inp[id]; return (r && typeof r.pass === "boolean") ? r.pass : null; };
   const hist = eff(HIST), cross = eff(CROSS);
-  // above 85 both weekly inputs can pass and the word reads HOLD, never ENTRY
+  // in the sell zone both weekly inputs can pass and the word reads HOLD, never ENTRY
   const trig = (hist == null || cross == null) ? "UNKNOWN"
-    : (cross === true && q != null && q <= 85) ? "ENTRY" : hist === true ? "HOLD" : "OFF";
+    : (cross === true && q != null && q < LADDER[0].qMin) ? "ENTRY" : hist === true ? "HOLD" : "OFF";
   const cr = inp[CROSS] || {}, wkN = typeof cr.bars_since_cross === "number" ? cr.bars_since_cross
     : Math.round((Date.parse(cr.bar_date) - Date.parse(cr.cross_bar_date))/6048e5);
 
@@ -2218,7 +2214,7 @@ function BTCPowerLaw() {
               {label:"price", value:fmtFull(price||0),                              color:"#facc15"},
               {label:"fair value",value:fmtFull(fv),                                    color:"#22d3ee"},
               {label:"vs fair value", value:pctS(Number(devPct)),      color:parseFloat(devPct)>0?"#ef4444":"#22c55e"},
-              {label:"quantile",      value:`${q.toFixed(1)}%`,                             color:q<15?"#22c55e":q>85?"#ef4444":"#facc15"},
+              {label:"quantile",      value:`${q.toFixed(1)}%`,                             color:q<LADDER[LADDER.length-1].qMax?"#22c55e":q>=LADDER[0].qMin?"#ef4444":"#facc15"},
             ].map(s=>(
               <div key={s.label} style={{
                 background: s.label==="vs fair value" ? (parseFloat(devPct)>0?"#150404":"#041209") : s.label==="quantile" ? tier.darkBg : "#070f1f",
@@ -2298,11 +2294,12 @@ function BTCPowerLaw() {
                       border:`1px solid ${active?t.color:t.color+"40"}`,
                       borderRadius:"4px",overflow:"hidden",
                       boxShadow:active?`0 0 12px ${t.color}44`:"none",
-                      display:"flex",alignItems:"center",justifyContent:"center",gap:"5px"}}>
-                      <span style={{fontSize:"10px",fontWeight:700,letterSpacing:"0.08em",
+                      display:"flex",flexDirection:width < 20 || window.innerWidth < 560 ? "column" : "row",lineHeight:1.15,alignItems:"center",justifyContent:"center",gap:width < 20 || window.innerWidth < 560 ? "0px" : "5px"}}>
+                      <span style={{fontSize:"10px",fontWeight:700,letterSpacing:width < 16 && window.innerWidth < 560 ? "0" : "0.08em",
                         color:active?t.color:t.color+"99",whiteSpace:"nowrap"}}>{t.name.split(" ")[0]}</span>
-                      <span style={{fontSize:TYPE.label,color:active?t.color+"cc":t.color+"66",
-                        whiteSpace:"nowrap"}}>{t.qMin.toFixed(0)}{" to "}{Math.min(100,t.qMax).toFixed(0)}</span>
+                      {/* a phone box under 16 points wide holds the ticker only; the MSTR and STRC boxes still carry 10, 60 and 75, and the BAND rule below spells them out */}
+                      {!(width < 16 && window.innerWidth < 560) && <span style={{fontSize:TYPE.label,color:active?t.color+"cc":t.color+"66",
+                        whiteSpace:"nowrap"}}>{t.qMin.toFixed(0)}{" to "}{Math.min(100,t.qMax).toFixed(0)}</span>}
                     </div>
                   );
                 })}

@@ -23,7 +23,7 @@ IV = {"ibit": (0.52, 0.45), "mstr": (0.82, 0.78), "mstx": (1.25, 1.40)}     # 12
 STRC = 1.5 * 0.12 - 0.5 * 0.0475
 ERF = np.vectorize(math.erf)
 D75, D30 = 0.6744898, -0.5244005
-CUR, EQ = (15, 50, 85), (25, 50, 75)
+CUR, EQ = (15, 50, 85), (25, 50, 75)          # CUR is the baseline the study ran against. The ladder moved to 10 / 60 / 75 on 2026-09-20
 INST = ["mstx", "mstr", "ibit", "strc"]
 ERAS = [("2010 to Jan 2015", "2010-01-01", "2015-01-14"), ("Jan 2015 to Dec 2018", "2015-01-14", "2018-12-15"),
         ("Dec 2018 to Nov 2022", "2018-12-15", "2022-11-21"), ("Nov 2022 on", "2022-11-21", "2100-01-01")]

@@ -1,2 +1,5 @@
 __pycache__/
 *.pyc
+
+# screenshots used for the 9/19 visual review stay local
+tools/audit-2026-09-19/shots/

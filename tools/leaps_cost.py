@@ -77,7 +77,7 @@ out = {"updated": dt.datetime.now().strftime("%Y-%m-%d %H:%M"), "units": N_UNITS
        "unit": "long Dec 15 2028 $33 call, short Jan 21 2028 $60 call",
        "long_first_trade": listed.strftime("%Y-%m-%d"), "short_first_trade": start.strftime("%Y-%m-%d"),
        "vol_ratio_long_to_short": round(ratio, 3), "model_vs_prints_mean_abs_error": round(float(np.mean(err)), 2) if err else None,
-       "note": "Model estimate near the mid: Black-Scholes on each day's MSTX close, vol backed out of the short leg's real trades, the long leg's vol scaled from it. Before the long leg first traded the line is hypothetical. A fill costs more than the mid: the long leg's market is several dollars wide.",
+       "note": "Model estimate near the mid. Black Scholes runs on each day's MSTX close. Vol comes from the short leg's real trades. The long leg's vol is scaled from it. Before the long leg first traded the line is hypothetical. A fill costs more than the mid because the long leg's market is several dollars wide.",
        "model": {"r": R, "mstx_last": round(float(px.iloc[-1]), 2), "asof": px.index[-1].strftime("%Y-%m-%d"),
                  "long": {"k": LONG["k"], "exp": str(LONG["exp"]), "iv": round(float(iv_long.iloc[-1]), 8)},
                  "short": {"k": SHORT["k"], "exp": str(SHORT["exp"]), "iv": round(float(iv_short.iloc[-1]), 8)}},

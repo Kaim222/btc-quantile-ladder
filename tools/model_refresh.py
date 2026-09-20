@@ -129,9 +129,9 @@ def build_history(d, e):
     w = h.join(x[["target"]]).resample("W-FRI").last().dropna(subset=["prem"])
     res["weekly"] = [{"d": str(i.date()), "p": round(float(r.prem), 3), "a": None if pd.isna(r.avg90) else round(float(r.avg90), 3),
                       "t": None if pd.isna(r.target) else round(float(r.target), 3), "btc": int(round(r.btc)), "bull": bool(r.bull)} for i, r in w.iterrows()]
-    res["note"] = ("mNAV = MSTR close / (Bitcoin at 4 PM New York x Bitcoin per share), the site's share convention; levels before mid 2025 are approximate. "
-                   "Bull = Bitcoin above its 200-day average. Best estimate = projected carrying the gap from five sessions earlier, faded with a 28-day half-life; "
-                   "both use that day's actual Bitcoin and STRC prices. Averages are calendar-day windows. Built by tools/model_refresh.py.")
+    res["note"] = ("mNAV = MSTR close / (Bitcoin at 4 PM New York x Bitcoin per share). This uses the site's share convention. Levels before mid 2025 are approximate. "
+                   "Bull = Bitcoin above its 200 day average. Best estimate = projected carrying the gap from five sessions earlier, faded with a 28 day half life. "
+                   "Both use that day's actual Bitcoin and STRC prices. Averages are calendar-day windows. Built by tools/model_refresh.py.")
     return res
 
 

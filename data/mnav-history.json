@@ -936,5 +936,5 @@
    "bull": true
   }
  ],
- "note": "mNAV = MSTR close / (Bitcoin at 4 PM New York x Bitcoin per share), the site's share convention; levels before mid 2025 are approximate. Bull = Bitcoin above its 200-day average. Best estimate = projected carrying the gap from five sessions earlier, faded with a 28-day half-life; both use that day's actual Bitcoin and STRC prices. Averages are calendar-day windows. Built by tools/model_refresh.py."
+ "note": "mNAV = MSTR close / (Bitcoin at 4 PM New York x Bitcoin per share). This uses the site's share convention. Levels before mid 2025 are approximate. Bull = Bitcoin above its 200 day average. Best estimate = projected carrying the gap from five sessions earlier, faded with a 28 day half life. Both use that day's actual Bitcoin and STRC prices. Averages are calendar-day windows. Built by tools/model_refresh.py."
 }

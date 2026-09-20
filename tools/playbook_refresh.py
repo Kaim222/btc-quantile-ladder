@@ -1076,7 +1076,7 @@ def main() -> int:
                 histogram_last16=info["last16"],
                 weeks=info["bars"],
                 note=(
-                    "MACD(8,21,5) on completed Monday-to-Sunday UTC weekly closes, EMA seeded on "
+                    "MACD 8,21,5 on completed Monday to Sunday UTC weekly closes. EMA is seeded on "
                     "the first value. Passes when the last complete bar's histogram is above zero "
                     "and above the prior complete bar's."
                 ),
@@ -1102,12 +1102,11 @@ def main() -> int:
                 histogram_last4=info["last4"],
                 weeks=info["bars"],
                 note=(
-                    "MACD(8,21,5) on the same completed Monday-to-Sunday UTC weekly closes as the "
-                    "histogram-rising row, EMA seeded on the first value. Passes when the last "
-                    "complete bar's histogram is above zero and at least one of the three bars "
-                    "before it was at or below zero, which is a bullish cross inside the last "
-                    "three weekly bars. cross_bar_date is the first bar after the most recent "
-                    "non-positive bar. Entry timing, not a hold condition."
+                    "MACD 8,21,5 uses the same completed Monday to Sunday UTC weekly closes as the histogram rising row. "
+                    "EMA is seeded on the first value. The last complete histogram bar must be above zero. "
+                    "At least one of the three preceding bars must be at or below zero. "
+                    "This marks a bullish cross inside the last three weekly bars. "
+                    "cross_bar_date is the first bar after the most recent bar at or below zero. Entry timing, not a hold condition."
                 ),
             )
         except Exception as exc:

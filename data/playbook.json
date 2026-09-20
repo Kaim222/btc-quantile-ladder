@@ -1,26 +1,26 @@
 {
-  "generated_at": "2026-09-19T23:11:14Z",
+  "generated_at": "2026-09-20T00:30:54Z",
   "as_of_run_date": "2026-09-19",
   "inputs": {
     "btc_above_200d": {
       "value": true,
       "pass": true,
       "source": "yahoo_daily",
-      "as_of": "2026-09-19",
+      "as_of": "2026-09-20",
       "error": null,
-      "btc_close": 81237.546875,
-      "sma_200d": 70462.174102,
-      "gap_pct": 15.292422
+      "btc_close": 81249.03125,
+      "sma_200d": 70462.231523,
+      "gap_pct": 15.308626
     },
     "btc_above_200w": {
       "value": true,
       "pass": true,
       "source": "yahoo_weekly",
-      "as_of": "2026-09-19 price vs week ending 2026-09-13",
+      "as_of": "2026-09-20 price vs week ending 2026-09-13",
       "error": null,
-      "btc_close": 81237.546875,
+      "btc_close": 81249.03125,
       "sma_200w": 65169.811279,
-      "gap_pct": 24.655182,
+      "gap_pct": 24.672804,
       "weeks": 559,
       "note": "SMA over completed calendar weeks only"
     },
@@ -101,7 +101,7 @@
         }
       ],
       "weeks": 559,
-      "note": "MACD(8,21,5) on completed Monday-to-Sunday UTC weekly closes, EMA seeded on the first value. Passes when the last complete bar's histogram is above zero and above the prior complete bar's."
+      "note": "MACD 8,21,5 on completed Monday to Sunday UTC weekly closes. EMA is seeded on the first value. Passes when the last complete bar's histogram is above zero and above the prior complete bar's."
     },
     "btc_weekly_macd_8_21_5_fresh_cross": {
       "value": false,
@@ -132,25 +132,25 @@
         }
       ],
       "weeks": 559,
-      "note": "MACD(8,21,5) on the same completed Monday-to-Sunday UTC weekly closes as the histogram-rising row, EMA seeded on the first value. Passes when the last complete bar's histogram is above zero and at least one of the three bars before it was at or below zero, which is a bullish cross inside the last three weekly bars. cross_bar_date is the first bar after the most recent non-positive bar. Entry timing, not a hold condition."
+      "note": "MACD 8,21,5 uses the same completed Monday to Sunday UTC weekly closes as the histogram rising row. EMA is seeded on the first value. The last complete histogram bar must be above zero. At least one of the three preceding bars must be at or below zero. This marks a bullish cross inside the last three weekly bars. cross_bar_date is the first bar after the most recent bar at or below zero. Entry timing, not a hold condition."
     },
     "ladder_quantile": {
-      "value": 11.508028,
+      "value": 11.470595,
       "pass": true,
       "source": "site formula",
-      "as_of": "2026-09-19",
+      "as_of": "2026-09-20",
       "error": null,
       "band": "below 15",
-      "btc_close": 81237.546875,
-      "fair_value": 141150.189449,
-      "days_since_genesis": 6468.0,
+      "btc_close": 81249.03125,
+      "fair_value": 141277.245765,
+      "days_since_genesis": 6469.0,
       "note": "the page's own priceToQuantile, ported into this script. Fair value is 10 ** (5.82 * log10(days since 2009-01-03) - 17.029), bands are offsets in log10(price / fair value), and the decaying bands cap their slope term at the run date. Passes when the quantile is not above the 85th band."
     },
     "btc_price": {
-      "value": 81237.546875,
+      "value": 81249.03125,
       "pass": null,
       "source": "yahoo_daily",
-      "as_of": "2026-09-19",
+      "as_of": "2026-09-20",
       "error": null,
       "note": "Yahoo daily close, not a live quote. The page's own live feed is separate."
     },
@@ -215,7 +215,7 @@
       "note": "Yahoo daily close, delayed. Not a live quote."
     },
     "mstr_atm_iv_30d": {
-      "value": 0.697147,
+      "value": 0.709964,
       "pass": null,
       "source": "yahoo_option_chain",
       "as_of": "2026-09-19",
@@ -223,8 +223,8 @@
       "expiry": "2026-10-16",
       "dte": 27,
       "strike": 155.0,
-      "call_iv": 0.712039,
-      "put_iv": 0.682254,
+      "call_iv": 0.7251,
+      "put_iv": 0.694827,
       "spot": 153.919998,
       "note": "mid of the ATM call and put impliedVolatility Yahoo reports, nearest expiry to 30 days"
     },
@@ -313,12 +313,12 @@
       "as_of_fetch": "2026-09-19",
       "stale": false,
       "rank_52w": {
-        "value": 25.615051,
-        "printed": 26.0,
+        "value": 24.411765,
+        "printed": 24.0,
         "iv_30d": 0.692,
-        "low_52w": 0.515,
+        "low_52w": 0.526,
         "high_52w": 1.206,
-        "percentile": 41.0,
+        "percentile": 40.0,
         "as_of": "2026-09-18",
         "source": "projectoption.com, single source",
         "error": null

@@ -1,0 +1,1611 @@
+[
+ {
+  "area": "mstx",
+  "findings": [
+   {
+    "where": "MSTX tab · LEVEL card · index.html:1555-1556",
+    "rule": "4 (definitions)",
+    "problem": "\"Projected\" and \"best estimate\" first appear on this card. levelRead ends \"at today's projected\" (line 1508) and the tiles are labelled PROJECTED MSTX and BEST ESTIMATE, 1 WEEK (lines 1557-1558). Neither word is defined on the card. The only definition on the whole tab sits 80 lines lower at line 1636, inside BITCOIN PRICE LOOKUP, which the reader reaches long after.",
+    "fix": "Insert one visible line immediately after the verdict headline on line 1555, above levelRead: <div style={{...BODY,lineHeight:1.5,marginTop:7}}>Projected is your mNAV formula. Best estimate is projected plus today's gap, which fades over weeks.</div>",
+    "severity": "HIGH",
+    "id": "MS-01"
+   },
+   {
+    "where": "MSTX tab · GAP CHART · MSTX card, toggle row · index.html:1575-1576",
+    "rule": "4 (definitions)",
+    "problem": "The VS PROJECTED and VS BEST ESTIMATE buttons are the switch between the two ideas and nothing next to them says what either word means. The nearest explanation is a sentence hidden behind the \"more\" toggle at line 1589.",
+    "fix": "Add directly under the header and toggle row, after line 1576: <div style={{fontSize:12,color:GRY,lineHeight:1.5,marginTop:6}}>Projected is your mNAV formula. Best estimate is projected plus today's gap, which fades over weeks.</div>",
+    "severity": "HIGH",
+    "id": "MS-02"
+   },
+   {
+    "where": "MSTX tab · GAP CHART · MSTX card · index.html:1589-1590",
+    "rule": "3 (charts need an always-visible legend row)",
+    "problem": "The chart has no legend. The white line, the green dashed Cheap line and the red dashed Rich line are explained only inside a sentence behind a \"more\" button: \"Tap for a day. Dashed lines are Cheap and Rich; the gap scale is stretched near zero.\"",
+    "fix": "Add a visible swatch row directly under the header, after line 1576, and delete the More wrapper: <div style={{...ROW,gap:14,marginTop:8}}>{[[\"#f1f5f9\",\"MSTX gap\"],[GRN,\"Cheap line\"],[RD,\"Rich line\"]].map(([c,t]) => <span key={t} style={{...ROW,gap:6,fontSize:12,color:\"#8aaac8\"}}><span style={{width:12,height:2,background:c,display:\"inline-block\"}}/>{t}</span>)}</div>",
+    "severity": "HIGH",
+    "id": "MS-03"
+   },
+   {
+    "where": "MSTX tab · BITCOIN PRICE LOOKUP card · index.html:1669",
+    "rule": "3 (charts need an always-visible legend row)",
+    "problem": "The four-line chart has no legend. All four series are described in one long sentence behind \"more\": \"Projected MSTR against Bitcoin. Cyan: projected, your mNAV formula. White: the best estimate, projected carrying today's gap. Amber dashes: the convex fit, the high end. Green: your mNAV, if entered. White dot: MSTR now. Cyan dot: the best estimate at your Bitcoin price.\"",
+    "fix": "Add a visible swatch row directly under the header, after line 1635: <div style={{...ROW,gap:14,marginTop:8}}>{[[\"#22d3ee\",\"Projected\"],[\"#e2e8f0\",\"Best estimate\"],[AMB,\"High end\"],[GRN,\"Your mNAV\"]].map(([c,t]) => <span key={t} style={{...ROW,gap:6,fontSize:12,color:\"#8aaac8\"}}><span style={{width:12,height:2,background:c,display:\"inline-block\"}}/>{t}</span>)}</div>",
+    "severity": "HIGH",
+    "id": "MS-04"
+   },
+   {
+    "where": "MSTX tab · mNAV HISTORY card · index.html:1721",
+    "rule": "3 (charts need an always-visible legend row)",
+    "problem": "The chart draws a white line, an amber line, a cyan line and red shaded bands with no legend. The meanings sit inside a sentence behind \"more\": \"White: mNAV, weekly. Amber: its 90-day average. Cyan: projected mNAV. Red shading: bear market, Bitcoin below its 200-day average.\"",
+    "fix": "Add a visible swatch row directly under the header, after line 1703: <div style={{...ROW,gap:14,marginTop:8}}>{[[\"#f1f5f9\",\"mNAV weekly\"],[AMB,\"90-day average\"],[\"#22d3ee\",\"Projected mNAV\"],[RD,\"Bear market\"]].map(([c,t]) => <span key={t} style={{...ROW,gap:6,fontSize:12,color:\"#8aaac8\"}}><span style={{width:12,height:2,background:c,display:\"inline-block\"}}/>{t}</span>)}</div>",
+    "severity": "HIGH",
+    "id": "MS-05"
+   },
+   {
+    "where": "MSTX tab · GAP CHART · MSTX card · index.html:1524",
+    "rule": "3 (chart height)",
+    "problem": "const W = narrow ? 440 : 880, H = narrow ? 200 : 170. The svg scales to the card width, so at 1280px the card is 940px wide with 16px padding each side and the chart renders 170 x 908/880 = 175px tall, under the 200px desktop floor. On a 390px phone the card is about 292px wide inside and it renders 200 x 292/440 = 133px, under the 180px phone floor. This is the squished chart in phone-MSTX-1.",
+    "fix": "Change to: const W = narrow ? 440 : 880, H = narrow ? 270 : 200. That renders 206px on desktop and 179px to 181px on a phone.",
+    "severity": "HIGH",
+    "id": "MS-06"
+   },
+   {
+    "where": "MSTX tab · BITCOIN PRICE LOOKUP card · index.html:1629",
+    "rule": "3 (chart height)",
+    "problem": "const W2 = narrow ? 440 : 880, H2 = narrow ? 230 : 240. On a 390px phone the chart renders 230 x 292/440 = 153px tall, under the 180px phone floor. Visible in phone-MSTX-2 where the whole curve sits in a shallow band.",
+    "fix": "Change the narrow value only: const W2 = narrow ? 440 : 880, H2 = narrow ? 270 : 240.",
+    "severity": "HIGH",
+    "id": "MS-07"
+   },
+   {
+    "where": "MSTX tab · mNAV HISTORY card · index.html:1693",
+    "rule": "3 (chart height)",
+    "problem": "const W3 = narrow ? 440 : 880, H3 = narrow ? 230 : 210. On a 390px phone the chart renders 230 x 292/440 = 153px tall, under the 180px phone floor.",
+    "fix": "Change the narrow value only: const W3 = narrow ? 440 : 880, H3 = narrow ? 270 : 210.",
+    "severity": "HIGH",
+    "id": "MS-08"
+   },
+   {
+    "where": "MSTX tab · shared tile helper, every card · index.html:1514",
+    "rule": "1 (type scale, same size within a row)",
+    "problem": "fontSize:label === \"MONITOR\" || label === \"BTC VS 50-DAY\" ? 14 : 22. In MSTX NOW the MSTX and LAG VS LAST HOUR values are 22px while MONITOR is 14px in the same row. In LEVEL, GAP MSTX, PROJECTED MSTX and BEST ESTIMATE are 22px while BTC VS 50-DAY is 14px. Two sizes in one row with no emphasis reason. This is the \"font sizes differ for no reason\" complaint, plainly visible in desk-MSTX-0.",
+    "fix": "Replace the ternary with a single value: fontSize:22. The full line becomes <div style={{fontSize:22,fontWeight:700,color,overflowWrap:\"break-word\",marginTop:6}}>",
+    "severity": "HIGH",
+    "id": "MS-09"
+   },
+   {
+    "where": "MSTX tab · shared tile helper, every card · index.html:1515",
+    "rule": "1 (12px tile sub lines)",
+    "problem": "<div style={{fontSize:10,color:SUB,marginTop:3}}>{sub}</div>. Every tile sub line renders at 10px. The standard reserves 10px for uppercase labels and chart axis text; tile sub lines are 12px. At 10px the sub lines under BEST ESTIMATE, 1 WEEK and BEST ESTIMATE MSTR are the smallest text on the page and carry real numbers.",
+    "fix": "Change to <div style={{fontSize:12,color:SUB,marginTop:4}}>{sub}</div>",
+    "severity": "HIGH",
+    "id": "MS-10"
+   },
+   {
+    "where": "MSTX tab · local footnote style, used by every card · index.html:1510",
+    "rule": "1 (no 11px; footnotes are 12px)",
+    "problem": "const FT = {fontSize:11,color:GRY,lineHeight:1.5,marginTop:9}. 11px is not in the scale. FT sets the LEVEL typical-gap line, the ALERT LOG tally and rules lines, the gap chart date line, the lookup definition line, every chart caption and the mNAV history captions.",
+    "fix": "const FT = {fontSize:12,color:GRY,lineHeight:1.5,marginTop:9};",
+    "severity": "HIGH",
+    "id": "MS-11"
+   },
+   {
+    "where": "MSTX tab · MSTX NOW headline vs LEVEL headline · index.html:1548 and 1555",
+    "rule": "1 (type scale consistency)",
+    "problem": "Line 1548 renders the MSTX NOW word at fontSize:\"clamp(32px,6vw,48px)\" with fontWeight:800. Line 1555 renders the LEVEL word at fontSize:28 with fontWeight:700. Two cards of the same kind, stacked one above the other, with headline words at different sizes and weights. In desk-MSTX-0 OFF HOURS towers over FAIR.",
+    "fix": "Make line 1555 match line 1548: <div style={{fontSize:\"clamp(32px,6vw,48px)\",fontWeight:800,color:word === \"STALE\" ? RD : gapColor(gap),marginTop:6}}>",
+    "severity": "HIGH",
+    "id": "MS-12"
+   },
+   {
+    "where": "MSTX tab · shared body style, used by MSTX NOW, LEVEL and mNAV HISTORY · index.html:876",
+    "rule": "1 (14px body sentences, no 13px)",
+    "problem": "const BODY = {fontSize:13,...}. 13px is not in the scale. BODY sets the MSTX NOW \"why\" sentence, the LEVEL read line and the mNAV HISTORY intro paragraph, which are the three longest body sentences on the tab.",
+    "fix": "const BODY = {fontSize:14,color:\"#b0c4d8\",flex:1,minWidth:0,overflowWrap:\"break-word\"}; Note this const is shared with the Playbook tab, so the change lands on both.",
+    "severity": "HIGH",
+    "id": "MS-13"
+   },
+   {
+    "where": "MSTX tab · shared button style, gap chart toggles, reset to live, DETAILS, every more button · index.html:880-882",
+    "rule": "1 and 2 (no 11px; one button style)",
+    "problem": "const GST = {...fontSize:11,...padding:\"4px 8px\"}. 11px is not in the scale, and every button on the tab inherits it: the VS PROJECTED and VS BEST ESTIMATE toggles, RESET TO LIVE, the DETAILS disclosure and each \"more\" link.",
+    "fix": "Change the size and pad to a single button height: fontSize:12, padding:\"5px 10px\". Full replacement for lines 880-882: const GST = {background:\"transparent\",border:\"1px solid #162840\",borderRadius:3,color:\"#4a7a9b\",fontSize:12,fontFamily:\"inherit\",fontWeight:600,letterSpacing:\"0.1em\",textTransform:\"uppercase\",padding:\"5px 10px\",lineHeight:1.2,cursor:\"pointer\"};",
+    "severity": "MEDIUM",
+    "id": "MS-14"
+   },
+   {
+    "where": "MSTX tab · shared input style, WHAT IF and BITCOIN PRICE LOOKUP · index.html:878",
+    "rule": "1 (no 11px)",
+    "problem": "const INP = {...fontSize:11,...}. 11px is not in the scale. Every call site on this tab then overrides it to 13, which is also not in the scale, so the base value is both wrong and dead.",
+    "fix": "Set the base to the value the inputs should render at and drop the overrides: fontSize:14 on line 878.",
+    "severity": "MEDIUM",
+    "id": "MS-15"
+   },
+   {
+    "where": "MSTX tab · WHAT IF card, the four input boxes · index.html:1597",
+    "rule": "1 (no 13px)",
+    "problem": "style={{...INP,display:\"block\",width:\"100%\",marginTop:5,fontSize:13,padding:\"6px 8px\"}}. The BTC, MSTR, MSTX and STRC entry boxes render at 13px, which is not in the scale, while their labels are 10px and the tiles below are 22px.",
+    "fix": "Change fontSize:13 to fontSize:14 in that style object.",
+    "severity": "MEDIUM",
+    "id": "MS-16"
+   },
+   {
+    "where": "MSTX tab · BITCOIN PRICE LOOKUP card, IF BITCOIN IS AT box · index.html:1640",
+    "rule": "1 (no 13px)",
+    "problem": "style={{...INP,display:\"block\",width:\"100%\",marginTop:5,fontSize:13,padding:\"6px 8px\"}}. 13px is not in the scale.",
+    "fix": "Change fontSize:13 to fontSize:14.",
+    "severity": "MEDIUM",
+    "id": "MS-17"
+   },
+   {
+    "where": "MSTX tab · BITCOIN PRICE LOOKUP card, BY THIS DATE box · index.html:1643",
+    "rule": "1 (no 13px)",
+    "problem": "style={{...INP,display:\"block\",width:\"100%\",marginTop:5,fontSize:13,padding:\"6px 8px\",colorScheme:\"dark\",boxSizing:\"border-box\"}}. 13px is not in the scale, and the date box sits beside the Bitcoin box so any mismatch shows immediately.",
+    "fix": "Change fontSize:13 to fontSize:14.",
+    "severity": "MEDIUM",
+    "id": "MS-18"
+   },
+   {
+    "where": "MSTX tab · BITCOIN PRICE LOOKUP card, YOUR mNAV box · index.html:1646",
+    "rule": "1 (no 13px)",
+    "problem": "style={{...INP,display:\"block\",width:\"100%\",marginTop:5,fontSize:13,padding:\"6px 8px\"}}. 13px is not in the scale.",
+    "fix": "Change fontSize:13 to fontSize:14.",
+    "severity": "MEDIUM",
+    "id": "MS-19"
+   },
+   {
+    "where": "MSTX tab · BITCOIN PRICE LOOKUP card, PROJECTED AND BEST ESTIMATE table · index.html:1674",
+    "rule": "1 (no 11px; one size per table)",
+    "problem": "fontSize:narrow ? 11 : 12. The same table renders its cells at 11px on a phone and 12px on desktop. 11px is not in the scale.",
+    "fix": "Change to fontSize:12 with no branch. The padding branch on the same line can stay.",
+    "severity": "MEDIUM",
+    "id": "MS-20"
+   },
+   {
+    "where": "MSTX tab · mNAV HISTORY card, both tbl tables · index.html:1700",
+    "rule": "1 (no 11px; one size per table)",
+    "problem": "fontSize:narrow ? 11 : 12 inside the shared tbl helper. Both the TWO YEARS table and the SINCE STRC table render cells at 11px on a phone. 11px is not in the scale.",
+    "fix": "Change to fontSize:12 with no branch.",
+    "severity": "MEDIUM",
+    "id": "MS-21"
+   },
+   {
+    "where": "MSTX tab · BITCOIN PRICE LOOKUP chart, y-axis dollar labels · index.html:1656",
+    "rule": "1 (chart axis text is 10px)",
+    "problem": "<text x={P2.l-5} y={yb(v)+3} fill=\"#7aa5c8\" fontSize=\"9\" textAnchor=\"end\">{usd0(v)}</text>. Axis text at 9px, while the gap chart above it uses 10px for the same job.",
+    "fix": "Change fontSize=\"9\" to fontSize=\"10\".",
+    "severity": "MEDIUM",
+    "id": "MS-22"
+   },
+   {
+    "where": "MSTX tab · BITCOIN PRICE LOOKUP chart, x-axis Bitcoin labels · index.html:1657",
+    "rule": "1 (chart axis text is 10px)",
+    "problem": "<text key={b} x={xb(b)} y={H2-7} fill=\"#7aa5c8\" fontSize=\"9\" textAnchor=\"middle\">. The 60k to 140k labels render at 9px.",
+    "fix": "Change fontSize=\"9\" to fontSize=\"10\".",
+    "severity": "MEDIUM",
+    "id": "MS-23"
+   },
+   {
+    "where": "MSTX tab · mNAV HISTORY chart, y-axis labels · index.html:1713",
+    "rule": "1 (chart axis text is 10px)",
+    "problem": "<text x={P3.l-5} y={y3(v)+3} fill=\"#7aa5c8\" fontSize=\"9\" textAnchor=\"end\">{v.toFixed(1)}</text>. The 0.0 to 4.0 scale renders at 9px.",
+    "fix": "Change fontSize=\"9\" to fontSize=\"10\".",
+    "severity": "MEDIUM",
+    "id": "MS-24"
+   },
+   {
+    "where": "MSTX tab · mNAV HISTORY chart, x-axis date labels · index.html:1719",
+    "rule": "1 (chart axis text is 10px)",
+    "problem": "<text key={k} x={...} y={H3-6} fill=\"#7aa5c8\" fontSize=\"9\" textAnchor={...}>{mdy(wk[i].d)}</text>. The 9/20/24 and 9/18/26 end labels render at 9px while the gap chart's matching end labels are 10px.",
+    "fix": "Change fontSize=\"9\" to fontSize=\"10\".",
+    "severity": "MEDIUM",
+    "id": "MS-25"
+   },
+   {
+    "where": "MSTX tab · mNAV HISTORY chart, STRC starts marker · index.html:1715",
+    "rule": "1 (chart axis text is 10px)",
+    "problem": "<text x={x3(strcAt)+4} y={P3.t+10} fill=\"#22d3ee\" fontSize=\"9\">STRC starts</text> renders at 9px.",
+    "fix": "Change fontSize=\"9\" to fontSize=\"10\".",
+    "severity": "LOW",
+    "id": "MS-26"
+   },
+   {
+    "where": "MSTX tab · DETAILS card, edit config link · index.html:1733",
+    "rule": "1 (no 11px)",
+    "problem": "style={{fontSize:11,color:\"#7ab8d8\"}}. 11px is not in the scale and this link sits directly under a 12px DETAILS button.",
+    "fix": "Change fontSize:11 to fontSize:12.",
+    "severity": "LOW",
+    "id": "MS-27"
+   },
+   {
+    "where": "MSTX tab · LEVEL card, typical gap footnote · index.html:1560",
+    "rule": "5 (no colons, no parentheses, two visible sentences per card)",
+    "problem": "The visible line reads \"Typical gap: -2.7% over the last 60 sessions, +12.5% since STRC began (+8.0% in bear markets, +19.6% in bull). MSTX sat at Rich on 54% of all days and 10% of the last 60.\" It uses a colon and a parenthetical aside, and it pushes the card to four visible sentences once levelRead is counted.",
+    "fix": "Wrap it in the existing More component and rewrite without the colon and the parenthesis, keeping every figure: <div style={FT}><More>{\"Typical gap is \"+msPct(hist.gap_mstx.last60)+\" over the last 60 sessions and \"+msPct(hist.gap_mstx.all)+\" since STRC began. Bear markets run \"+msPct(hist.gap_mstx.bear)+\" and bull markets \"+msPct(hist.gap_mstx.bull)+\". MSTX sat at Rich on \"+hist.gap_mstx.rich_share+\"% of all days and \"+hist.gap_mstx.rich_share_last60+\"% of the last 60.\"}</More></div>",
+    "severity": "MEDIUM",
+    "id": "MS-28"
+   },
+   {
+    "where": "MSTX tab · LEVEL card, FAIR read line · index.html:1508",
+    "rule": "5 (two visible sentences per card)",
+    "problem": "levelRead for FAIR is \"Between Cheap and Rich. Cheap is under $16.13, Rich is over $18.53 at today's projected.\" The first sentence only restates the FAIR headline directly above it, and the card needs its sentence budget for the projected and best estimate definition.",
+    "fix": "Drop the first sentence: verdict(gap) === \"FAIR\" ? \"Cheap is under \"+usd2(projected*(1+cheap/100))+\", Rich is over \"+usd2(projected*(1+rich/100))+\" at today's projected.\" : \"\"",
+    "severity": "MEDIUM",
+    "id": "MS-29"
+   },
+   {
+    "where": "MSTX tab · LEVEL card, RICH read line · index.html:1506",
+    "rule": "5 (no colons, 20 words or fewer, two visible sentences)",
+    "problem": "\"Ahead of projected. Six earlier Rich starts: after the four in 2025 MSTX was lower a month later, after the two in 2026 it ran 39% and 44%. Not a sell on its own.\" Three sentences, a colon, and a 29-word middle sentence.",
+    "fix": "Keep two short sentences visible and move the history behind the More toggle, all figures unchanged. Visible: \"Ahead of projected. Not a sell on its own.\" Behind more: \"Six earlier Rich starts. After the four in 2025 MSTX was lower a month later. After the two in 2026 it ran 39% and 44%.\"",
+    "severity": "HIGH",
+    "id": "MS-30"
+   },
+   {
+    "where": "MSTX tab · GAP CHART · MSTX card, projected caption · index.html:1590",
+    "rule": "5 (no semicolons)",
+    "problem": "\"Tap for a day. Dashed lines are Cheap and Rich; the gap scale is stretched near zero.\" A semicolon inside a sentence, and the first half becomes redundant once the swatch legend exists.",
+    "fix": "Replace with \"Tap for a day. The gap scale is stretched near zero.\"",
+    "severity": "MEDIUM",
+    "id": "MS-31"
+   },
+   {
+    "where": "MSTX tab · ALERT LOG card, rules line · index.html:1479-1481",
+    "rule": "5 (no semicolons, no parentheses, 20 words or fewer)",
+    "problem": "The rules string builds \"Lag at -3.0% MSTX against its own last hour at MSTR's bar low while BTC holds (hour move at least -1.0%), only with BTC above its 50-day; Cheap at -6% MSTX, only with BTC above its 50-day; Rich at +8% MSTX. Rich fires with the BTC 50-day sell gate enabled.\" Two semicolons, one parenthetical, and a 45-word opening sentence. Its clipped preview is visible in desk-MSTX-0.",
+    "fix": "Rebuild as short sentences with the same values: const rules = \"Lag fires at \" + msPct(lagLine) + \" MSTX against its own last hour at MSTR's bar \" + (cfg.lag_at_low ? \"low\" : \"close\") + \". BTC must hold, an hour move of at least \" + msPct(nm(cfg.btc_hour_move_floor)*100) + \", \" + gate + \". Cheap fires at \" + msPct(cheap,0) + \" MSTX, \" + gate + \". Rich fires at \" + msPct(rich,0) + \" MSTX \" + (cfg.rich_gate ? \"with the BTC 50-day sell gate enabled.\" : \"in either regime.\")",
+    "severity": "MEDIUM",
+    "id": "MS-32"
+   },
+   {
+    "where": "MSTX tab · BITCOIN PRICE LOOKUP card, table footnote · index.html:1676-1680",
+    "rule": "5 (no colons, no semicolons, no parentheses, 20 words or fewer)",
+    "problem": "The footnote contains \"Best estimate: projected plus today's gap\", \"The 28-day half-life is an assumption; 42 and 56 days score the same.\", \"Your mNAV counts debt and preferred: price = mNAV x Bitcoin per share - $X\" and a trailing parenthetical \"(preferred 7% of the Bitcoin, debt 0.1%).\" It also runs a 34-word sentence about the walk-forward test.",
+    "fix": "Rewrite the prose, leave the formula and every figure alone. \"Best estimate is projected plus today's gap, fading by half every 28 days.\" \"The walk-forward test halved the error of projected alone a week out. It cut it by a fifth at one month and was about even at two months.\" \"The 28-day half-life is an assumption. 42 and 56 days score the same.\" \"Your mNAV counts debt and preferred, so price = mNAV x Bitcoin per share - $X of debt and preferred per share.\" \"Preferred is 7% of the Bitcoin and debt is 0.1%.\" Keep the existing template expressions for every number.",
+    "severity": "MEDIUM",
+    "id": "MS-33"
+   },
+   {
+    "where": "MSTX tab · BITCOIN PRICE LOOKUP card, BEST ESTIMATE MSTR tile sub line · index.html:1649",
+    "rule": "5 (no colons inside a line; middle dot is the separator)",
+    "problem": "The sub line reads \"projected $146 · high $146 · carries 100% of today's gap: +4.4% MSTR, +7.8% MSTX\". Middle dots separate the other parts and then a colon appears inside the last part.",
+    "fix": "Replace the colon with a middle dot: ...+\" · carries \"+Math.round(wGap*100)+\"% of today's gap · \"+msPct(gapNow == null ? null : gapNow*100)+\" MSTR · \"+msPct(whatGap)+\" MSTX\"",
+    "severity": "MEDIUM",
+    "id": "MS-34"
+   },
+   {
+    "where": "MSTX tab · mNAV HISTORY card, intro paragraph · index.html:1704-1705",
+    "rule": "5 (no colons, two visible sentences per card)",
+    "problem": "\"Projected has only been tested since STRC began on 7/30/25: 287 days, 70% of them bear-market days. MSTR ran above projected in both, by 10.4% on bull days and 4.0% on bear days. That is why the best estimate carries the gap.\" A colon inside the first sentence and three visible sentences in the card.",
+    "fix": "Two sentences visible, the third behind the More toggle. Visible: \"Projected has only been tested since STRC began on \"+mdy(hist.strc_from)+\", \"+(allE.days || UNK)+\" days with \"+(bearShare == null ? UNK : bearShare+\"%\")+\" of them bear-market days. MSTR ran above projected in both, by \"+pc(bullE.bias_projected)+\" on bull days and \"+pc(bearE.bias_projected)+\" on bear days.\" Behind more: \"That is why the best estimate carries the gap.\"",
+    "severity": "MEDIUM",
+    "id": "MS-35"
+   },
+   {
+    "where": "MSTX tab · mNAV HISTORY card, chart caption · index.html:1722-1723",
+    "rule": "5 (no colons)",
+    "problem": "After the legend text the same string reads \"mNAV has fallen over time in both kinds of market: 2024H2 1.94, ... So the bull and bear medians below are partly a before and after. Early levels are approximate: the share count is scaled by one constant.\" Two colons inside sentences.",
+    "fix": "Replace with \"mNAV has fallen over time in both kinds of market. The period medians are \"+per.map(q => q.name+\" \"+x2h(q.median)).join(\", \")+\". So the bull and bear medians below are partly a before and after. Early levels are approximate because the share count is scaled by one constant. Built through \"+mdy(hist.as_of)+\".\"",
+    "severity": "MEDIUM",
+    "id": "MS-36"
+   },
+   {
+    "where": "MSTX tab · BITCOIN PRICE LOOKUP card, dot note after the legend moves out · index.html:1669",
+    "rule": "5 (no colons)",
+    "problem": "Even after the colour names move into a swatch legend, the two dot explanations keep colons: \"White dot: MSTR now. Cyan dot: the best estimate at your Bitcoin price.\"",
+    "fix": "Keep only this behind the More toggle, rewritten: \"The white dot is MSTR now. The cyan dot is the best estimate at your Bitcoin price.\"",
+    "severity": "MEDIUM",
+    "id": "MS-37"
+   },
+   {
+    "where": "MSTX tab · mNAV HISTORY card, TWO YEARS table, MIDDLE HALF column · index.html:1725",
+    "rule": "5 (say \"to\" for ranges, no en dashes)",
+    "problem": "x2h(r.low)+(narrow ? \"–\" : \" to \")+x2h(r.high). On a phone the middle-half range prints as \"1.54–2.24\" with an en dash. Desktop already says \"to\", so the same cell reads two different ways.",
+    "fix": "Drop the branch: x2h(r.low)+\" to \"+x2h(r.high)",
+    "severity": "MEDIUM",
+    "id": "MS-38"
+   },
+   {
+    "where": "MSTX tab · mNAV HISTORY card, miss footnote · index.html:1728",
+    "rule": "5 (20 words or fewer)",
+    "problem": "\"The miss is the average distance between MSTR's close and the estimate, as a share of the price, on days that have both estimates, given where Bitcoin and STRC actually went.\" One 31-word sentence, and its clipped first line is visible in desk-MSTX-3.",
+    "fix": "Replace with \"The miss is the average distance between MSTR's close and the estimate, as a share of the price. It covers days that have both estimates, given where Bitcoin and STRC actually went.\"",
+    "severity": "MEDIUM",
+    "id": "MS-39"
+   },
+   {
+    "where": "MSTX tab · BITCOIN PRICE LOOKUP card, definition line · index.html:1636",
+    "rule": "1 and 4 (definitions are body text, not a footnote)",
+    "problem": "<div style={{...FT,marginTop:5,marginBottom:10}}> renders the projected and best estimate definition at 11px in the dim GRY footnote colour, the same treatment as chart captions. A definition the owner says is missing should not be the faintest text in the card.",
+    "fix": "Use body treatment: <div style={{...BODY,lineHeight:1.5,marginTop:5,marginBottom:10}}> and leave the sentence as it is.",
+    "severity": "LOW",
+    "id": "MS-40"
+   },
+   {
+    "where": "MSTX tab · More disclosure button, every card · index.html:976-978",
+    "rule": "2 (one button style and height per kind)",
+    "problem": "style={{...GST,textTransform:\"none\",letterSpacing:0,color:\"#8aaac8\",padding:\"3px 0\",border:\"none\"}}. The more button strips the border and the horizontal padding from GST, so it renders as loose floating text at a different height from the VS PROJECTED, RESET TO LIVE and DETAILS buttons. With zero side padding and 3px top padding it also sits at an inconsistent distance from the text above it, which is the \"more buttons float\" complaint.",
+    "fix": "Give it a fixed, repeatable box: style={{...GST,textTransform:\"none\",letterSpacing:0,color:\"#8aaac8\",border:\"none\",padding:0,marginTop:6,fontSize:12,lineHeight:1.2,display:\"block\"}}",
+    "severity": "MEDIUM",
+    "id": "MS-41"
+   },
+   {
+    "where": "MSTX tab · ALERT LOG card, tally and rules lines · index.html:1571",
+    "rule": "6 (equal spacing)",
+    "problem": "<div style={FT}><More>{tally}</More></div><div style={FT}><More>{rules}</More></div>. Each block adds its own marginTop:9, and only the second one shows a more button because the tally fits on one line. The result in desk-MSTX-0 is a 9px gap, then a wider one, then a lone more button hanging under the rules line at a third spacing.",
+    "fix": "Put both in one container with a single gap and let FT drop its own margin here: <div style={{display:\"flex\",flexDirection:\"column\",gap:9,marginTop:9}}><div style={{...FT,marginTop:0}}><More>{tally}</More></div><div style={{...FT,marginTop:0}}><More>{rules}</More></div></div>",
+    "severity": "MEDIUM",
+    "id": "MS-42"
+   },
+   {
+    "where": "MSTX tab · DETAILS card · index.html:1731",
+    "rule": "2 (one button style and height per kind)",
+    "problem": "<button aria-expanded={det} style={{...GST,border:\"none\",padding:0}}>. The DETAILS disclosure drops both the border and all padding from GST, so it renders as bare text where RESET TO LIVE and the gap chart toggles render as bordered pills. Three button shapes on one tab.",
+    "fix": "Keep the GST pill: style={GST}. The caret text {(det ? \"▾ \" : \"▸ \")+\"DETAILS\"} stays as it is.",
+    "severity": "MEDIUM",
+    "id": "MS-43"
+   },
+   {
+    "where": "MSTX tab · shared tile helper and stack, every card · index.html:1514 and 982",
+    "rule": "6 (no text that wraps mid-word)",
+    "problem": "overflowWrap:\"anywhere\" on the tile value (line 1514) and on VIS_STACK (line 982). \"anywhere\" breaks inside a word at any character even when the word would fit on the next line, so at 390px a tile value or a label can split mid-word.",
+    "fix": "Change both to overflowWrap:\"break-word\", which only breaks a word that cannot fit on a line by itself.",
+    "severity": "LOW",
+    "id": "MS-44"
+   }
+  ]
+ },
+ {
+  "area": "playbook",
+  "findings": [
+   {
+    "where": "Playbook tab, UNIT COST LOOKUP card, index.html line 1070",
+    "rule": "Rule 2 (controls)",
+    "problem": "The OPTION VOL range input is styled `style={{width:\"100%\",marginTop:8,accentColor:\"#22d3ee\"}}` only. The global CSS at line 31 sets `input[type=range]::-webkit-slider-runnable-track { background: transparent }`, so this control renders as a lone cyan dot with no track, no fill and no endpoints. The MSTX ON SETTLEMENT slider 200 lines below does draw a track, so the two sliders on the same tab look like different controls.",
+    "fix": "Wrap the input in the same track markup the MSTX slider uses, and give it the 4px track from Rule 2. Replace line 1070 with:\n<div style={{position:\"relative\",display:\"flex\",alignItems:\"center\",height:\"20px\",marginTop:8}}>\n  <div style={{position:\"absolute\",left:0,right:0,height:\"4px\",background:\"#0d1e30\",borderRadius:\"3px\"}}/>\n  <div style={{position:\"absolute\",left:0,width:((lkVol+0.3)/0.6*100)+\"%\",height:\"4px\",background:\"#22d3ee\",borderRadius:\"3px\",opacity:0.75}}/>\n  <input type=\"range\" min=\"-0.3\" max=\"0.3\" step=\"0.05\" value={lkVol} onChange={e => setLkVol(Number(e.target.value))} style={{position:\"absolute\",left:0,right:0,width:\"100%\",appearance:\"none\",WebkitAppearance:\"none\",background:\"transparent\",cursor:\"pointer\",margin:0,height:\"20px\"}}/>\n</div>",
+    "severity": "HIGH",
+    "id": "PL-01"
+   },
+   {
+    "where": "Playbook tab, WEEKLY MACD card, index.html line 1183",
+    "rule": "Rule 3 (charts)",
+    "problem": "`const CW = window.innerWidth < 560 ? 344 : 760, CH = 118`. The svg is `width:100%, height:auto`, so the rendered height is renderedWidth x CH/CW. At the desktop card width of about 885px that is about 137px, and on the 390px phone the card renders the svg about 276px wide, giving about 95px. The standard asks for about 220px for this histogram and never under 180px on a phone. The plot area itself is only 82px (CH minus CP.t 13 minus CP.b 23), which is why the bars look squashed against a 900px wide card.",
+    "fix": "Change line 1183 to: `const CW = window.innerWidth < 560 ? 344 : 760, CH = window.innerWidth < 560 ? 224 : 190, CP = {t:16, r:8, b:34, l:10};` That renders about 180px on the phone and about 220px on the desktop card, and the larger CP.b leaves room for the 10px date labels and the LAST 16 WEEKS line without them colliding.",
+    "severity": "HIGH",
+    "id": "PL-02"
+   },
+   {
+    "where": "Playbook tab, COST OF 200 LEAPS UNITS chart, index.html line 994",
+    "rule": "Rule 3 (charts)",
+    "problem": "`const W = 720, H = 250` is fixed for both breakpoints. With `width:\"100%\",height:\"auto\"` the phone renders the svg about 276px wide, so the height collapses to 276 x 250/720 = about 96px. The phone screenshot shows a chart barely taller than one line of text, with axis text unreadable.",
+    "fix": "Make the viewBox responsive the way the MACD chart is. Change line 994 to: `const W = window.innerWidth < 560 ? 340 : 720, H = window.innerWidth < 560 ? 232 : 250, P = {l:46, r:10, t:14, b:22}, cw = W - P.l - P.r, ch = H - P.t - P.b;` That renders about 188px on a phone and leaves the desktop at about 307px.",
+    "severity": "HIGH",
+    "id": "PL-03"
+   },
+   {
+    "where": "Playbook tab, COST OF 200 LEAPS UNITS chart, index.html lines 1036 to 1038",
+    "rule": "Rule 3 (charts) and Rule 5 (copy)",
+    "problem": "There is no legend. The line under the chart is a sentence with four colons, \"Cyan: model cost. Amber: 10-day average. White dots: days both legs really traded. Dashed: before the long leg existed.\" It is also wrapped in <More>, so on the phone it truncates to \"Cyan: model cost. Amber: 10-day average. Wh…\" with a more button, and on desktop it is replaced by the hover readout the moment the pointer enters the chart, so the colour key disappears exactly when someone is reading the chart.",
+    "fix": "Insert an always-visible swatch legend directly under the header, after line 1014 and before the svg:\n<div style={{display:\"flex\",flexWrap:\"wrap\",gap:\"14px\",fontSize:12,color:\"#b0c4d8\",marginBottom:10}}>\n  <span><span style={{display:\"inline-block\",width:12,height:3,background:\"#22d3ee\",marginRight:6,verticalAlign:\"middle\"}}/>model cost</span>\n  <span><span style={{display:\"inline-block\",width:12,height:3,background:\"#facc15\",marginRight:6,verticalAlign:\"middle\"}}/>10 day average</span>\n  <span><span style={{display:\"inline-block\",width:8,height:8,borderRadius:\"50%\",background:\"#f1f5f9\",marginRight:6,verticalAlign:\"middle\"}}/>both legs traded</span>\n  <span><span style={{display:\"inline-block\",width:12,height:3,background:\"linear-gradient(90deg,#22d3ee 55%,transparent 55%)\",marginRight:6,verticalAlign:\"middle\"}}/>before the long leg</span>\n</div>\nThen replace lines 1036 to 1038 with the hover readout alone:\n<div style={{fontSize:12,color:\"#b0c4d8\",marginTop:4,minHeight:\"18px\"}}>\n  {h ? mdy(h.d) + \" · MSTX \" + usd2(h.mstx) + \" · unit \" + usd2(h.unit) + \" · \" + (lc.units||200) + \" units \" + usd(h.cost) : \"\"}</div>",
+    "severity": "HIGH",
+    "id": "PL-04"
+   },
+   {
+    "where": "Playbook tab, WEEKLY MACD card, index.html line 1301 (header) and 1303 (svg opens)",
+    "rule": "Rule 3 (charts)",
+    "problem": "The histogram has no legend at all. Green bars, red bars and the amber cross marker with its triangle are never named anywhere on the card. The only explanation is the sentence at line 1330, which names none of the colours.",
+    "fix": "Insert a legend row between the header at line 1301 and the chart at line 1302:\n<div style={{display:\"flex\",flexWrap:\"wrap\",gap:\"14px\",fontSize:12,color:\"#b0c4d8\",marginBottom:10}}>\n  <span><span style={{display:\"inline-block\",width:10,height:10,background:GRN,marginRight:6,verticalAlign:\"middle\"}}/>positive week</span>\n  <span><span style={{display:\"inline-block\",width:10,height:10,background:RD,marginRight:6,verticalAlign:\"middle\"}}/>negative week</span>\n  <span><span style={{display:\"inline-block\",width:2,height:10,background:\"#facc15\",marginRight:6,verticalAlign:\"middle\"}}/>cross week</span>\n</div>",
+    "severity": "HIGH",
+    "id": "PL-05"
+   },
+   {
+    "where": "Playbook tab, PHASE 1 card, index.html lines 1226 to 1227",
+    "rule": "Rule 6 (layout) and Rule 1 (type scale)",
+    "problem": "Each spread is a `display:\"flex\",gap:\"12px\",flexWrap:\"wrap\"` row, so the four cells pack left with no columns. Nothing lines up between the two spreads, the debit of the first row sits at a different x than the debit of the second, and on the phone the row wraps into four ragged lines. This is the row that carries four different font sizes in the same breath.",
+    "fix": "Make it one aligned grid row per spread. Replace lines 1226 to 1227 with:\n<div key={r.k} style={{display:\"grid\",gridTemplateColumns:window.innerWidth < 560 ? \"minmax(0,1fr) auto\" : \"minmax(150px,1.1fr) minmax(0,1.6fr) 130px 190px\",\n  columnGap:\"12px\",rowGap:\"2px\",alignItems:\"baseline\",padding:\"7px 0\",borderTop:i?SEP:\"none\"}}>\nKeep the four spans in place and add `textAlign:\"right\"` to the debit span and the contracts span so the numbers form columns.",
+    "severity": "HIGH",
+    "id": "PL-06"
+   },
+   {
+    "where": "Playbook tab, PHASE 1 card, spread name, index.html line 1228",
+    "rule": "Rule 1 (type scale)",
+    "problem": "`fontSize:11,fontWeight:700,letterSpacing:\"0.1em\"`. 11px is not in the scale, and the letter-spaced accent-coloured treatment makes \"Oct 9 16 / Oct 2 16 calendar\" read as a heading rather than the first cell of a row whose other cells are 13px and 15px.",
+    "fix": "Change to `fontSize:12,fontWeight:600,letterSpacing:0,color:AC,whiteSpace:\"nowrap\"`.",
+    "severity": "HIGH",
+    "id": "PL-07"
+   },
+   {
+    "where": "Playbook tab, PHASE 1 card, legs cell, index.html line 1230",
+    "rule": "Rule 1 (type scale)",
+    "problem": "`fontSize:13` is not in the scale, and it is a third size inside a row that already runs 11 and 15.",
+    "fix": "Change `fontSize:13` to `fontSize:12`.",
+    "severity": "HIGH",
+    "id": "PL-08"
+   },
+   {
+    "where": "Playbook tab, PHASE 1 card, debit cell, index.html line 1231",
+    "rule": "Rule 1 (type scale)",
+    "problem": "`fontSize:15,fontWeight:700` is not in the scale. It is the fourth size in one row and it is the largest text in the card, larger than the card header.",
+    "fix": "Change to `fontSize:14,fontWeight:700,color:\"#f1f5f9\",textAlign:\"right\"`. 14px bold is the one emphasised number the row is allowed.",
+    "severity": "HIGH",
+    "id": "PL-09"
+   },
+   {
+    "where": "Playbook tab, PHASE 1 card, contracts and cost cell, index.html line 1233",
+    "rule": "Rule 1 (type scale)",
+    "problem": "`fontSize:13` is not in the scale. This cell also sits on a second visual line on desktop because the flex row wraps, so \"275 contracts · cost $5,775\" reads as a separate statement rather than as the last column of the spread row.",
+    "fix": "Change `fontSize:13` to `fontSize:12` and add `textAlign:\"right\"`.",
+    "severity": "HIGH",
+    "id": "PL-10"
+   },
+   {
+    "where": "Playbook tab, hero card, index.html lines 1214 to 1217",
+    "rule": "Rule 5 (copy)",
+    "problem": "`actS.slice(0,3).map(...)` renders three steps, each wrapped in its own `<More step>`, so the card shows three paragraphs and three separate \"more\" buttons stacked down the card. On the phone that is five visible sentences and three toggles inside one card. The standard allows at most two visible sentences per card and the toggles should be one.",
+    "fix": "Show the first step only and put every remaining step behind the single existing more toggle. Replace line 1214 with:\n          ? <div style={{fontSize:14,color:\"#e2e8f0\",lineHeight:1.5,marginTop:10}}><More step>{actS[0]}</More></div>\nand replace line 1217 with:\n        {actS.length > 1 && <div style={{...BODY,marginTop:6}}><More hide label=\"more steps\">{actS.slice(1).join(\" \")}</More></div>}",
+    "severity": "HIGH",
+    "id": "PL-11"
+   },
+   {
+    "where": "index.html line 876, const BODY (used on the Playbook tab at lines 1217, 1235, 1236 and 1242)",
+    "rule": "Rule 1 (type scale)",
+    "problem": "`const BODY = {fontSize:13,...}`. 13px is not in the scale. It sets the size of the hero's more-steps text, the Phase 1 positions paragraph and the LEAPS UNITS objective, so the tab's main body copy sits one pixel off the 14px hero steps directly above it.",
+    "fix": "Change `fontSize:13` to `fontSize:14` in the BODY constant. Note this constant is shared with the MSTX tab, which the same standard puts at 14px for body sentences, so the change is correct in both places.",
+    "severity": "HIGH",
+    "id": "PL-12"
+   },
+   {
+    "where": "Playbook tab, LEAPS UNITS card, unit price line, index.html line 1243",
+    "rule": "Rule 1 (type scale) and Rule 5 (copy)",
+    "problem": "`fontSize:15` is not in the scale, and the rendered sentence is \"Unit price at the 9/18 close: $3.97\", which puts a colon inside a sentence.",
+    "fix": "Replace line 1243 with:\n        <div style={{fontSize:14,color:\"#22d3ee\",marginBottom:16}}>{\"Unit price at the \" + (md(lc && lc.model && lc.model.asof) || UNK) + \" close is \" + msUsd(nm(lc && lc.ref && lc.ref.today && lc.ref.today.unit))}</div>",
+    "severity": "HIGH",
+    "id": "PL-13"
+   },
+   {
+    "where": "Playbook tab, reference tiles under the LEAPS cost chart, index.html line 1043",
+    "rule": "Rule 1 (type scale)",
+    "problem": "`fontSize:18,fontWeight:700` for the LAST CLOSE, 1 MONTH AGO, 2 MONTHS AGO and LOW numbers. 18px is not in the scale, and the identical-looking tiles 30 lines below at lines 1074 and 1077 use 20px, so two rows of the same tile on the same card carry two different number sizes.",
+    "fix": "Change `fontSize:18` to `fontSize:22`.",
+    "severity": "HIGH",
+    "id": "PL-14"
+   },
+   {
+    "where": "Playbook tab, UNIT COST LOOKUP result tiles, index.html lines 1074 and 1077",
+    "rule": "Rule 1 (type scale)",
+    "problem": "`fontSize:20,fontWeight:700` on the 200 UNITS COST and ONE UNIT figures. 20px is not in the scale and it does not match the 18px used by the reference tiles above on the same card.",
+    "fix": "Change `fontSize:20` to `fontSize:22` on both lines, so every tile number on the tab is 22px.",
+    "severity": "HIGH",
+    "id": "PL-15"
+   },
+   {
+    "where": "Playbook tab, WHAT MOVES IT tile, index.html line 1080",
+    "rule": "Rule 1 (type scale), Rule 5 (copy) and Rule 6 (layout)",
+    "problem": "`fontSize:11` is not in the scale. The three lines are separated by <br/> and each carries a colon, \"MSTX +$1: +$4,157\", \"one week later: +$704\", \"option vol +10%: -$1,652\". Because they are plain text the dollar values start at three different x positions, so nothing aligns inside the tile.",
+    "fix": "Replace line 1080 with three aligned label and value rows at 12px using the middle dot separator the standard allows on meta lines:\n              <div style={{fontSize:12,color:\"#b0c4d8\",lineHeight:1.6}}>\n                {[[\"MSTX +$1\",sg(dS)],[\"one week later\",sg(dT)],[\"option vol +10%\",sg(dV)]].map(([a,b]) =>\n                  <div key={a} style={{display:\"flex\",justifyContent:\"space-between\",gap:8}}><span>{a}</span><span>{b}</span></div>)}</div>",
+    "severity": "HIGH",
+    "id": "PL-16"
+   },
+   {
+    "where": "Playbook tab, LEAPS UNITS AT THE END BY ROUTE table, index.html line 1285",
+    "rule": "Rule 4 (definitions)",
+    "problem": "The two number columns are headed \"UNITS, YOUR VIEW\" and \"UNITS, MARKET VIEW\" and neither term is defined anywhere visible. The only definition, \"Market view is MSTX's own history ... Your view is the same prices one dollar higher\", is buried in the middle of the routes note that the card truncates to its first sentence at line 1290 and hides the rest behind the more toggle at line 1293. A reader sees 32 against 34 with no way to know what separates them.",
+    "fix": "Add a one-line definition directly under the header, inserted after line 1283:\n        <div style={{fontSize:12,color:\"#b0c4d8\",marginBottom:8}}>Market view is MSTX's own history. Your view is the same prices one dollar higher.</div>",
+    "severity": "HIGH",
+    "id": "PL-17"
+   },
+   {
+    "where": "data/paper-ledger.json, key plan.phases[0].next_action_steps[0] (rendered in the Playbook hero, index.html line 1214)",
+    "rule": "Rule 5 (copy)",
+    "problem": "\"Hold both calendars into Monday 9/21. Before the open, get your broker's bid and ask on both calendars and the LEAPS legs, then decide: keep holding, or sell both and buy LEAPS units in thirds.\" The second sentence uses a colon inside the sentence and runs 31 words.",
+    "fix": "Replace the value with: \"Hold both calendars into Monday 9/21. Before the open, get your broker's bid and ask on both calendars and the LEAPS legs. Then keep holding, or sell both and buy LEAPS units in thirds.\"",
+    "severity": "HIGH",
+    "id": "PL-18"
+   },
+   {
+    "where": "data/paper-ledger.json, key plan.phases[0].next_action_steps[1] (rendered in the Playbook hero, index.html line 1214)",
+    "rule": "Rule 5 (copy)",
+    "problem": "\"Tripwire: a daily close above $20 or under $15 closes the position the next morning. Checkpoint Fri 9/25: outside $15 to $19, close; inside, hold the final week.\" Two colons inside sentences and one semicolon.",
+    "fix": "Replace the value with: \"A daily close above $20 or under $15 closes the position the next morning. On Fri 9/25, close if MSTX is outside $15 to $19 and hold the final week if it is inside.\"",
+    "severity": "HIGH",
+    "id": "PL-19"
+   },
+   {
+    "where": "data/paper-ledger.json, key plan.objective (rendered in the LEAPS UNITS card, index.html line 1242)",
+    "rule": "Rule 5 (copy)",
+    "problem": "\"LEAPS units, not dollars: the count of MSTX Dec 2028 $33 / Jan 2028 $60 units the account can buy after the trade settles, at that day's unit price. The unit price is estimated from the real option prints and refreshed daily.\" A colon inside the sentence and a 36 word opening sentence. Because it renders inside a single-line <More>, the desktop shows \"…units the account can buy after the trade s…\" and the phone shows \"the count …\", so the card's whole explanation is a clipped fragment.",
+    "fix": "Replace the value with: \"LEAPS units, not dollars. This is the count of MSTX Dec 2028 $33 and Jan 2028 $60 units the account buys after settlement. The unit price is estimated from the real option prints and refreshed daily.\"",
+    "severity": "HIGH",
+    "id": "PL-20"
+   },
+   {
+    "where": "Playbook tab, hero card, fallback action line, index.html line 1216",
+    "rule": "Rule 1 (type scale)",
+    "problem": "`fontSize:15` on the fallback single-action text, while the step version of the same slot at line 1214 is `fontSize:14`. The same sentence renders at two different sizes depending on which field the ledger supplies.",
+    "fix": "Change `fontSize:15` to `fontSize:14`.",
+    "severity": "MEDIUM",
+    "id": "PL-21"
+   },
+   {
+    "where": "Playbook tab, hero card, IN PHASE line, index.html line 1212",
+    "rule": "Rule 1 (type scale)",
+    "problem": "`fontSize:\"13px\"` on the \"IN PHASE 1\" line under the ENTRY OFF headline. 13px is not in the scale.",
+    "fix": "Change `fontSize:\"13px\"` to `fontSize:\"12px\"`.",
+    "severity": "MEDIUM",
+    "id": "PL-22"
+   },
+   {
+    "where": "index.html line 977, the More toggle button (every \"more\" on the Playbook tab)",
+    "rule": "Rule 1 (type scale)",
+    "problem": "The button spreads GST, which sets `fontSize:11` at line 880. Every \"more\" and \"more steps\" button on the tab, eight of them on desktop, renders at 11px, a size the scale does not contain.",
+    "fix": "Add an explicit size to the button's inline style at line 977 so the shared GST constant is left alone for the other tabs: `style={{...GST,fontSize:12,textTransform:\"none\",letterSpacing:0,color:\"#8aaac8\",padding:\"3px 0\",border:\"none\"}}`.",
+    "severity": "MEDIUM",
+    "id": "PL-23"
+   },
+   {
+    "where": "Playbook tab, index.html line 1199, const FT (used at lines 1245, 1246, 1290 and 1293)",
+    "rule": "Rule 1 (type scale)",
+    "problem": "`const FT = {fontSize:10,...}`. These are footnotes, not uppercase labels, so the scale puts them at 12px. At 10px in #5a7fa0 the \"At the 10/2 close · no cash · longs at 100% vol · unit priced for 10/2 · whole units\" line under BY MSTX CLOSE ON SETTLEMENT is barely legible on the phone.",
+    "fix": "Change `fontSize:10` to `fontSize:12` in the FT constant on line 1199.",
+    "severity": "MEDIUM",
+    "id": "PL-24"
+   },
+   {
+    "where": "Playbook tab, LEAPS UNITS card, slider readout, index.html line 1169 (uRead)",
+    "rule": "Rule 5 (copy)",
+    "problem": "The string builds \"At $16.50 on settlement: position about $31,432, unit $3.55, 88 LEAPS\", which puts a colon inside a sentence.",
+    "fix": "Replace lines 1169 to 1172 with:\n  const uRead = \"At \" + usdS(uSel) + \" on settlement the position is about \"\n    + (uSelR.pv == null ? UNK : usd0(uSelR.pv))\n    + \", the unit is \" + (uSelR.up == null ? UNK : usd2(uSelR.up)) + \" and the count is \" + (uSelR.n == null ? UNK : uSelR.n.toFixed(0)) + \" LEAPS\";",
+    "severity": "MEDIUM",
+    "id": "PL-25"
+   },
+   {
+    "where": "Playbook tab, LEAPS UNITS card, slider readout, index.html line 1278",
+    "rule": "Rule 1 (type scale)",
+    "problem": "`fontSize:11` on the line that reads back the slider value. 11px is not in the scale and it does not match the 12px table directly above it.",
+    "fix": "Change `fontSize:11` to `fontSize:12`.",
+    "severity": "MEDIUM",
+    "id": "PL-26"
+   },
+   {
+    "where": "Playbook tab, MSTX ON SETTLEMENT slider, index.html lines 1266 and 1268",
+    "rule": "Rule 2 (controls)",
+    "problem": "Both the track div and the fill div are `height:\"3px\"`. The standard sets the track at about 4px.",
+    "fix": "Change `height:\"3px\"` to `height:\"4px\"` on line 1266 and on line 1268.",
+    "severity": "MEDIUM",
+    "id": "PL-27"
+   },
+   {
+    "where": "index.html lines 31 to 44, the global input[type=range] rules",
+    "rule": "Rule 2 (controls)",
+    "problem": "The thumb is `width: 14px; height: 14px` with `margin-top: -5.5px`, and the runnable track is `height: 3px`. The standard sets a 16px thumb on a 4px track. The half-pixel margin also makes the thumb sit one pixel high of the track drawn behind it on the MSTX ON SETTLEMENT slider.",
+    "fix": "On line 31 and line 39 change `height: 3px` to `height: 4px`. On lines 33 and 41 change `width: 14px; height: 14px` to `width: 16px; height: 16px`. On line 34 change `margin-top: -5.5px` to `margin-top: -6px`.",
+    "severity": "MEDIUM",
+    "id": "PL-28"
+   },
+   {
+    "where": "Playbook tab, COST OF 200 LEAPS UNITS chart, index.html line 1014",
+    "rule": "Rule 1 (type scale) and Rule 3 (charts)",
+    "problem": "`fontSize:11` is not in the scale, and the chart's subject line \"long Dec 15 2028 $33 call, short Jan 21 2028 $60 call\" is wrapped in <More>, which is a nowrap single line. On the phone it truncates to \"long Dec 15 2028 $33 call, short Jan 21 202…\" and puts a more button under a ten word label.",
+    "fix": "Replace line 1014 with:\n      <div style={{fontSize:12,color:\"#7a9ab8\",marginBottom:10}}>{String(lc.unit||\"\")}</div>",
+    "severity": "MEDIUM",
+    "id": "PL-29"
+   },
+   {
+    "where": "Playbook tab, reference tile sub lines, index.html line 1044",
+    "rule": "Rule 1 (type scale)",
+    "problem": "`fontSize:10` on the \"9/18/26 · MSTX $18.73\" sub line. 10px is reserved for uppercase labels; tile sub lines are 12px.",
+    "fix": "Change `fontSize:10` to `fontSize:12`.",
+    "severity": "MEDIUM",
+    "id": "PL-30"
+   },
+   {
+    "where": "Playbook tab, UNIT COST LOOKUP inputs, index.html line 1057",
+    "rule": "Rule 1 (type scale)",
+    "problem": "`const IN = {...fontSize:13...}` sets the DATE, MSTX PRICE and UNITS input values at 13px, a size the scale does not contain.",
+    "fix": "Change `fontSize:13` to `fontSize:14` in the IN constant on line 1057.",
+    "severity": "MEDIUM",
+    "id": "PL-31"
+   },
+   {
+    "where": "Playbook tab, UNIT COST LOOKUP footnote, index.html lines 1082 to 1084",
+    "rule": "Rule 1 (type scale) and Rule 5 (copy)",
+    "problem": "`fontSize:10` on a footnote that the scale puts at 12px, and the sentence reads \"Model estimate near the mid: both legs repriced with Black-Scholes at today's fitted vols (long 100%, short 68%). A real fill costs more; the long leg's market is wide.\" That is a colon inside a sentence, a parenthetical aside and a semicolon.",
+    "fix": "Change `fontSize:10` to `fontSize:12` on line 1082, and replace the string on lines 1083 to 1084 with:\n            {\"Model estimate near the mid. Both legs are repriced with Black-Scholes at today's fitted vols, long \"\n              + Math.round(mdl.long.iv*100) + \"% and short \" + Math.round(mdl.short.iv*100) + \"%. A real fill costs more because the long leg's market is wide.\"}",
+    "severity": "MEDIUM",
+    "id": "PL-32"
+   },
+   {
+    "where": "Playbook tab, WEEKLY MACD chart axis text, index.html lines 1313, 1318, 1320, 1321 and 1325",
+    "rule": "Rule 1 (type scale)",
+    "problem": "Every axis and annotation label in the histogram is `fontSize=\"8\"`: the zero baseline label, the amber cross date, the two end dates and the LAST 16 WEEKS caption. 8px is not in the scale and it is unreadable on the phone shot.",
+    "fix": "Change `fontSize=\"8\"` to `fontSize=\"10\"` on lines 1313, 1318, 1320, 1321 and 1325. Pair this with the taller CH on line 1183 so the enlarged labels have room.",
+    "severity": "MEDIUM",
+    "id": "PL-33"
+   },
+   {
+    "where": "Playbook tab, WEEKLY MACD footer sentence, index.html line 1330",
+    "rule": "Rule 1 (type scale) and Rule 3 (charts)",
+    "problem": "`fontSize:11` is not in the scale, and \"Falling since 9/6. Crossed 7/26, 7 weeks ago. Last bar 9/13.\" is wrapped in <More>, so on the phone it truncates to \"…7 weeks ag…\" and adds a more button under three short sentences that would fit if they simply wrapped.",
+    "fix": "Replace lines 1330 to 1333 with the plain wrapped text at 12px:\n          <div style={{fontSize:12,color:\"#b0c4d8\",marginTop:7}}>\n            {(rising ? \"Rising since \" : \"Falling since \") + (md(rise)||UNK) + \". Crossed \" + (md(xd0)||UNK) + \", \"\n              + (isNaN(wkN) ? UNK : wkN) + \" weeks ago. Last bar \" + (bars.length ? (md(bars[bars.length-1].bar) || bars[bars.length-1].bar) : UNK) + \".\"}</div>",
+    "severity": "MEDIUM",
+    "id": "PL-34"
+   },
+   {
+    "where": "Playbook tab, BY MSTX CLOSE ON SETTLEMENT table headers, index.html line 1249",
+    "rule": "Rule 6 (layout)",
+    "problem": "The four headers sit in `repeat(4,minmax(0,1fr))` with no nowrap. On the 390px phone \"POSITION VALUE\" and \"UNIT PRICE\" each break onto two lines, so the header band is two rows tall while the data rows are one, and the second half of each header collides with the top data row.",
+    "fix": "Add `whiteSpace:\"nowrap\"` to the header cell style on line 1249 and give the grid real minimums. On line 1248 change `gridTemplateColumns:\"repeat(4,minmax(0,1fr))\"` to `gridTemplateColumns:\"minmax(64px,1fr) minmax(96px,1fr) minmax(76px,1fr) minmax(56px,1fr)\"`. The existing `overflowX:\"auto\"` wrapper on line 1247 absorbs the overflow on the phone.",
+    "severity": "MEDIUM",
+    "id": "PL-35"
+   },
+   {
+    "where": "Playbook tab, LEAPS UNITS AT THE END BY ROUTE table, index.html line 1284",
+    "rule": "Rule 6 (layout)",
+    "problem": "`gridTemplateColumns:\"minmax(0,1fr) 64px 64px\"`. 64px is too narrow for the headers, so \"UNITS, YOUR VIEW\" renders as three stacked lines and \"UNITS, MARKET VIEW\" as three more, giving a three-line header band over one-line numbers.",
+    "fix": "Change line 1284 to `gridTemplateColumns:\"minmax(0,1fr) 96px 96px\"`. The headers then break to two lines at most and the numbers keep their right alignment.",
+    "severity": "MEDIUM",
+    "id": "PL-36"
+   },
+   {
+    "where": "data/paper-ledger.json, key plan.phases[0].next_action_detail (rendered behind the hero more toggle, index.html line 1218)",
+    "rule": "Rule 5 (copy)",
+    "problem": "\"The thirds plan, not yet decided: sell both calendars 20 to 30 minutes after the open, then buy LEAPS units one third Monday, one third when the gap is at or under zero or on 10/2, and one third on a Cheap alert or on 10/16. No Phase 2.\" A colon inside the sentence and a 45 word sentence.",
+    "fix": "Replace the value with: \"The thirds plan is not yet decided. Sell both calendars 20 to 30 minutes after the open. Then buy LEAPS units in thirds. One third Monday. One third when the gap is at or under zero or on 10/2. One third on a Cheap alert or on 10/16. No Phase 2.\"",
+    "severity": "MEDIUM",
+    "id": "PL-37"
+   },
+   {
+    "where": "data/paper-ledger.json, key plan.phases[0].positions (rendered behind the Phase 1 more toggle, index.html line 1236)",
+    "rule": "Rule 5 (copy)",
+    "problem": "\"At the 9/18 close (MSTX $18.73) the two calendars model at about $23,800 at 135% vol, the vol that matched your 9/18 quote, against $16,975 paid.\" A parenthetical aside and a 33 word sentence.",
+    "fix": "Replace the first sentence so the value keeps every figure and loses the parentheses: \"At the 9/18 close with MSTX at $18.73 the two calendars model at about $23,800 at 135% vol. That is the vol that matched your 9/18 quote, against $16,975 paid. Break-evens at the 10/2 close are about $14.94 and $19.57 at 100% vol. The best stretch runs from $16 to $18.\"",
+    "severity": "MEDIUM",
+    "id": "PL-38"
+   },
+   {
+    "where": "data/routes.json, key routes[2].route (rendered in the routes table, index.html line 1288)",
+    "rule": "Rule 5 (copy)",
+    "problem": "\"Close now and buy LEAPS, after five cents of slippage on 450 calendars (count fixed once bought)\" uses a parenthetical aside, and because the route cell carries `overflowWrap:\"anywhere\"` the parenthesis wraps onto a fourth line on the phone.",
+    "fix": "Replace the value with: \"Close now and buy LEAPS after five cents of slippage on 450 calendars, count fixed once bought\".",
+    "severity": "MEDIUM",
+    "id": "PL-39"
+   },
+   {
+    "where": "data/leaps-cost.json, key note (rendered in the Playbook footnote, index.html line 1293)",
+    "rule": "Rule 5 (copy)",
+    "problem": "\"Model estimate near the mid: Black-Scholes on each day's MSTX close, vol backed out of the short leg's real trades, the long leg's vol scaled from it. Before the long leg first traded the line is hypothetical. A fill costs more than the mid: the long leg's market is several dollars wide.\" Two colons inside sentences and a 31 word opening sentence.",
+    "fix": "Replace the value with: \"Model estimate near the mid. Black-Scholes runs on each day's MSTX close. Vol is backed out of the short leg's real trades and the long leg's vol is scaled from it. Before the long leg first traded the line is hypothetical. A fill costs more than the mid because the long leg's market is several dollars wide.\"",
+    "severity": "MEDIUM",
+    "id": "PL-40"
+   },
+   {
+    "where": "Playbook tab, COST OF 200 LEAPS UNITS chart axis text, index.html lines 1020, 1033 and 1034",
+    "rule": "Rule 1 (type scale)",
+    "problem": "The dollar gridline labels and both date labels are `fontSize=\"9\"`. 9px is not in the scale, which puts chart axis text at 10px.",
+    "fix": "Change `fontSize=\"9\"` to `fontSize=\"10\"` on line 1020, line 1033 and line 1034.",
+    "severity": "LOW",
+    "id": "PL-41"
+   },
+   {
+    "where": "Playbook tab, COST OF 200 LEAPS UNITS chart, first-trade annotation, index.html line 1023",
+    "rule": "Rule 1 (type scale)",
+    "problem": "`fontSize=\"8\"` on the \"Dec 2028 $33 first traded\" marker label, the smallest text on the tab and half the size of the card header above it.",
+    "fix": "Change `fontSize=\"8\"` to `fontSize=\"10\"`.",
+    "severity": "LOW",
+    "id": "PL-42"
+   },
+   {
+    "where": "Playbook tab, WEEKLY MACD chart, latest value label, index.html line 1323",
+    "rule": "Rule 1 (type scale)",
+    "problem": "`fontSize=\"9\"` on the \"+1,947\" value that sits above the last bar. 9px is not in the scale, and it is also a different size from the 8px axis labels in the same svg.",
+    "fix": "Change `fontSize=\"9\"` to `fontSize=\"10\"`.",
+    "severity": "LOW",
+    "id": "PL-43"
+   },
+   {
+    "where": "Playbook tab, UNIT COST LOOKUP result tile sub lines, index.html lines 1075 and 1078",
+    "rule": "Rule 1 (type scale)",
+    "problem": "`fontSize:10` on \"9/19/26 · MSTX $18.73\" and \"same as the last close\". 10px is reserved for uppercase labels; tile sub lines are 12px.",
+    "fix": "Change `fontSize:10` to `fontSize:12` on line 1075 and on line 1078.",
+    "severity": "LOW",
+    "id": "PL-44"
+   },
+   {
+    "where": "Playbook tab, LEAPS UNITS card, fallback notice, index.html line 1246",
+    "rule": "Rule 5 (copy)",
+    "problem": "\"Live unit curve unavailable: unit prices are the ledger's 9/19 copy.\" puts a colon inside a sentence.",
+    "fix": "Replace the text on line 1246 with: `Live unit curve unavailable. Unit prices are the ledger's 9/19 copy.`",
+    "severity": "LOW",
+    "id": "PL-45"
+   }
+  ]
+ },
+ {
+  "area": "copy",
+  "findings": [
+   {
+    "where": "MSTX tab · LEVEL card · index.html line 1555 (insert after the LEVEL verdict word, before the levelRead line at 1556)",
+    "rule": "Rule 4 (definitions) and the owner's own words: \"you don't define anywhere what projected means versus best estimate means\"",
+    "problem": "The LEVEL card is where \"projected\" and \"best estimate\" first appear on the MSTX tab. It renders the tiles PROJECTED MSTX $17.16 with sub line \"your mNAV formula · alerts use this\" and BEST ESTIMATE, 1 WEEK $18.05 with sub line \"1 month $16.97 · flat Bitcoin, incl. 2x decay\". Neither word is defined anywhere on the card. The only definition on the whole site sits far below at line 1636 inside BITCOIN PRICE LOOKUP.",
+    "fix": "Insert one visible line directly under the verdict word, above levelRead: <div style={{...FT,marginTop:7}}>Projected is your mNAV formula. Best estimate is projected plus today's gap, which fades over weeks.</div>",
+    "severity": "HIGH",
+    "id": "CO-01"
+   },
+   {
+    "where": "MSTX tab · GAP CHART · MSTX card · index.html line 1583 (after the header and toggle row, before the read line at 1584)",
+    "rule": "Rule 4 (definitions at the gap chart toggle) and the owner's own words: \"there's no legend on a couple of the charts, so it's just not clear anywhere\"",
+    "problem": "The card header row carries two toggle buttons, \"vs projected\" and \"vs best estimate\", with no line saying what either word means. A reader flips the toggle and the chart changes with no explanation.",
+    "fix": "Insert directly under the header row: <div style={{...FT,marginTop:6}}>Projected is your mNAV formula. Best estimate is projected plus today's gap, which fades over weeks.</div>",
+    "severity": "HIGH",
+    "id": "CO-02"
+   },
+   {
+    "where": "MSTX tab · BITCOIN PRICE LOOKUP chart legend · index.html line 1682",
+    "rule": "Rule 3 (always-visible legend, never behind \"more\") and Rule 5 (no colons, at most two visible sentences)",
+    "problem": "Current text, all inside a <More> that clips to one nowrap line with a \"more\" button: \"Projected MSTR against Bitcoin. Cyan: projected, your mNAV formula. White: the best estimate, projected carrying today's gap. Amber dashes: the convex fit, the high end. Green: your mNAV, if entered. White dot: MSTR now. Cyan dot: the best estimate at your Bitcoin price.\" That is seven sentences and six colons, and the chart's only legend is hidden.",
+    "fix": "Split into an always-visible swatch legend row plus one sentence. Legend row (colour swatch + label, no <More>): \"Cyan projected · White best estimate · Amber dashes convex fit, the high end · Green your mNAV · White dot MSTR now · Cyan dot best estimate at your Bitcoin price\". Keep one visible sentence above it: \"The chart reads projected MSTR against Bitcoin.\"",
+    "severity": "HIGH",
+    "id": "CO-03"
+   },
+   {
+    "where": "MSTX tab · mNAV HISTORY · BULL AND BEAR MARKETS chart legend · index.html lines 1721 to 1723",
+    "rule": "Rule 3 (always-visible legend) and Rule 5 (no colons, sentences of 20 words or fewer)",
+    "problem": "Current text, clipped behind \"more\": \"White: mNAV, weekly. Amber: its 90-day average. Cyan: projected mNAV. Red shading: bear market, Bitcoin below its 200-day average. mNAV has fallen over time in both kinds of market: late 2024 2.69, early 2025 2.08, late 2025 1.43, early 2026 0.96, since July 2026 0.76. So the bull and bear medians below are partly a before and after. Early levels are approximate: the share count is scaled by one constant. Built through 9/18/26.\" Six colons, and the four-series legend is hidden.",
+    "fix": "Always-visible swatch legend row: \"White mNAV weekly · Amber 90-day average · Cyan projected mNAV · Red shading bear market\". Then behind \"more\": \"Red shading means Bitcoin closed below its 200-day average. mNAV has fallen over time in both kinds of market. Medians by period run late 2024 2.69, early 2025 2.08, late 2025 1.43, early 2026 0.96, since July 2026 0.76. So the bull and bear medians below are partly a before and after. Early levels are approximate because the share count is scaled by one constant. Built through 9/18/26.\"",
+    "severity": "HIGH",
+    "id": "CO-04"
+   },
+   {
+    "where": "Playbook tab · COST OF 200 LEAPS UNITS, DAY BY DAY chart legend · index.html line 1038",
+    "rule": "Rule 3 (always-visible legend) and Rule 5 (no colons)",
+    "problem": "Current text: \"Cyan: model cost. Amber: 10-day average. White dots: days both legs really traded. Dashed: before the long leg existed.\" Four colons, and it is wrapped in <More> with whiteSpace nowrap, so it truncates to one clipped line with a \"more\" button. It is also swapped out entirely for the hover read-out, so the legend disappears the moment the cursor touches the chart.",
+    "fix": "Make it a permanent swatch legend row under the header, not the hover slot: \"Cyan model cost · Amber 10-day average · White dots both legs traded · Dashed before the long leg existed\". Put the hover read-out on its own line below it.",
+    "severity": "HIGH",
+    "id": "CO-05"
+   },
+   {
+    "where": "Playbook tab · WEEKLY MACD (8,21,5) · HISTOGRAM card · index.html lines 1296 to 1327 (add under the header at 1298)",
+    "rule": "Rule 3 (every chart has an always-visible legend row)",
+    "problem": "The histogram renders green bars, red bars, a grey zero line and an amber vertical line with an amber triangle marker. There is no legend anywhere on the card. Nothing tells the reader that amber marks the cross week.",
+    "fix": "Add a visible line directly under the header: <div style={{fontSize:11,color:\"#7a9ab8\",marginBottom:8}}>Green bars above zero · Red bars below zero · Amber line the cross week</div>",
+    "severity": "HIGH",
+    "id": "CO-06"
+   },
+   {
+    "where": "Playbook tab · hero card word · index.html line 1212",
+    "rule": "Rule 5 (cut words that carry nothing) and plain correctness of rendered words",
+    "problem": "The code renders {\"ENTRY \" + trig} where trig is one of \"ENTRY\", \"HOLD\", \"OFF\" or \"UNKNOWN\" (set at lines 1124 to 1126). When the trigger is on, the 28px headline reads \"ENTRY ENTRY\". When it is a hold, it reads \"ENTRY HOLD\", which contradicts itself. Only the current \"ENTRY OFF\" state reads correctly.",
+    "fix": "Replace {\"ENTRY \" + trig} with {trig === \"ENTRY\" ? \"ENTRY ON\" : trig === \"HOLD\" ? \"HOLD\" : trig === \"OFF\" ? \"ENTRY OFF\" : \"ENTRY UNKNOWN\"}",
+    "severity": "HIGH",
+    "id": "CO-07"
+   },
+   {
+    "where": "MSTX tab · ALERT LOG card footnote · index.html lines 1479 to 1481",
+    "rule": "Rule 5 (no semicolons, no parenthetical asides, sentences of 20 words or fewer)",
+    "problem": "Renders as: \"Lag at −3.0% MSTX against its own last hour at MSTR's bar low while BTC holds (hour move at least −1.0%), only with BTC above its 50-day; Cheap at −6% MSTX, only with BTC above its 50-day; Rich at +8% MSTX. Rich fires in either regime.\" Two semicolons, one parenthetical aside, and a first sentence of 41 words.",
+    "fix": "Rebuild the template as: const gate = cfg.regime_gate ? \" It needs BTC above its 50-day.\" : \"\"; const rules = \"Lag fires at \" + msPct(lagLine) + \" MSTX against its last hour, at MSTR's bar \" + (cfg.lag_at_low ? \"low\" : \"close\") + \", with the hour move at least \" + msPct(nm(cfg.btc_hour_move_floor)*100) + \".\" + gate + \" Cheap fires at \" + msPct(cheap,0) + \" MSTX.\" + gate + \" Rich fires at \" + msPct(rich,0) + \" MSTX \" + (cfg.rich_gate ? \"with the BTC 50-day sell gate on.\" : \"in either regime.\"); Renders as: \"Lag fires at −3.0% MSTX against its last hour, at MSTR's bar low, with the hour move at least −1.0%. It needs BTC above its 50-day. Cheap fires at −6% MSTX. It needs BTC above its 50-day. Rich fires at +8% MSTX in either regime.\"",
+    "severity": "HIGH",
+    "id": "CO-08"
+   },
+   {
+    "where": "MSTX tab · LEVEL card typical-gap line · index.html line 1560",
+    "rule": "Rule 5 (no colons, no parenthetical asides, 20 words or fewer, at most two visible sentences per card)",
+    "problem": "Renders as: \"Typical gap: -2.7% over the last 60 sessions, +12.5% since STRC began (+8.0% in bear markets, +19.6% in bull). MSTX sat at Rich on 54% of all days and 10% of the last 60.\" One colon, one parenthetical aside, a 24-word first sentence, and it is fully visible, which pushes the LEVEL card to four visible sentences.",
+    "fix": "Wrap in <More hide> and rewrite as: \"The gap runs -2.7% over the last 60 sessions and +12.5% since STRC began. In bear markets it runs +8.0% and in bull +19.6%. MSTX sat at Rich on 54% of all days and 10% of the last 60.\"",
+    "severity": "HIGH",
+    "id": "CO-09"
+   },
+   {
+    "where": "Ladder tab · THE RULES card · GATE row · data/ladder-rules.json line 5, rules[0].rule",
+    "rule": "Rule 5 (no colons, no semicolons)",
+    "problem": "Current text: \"BTC daily close vs its 50-day. Above: long structures allowed. Below: no new money; open positions run their own exits.\" Two colons and a semicolon, all visible on the Ladder tab.",
+    "fix": "\"BTC daily close against its 50-day. Above it long structures are allowed, below it no new money and open positions run their own exits.\"",
+    "severity": "HIGH",
+    "id": "CO-10"
+   },
+   {
+    "where": "Ladder tab · THE RULES card · EXIT row · data/ladder-rules.json line 11, rules[6].rule",
+    "rule": "Rule 5 (no semicolons, no colons, no parenthetical asides)",
+    "problem": "Current text: \"The band crossing on the monthly close; the short strike is the trigger. Gate flips down: roll the short call down and closer (30 to 45 days), keep the long. At the 85 line: sell the BTC beta into it and rotate down.\" One semicolon, two colons and one parenthetical aside, all visible.",
+    "fix": "\"The band crossing on the monthly close, with the short strike as the trigger. If the gate flips down, roll the short call down and closer, 30 to 45 days, and keep the long. At the 85 line, sell the BTC beta into it and rotate down.\"",
+    "severity": "HIGH",
+    "id": "CO-11"
+   },
+   {
+    "where": "Playbook tab · LEAPS UNITS card intro · data/paper-ledger.json line 173, plan.objective",
+    "rule": "Rule 5 (no colons, sentences of 20 words or fewer)",
+    "problem": "Current text: \"LEAPS units, not dollars: the count of MSTX Dec 2028 $33 / Jan 2028 $60 units the account can buy after the trade settles, at that day's unit price. The unit price is estimated from the real option prints and refreshed daily.\" One colon and a 33-word first sentence. It renders as the first line of the LEAPS UNITS card at index.html line 1242.",
+    "fix": "\"The plan counts LEAPS units, not dollars. A unit is one MSTX Dec 2028 $33 call against one Jan 2028 $60 call. The count is what the account can buy after the trade settles, at that day's unit price. The unit price comes from the real option prints and refreshes daily.\" Keep the first two sentences visible and let the <More> toggle at line 1242 hold the rest.",
+    "severity": "HIGH",
+    "id": "CO-12"
+   },
+   {
+    "where": "Playbook tab · LEAPS UNITS AT THE END, BY ROUTE footnote · data/routes.json line 30, note (regenerated at tools/routes_refresh.py lines 126 to 131)",
+    "rule": "Rule 5 (no colons, no semicolons, no parenthetical asides, 20 words or fewer)",
+    "problem": "One semicolon, two colons, one parenthetical aside and several sentences over 20 words. Its first sentence renders visibly under the routes table at index.html line 1295 and runs 21 words; the rest renders behind \"more\" at line 1298.",
+    "fix": "Rewrite the note built in tools/routes_refresh.py to: \"Holding to %s ends with more units than closing now in %d%% of history's paths and %d%% on your view. Model averages, whole units at the model mid, bought the session after each settlement at the settlement close. A real fill buys fewer. Priced at the %s close, MSTX $%.2f, unit $%.2f, no cash. Market view is MSTX's own history, every %d-session and %d-session move since the fund listed, drift removed. Your view is the same prices one dollar higher. Phase 1 is marked at 100%% vol at the %s close, closing now at 135%% vol, about $%s. Phase 2 is at 120%% vol off the plan's strikes with 30%% held as cash. Averages hide the spread. Phase 1 pays most between $16 and $18 and little outside $15 to $19.\" Keep the same format arguments in the same order.",
+    "severity": "HIGH",
+    "id": "CO-13"
+   },
+   {
+    "where": "Playbook tab · LEAPS UNITS card footnote · data/leaps-cost.json line 9, note (regenerated at tools/leaps_cost.py line 80)",
+    "rule": "Rule 5 (no colons, sentences of 20 words or fewer)",
+    "problem": "Current text: \"Model estimate near the mid: Black-Scholes on each day's MSTX close, vol backed out of the short leg's real trades, the long leg's vol scaled from it. Before the long leg first traded the line is hypothetical. A fill costs more than the mid: the long leg's market is several dollars wide.\" Two colons and a 28-word first sentence. It renders behind \"more\" at index.html line 1297.",
+    "fix": "Change the note literal in tools/leaps_cost.py to: \"Model estimate near the mid. Black-Scholes on each day's MSTX close, with vol backed out of the short leg's real trades. The long leg's vol is scaled from it. Before the long leg first traded the line is hypothetical. A fill costs more than the mid because the long leg's market is several dollars wide.\"",
+    "severity": "HIGH",
+    "id": "CO-14"
+   },
+   {
+    "where": "MSTX tab · BITCOIN PRICE LOOKUP table footnote · index.html lines 1676 to 1680",
+    "rule": "Rule 5 (no colons, no semicolons, no parenthetical asides, 20 words or fewer)",
+    "problem": "Two colons (\"Best estimate:\", \"counts debt and preferred:\"), two semicolons (\"an assumption; 42\", \"box label; Strategy's\"), one parenthetical aside (\"(preferred 21% of the Bitcoin, debt 0.5%)\") and a 36-word walk-forward sentence.",
+    "fix": "\"Uses the MSTR, MSTX and STRC boxes in WHAT IF as the starting point. MSTX is a 2x daily fund. For today's date it is twice the day's move off yesterday's closes, the same formula as WHAT IF. For a later date it is MSTX now times the MSTR ratio squared, less decay at 75% MSTR vol. Best estimate is projected plus today's gap, fading by half every 28 days. Walk-forward it halved the error of projected alone a week out. It cut the error by a fifth at one month and was about even at two months. The 28-day half-life is an assumption, and 42 and 56 days score the same. Projected and high are both capped at mNAV 2.0, the same cap the Ladder tab uses. Your mNAV counts debt and preferred, so price = mNAV x Bitcoin per share - $25.39 of debt and preferred per share. Start from the number in the box label. Strategy's own figure runs higher because it counts shares differently, preferred 21% of the Bitcoin and debt 0.5%.\" Keep every interpolated value in the same position.",
+    "severity": "MEDIUM",
+    "id": "CO-15"
+   },
+   {
+    "where": "MSTX tab · LEVEL card · RICH read line · index.html line 1506",
+    "rule": "Rule 5 (no colons, 20 words or fewer, at most two visible sentences per card)",
+    "problem": "Current text: \"Ahead of projected. Six earlier Rich starts: after the four in 2025 MSTX was lower a month later, after the two in 2026 it ran 39% and 44%. Not a sell on its own.\" One colon and a 30-word second sentence, all visible.",
+    "fix": "Show only \"Ahead of projected, and not a sell on its own.\" and put the rest behind a <More hide>: \"There have been six earlier Rich starts. After the four in 2025 MSTX was lower a month later. After the two in 2026 it ran 39% and 44%.\"",
+    "severity": "MEDIUM",
+    "id": "CO-16"
+   },
+   {
+    "where": "MSTX tab · mNAV HISTORY card intro · index.html lines 1704 to 1705",
+    "rule": "Rule 5 (no colons, at most two visible sentences per card)",
+    "problem": "Renders as: \"Projected has only been tested since STRC began on 7/30/25: 287 days, 70% of them bear-market days. MSTR ran above projected in both, by 10.4% on bull days and 4.0% on bear days. That is why the best estimate carries the gap.\" One colon and three fully visible sentences.",
+    "fix": "\"Projected has only been tested since STRC began on 7/30/25, over 287 days, 70% of them bear-market days. MSTR ran above projected in both, by 10.4% on bull days and 4.0% on bear days.\" Move \"That is why the best estimate carries the gap.\" into the card's existing \"more\" footnote at line 1721.",
+    "severity": "MEDIUM",
+    "id": "CO-17"
+   },
+   {
+    "where": "MSTX tab · SINCE STRC, WHERE PROJECTED IS TESTED table footnote · index.html line 1728",
+    "rule": "Rule 5 (sentences of 20 words or fewer, no comma pileups)",
+    "problem": "Current text is one 31-word sentence with four commas: \"The miss is the average distance between MSTR's close and the estimate, as a share of the price, on days that have both estimates, given where Bitcoin and STRC actually went.\"",
+    "fix": "\"The miss is the average distance between MSTR's close and the estimate, as a share of the price. It covers days that have both estimates, at the Bitcoin and STRC prices that actually happened.\"",
+    "severity": "MEDIUM",
+    "id": "CO-18"
+   },
+   {
+    "where": "Playbook tab · UNIT COST LOOKUP footnote · index.html lines 1083 to 1084",
+    "rule": "Rule 5 (no colons, no semicolons, no parenthetical asides)",
+    "problem": "Renders as: \"Model estimate near the mid: both legs repriced with Black-Scholes at today's fitted vols (long 116%, short 132%). A real fill costs more; the long leg's market is wide.\" One colon, one parenthetical aside, one semicolon.",
+    "fix": "\"Model estimate near the mid, with both legs repriced by Black-Scholes at today's fitted vols, long \" + Math.round(mdl.long.iv*100) + \"% and short \" + Math.round(mdl.short.iv*100) + \"%. A real fill costs more because the long leg's market is wide.\"",
+    "severity": "MEDIUM",
+    "id": "CO-19"
+   },
+   {
+    "where": "MSTX tab · GAP CHART footnote, projected view · index.html line 1590",
+    "rule": "Rule 5 (no semicolons)",
+    "problem": "Current text: \"Tap for a day. Dashed lines are Cheap and Rich; the gap scale is stretched near zero.\" One semicolon.",
+    "fix": "\"Tap for a day. Dashed lines are Cheap and Rich. The gap scale is stretched near zero.\"",
+    "severity": "MEDIUM",
+    "id": "CO-20"
+   },
+   {
+    "where": "Playbook tab · BY MSTX CLOSE ON SETTLEMENT slider read-out · index.html lines 1169 to 1171",
+    "rule": "Rule 5 (no colons)",
+    "problem": "Renders as: \"At $16.50 on settlement: position about $31,432, unit $3.55, 88 LEAPS\". A colon inside the sentence.",
+    "fix": "const uRead = \"At \" + usdS(uSel) + \" on settlement the position is about \" + (uSelR.pv == null ? UNK : usd0(uSelR.pv)) + \", the unit is \" + (uSelR.up == null ? UNK : usd2(uSelR.up)) + \" and that buys \" + (uSelR.n == null ? UNK : uSelR.n.toFixed(0)) + \" LEAPS.\"",
+    "severity": "MEDIUM",
+    "id": "CO-21"
+   },
+   {
+    "where": "Playbook tab · LEAPS UNITS card · unit price line · index.html line 1243",
+    "rule": "Rule 5 (no colons)",
+    "problem": "Renders as: \"Unit price at the 9/18 close: $3.97\". A colon inside the sentence.",
+    "fix": "{\"Unit price at the \" + (md(lc && lc.model && lc.model.asof) || UNK) + \" close is \" + msUsd(nm(lc && lc.ref && lc.ref.today && lc.ref.today.unit))}",
+    "severity": "MEDIUM",
+    "id": "CO-22"
+   },
+   {
+    "where": "Playbook tab · LEAPS UNITS card · fallback notice · index.html line 1253",
+    "rule": "Rule 5 (no colons)",
+    "problem": "Current text: \"Live unit curve unavailable: unit prices are the ledger's 9/19 copy.\" A colon inside the sentence.",
+    "fix": "\"Live unit curve unavailable. Unit prices are the ledger's 9/19 copy.\"",
+    "severity": "MEDIUM",
+    "id": "CO-23"
+   },
+   {
+    "where": "MSTX tab · BITCOIN PRICE LOOKUP · BEST ESTIMATE MSTR tile sub line · index.html line 1649",
+    "rule": "Rule 5 (no colons; labels and meta lines may use the middle dot separator)",
+    "problem": "Renders as: \"projected $146 · high $146 · carries 100% of today's gap: +4.4% MSTR, +7.8% MSTX\". A colon inside a meta line that already uses middle dots as its separator.",
+    "fix": "Change the join so the colon becomes a middle dot: \"projected \"+usd0(mstrAt(B,tLo))+\" · high \"+usd0(mstrAt(B,tHi))+\" · carries \"+Math.round(wGap*100)+\"% of today's gap · \"+msPct(gapNow == null ? null : gapNow*100)+\" MSTR · \"+msPct(whatGap)+\" MSTX\"",
+    "severity": "MEDIUM",
+    "id": "CO-24"
+   },
+   {
+    "where": "Playbook tab · hero card step 1 · data/paper-ledger.json line 128, plan.phases[0].next_action_steps[0]",
+    "rule": "Rule 5 (no colons)",
+    "problem": "Current text: \"Hold both calendars into Monday 9/21. Before the open, get your broker's bid and ask on both calendars and the LEAPS legs, then decide: keep holding, or sell both and buy LEAPS units in thirds.\" A colon inside the sentence, and a 33-word second sentence.",
+    "fix": "\"Hold both calendars into Monday 9/21. Before the open, get your broker's bid and ask on both calendars and the LEAPS legs. Then decide to keep holding, or to sell both and buy LEAPS units in thirds.\"",
+    "severity": "MEDIUM",
+    "id": "CO-25"
+   },
+   {
+    "where": "Playbook tab · hero card step 2 · data/paper-ledger.json line 129, plan.phases[0].next_action_steps[1]",
+    "rule": "Rule 5 (no colons, no semicolons)",
+    "problem": "Current text: \"Tripwire: a daily close above $20 or under $15 closes the position the next morning. Checkpoint Fri 9/25: outside $15 to $19, close; inside, hold the final week.\" Two colons and a semicolon.",
+    "fix": "\"The tripwire is a daily close above $20 or under $15, which closes the position the next morning. On Fri 9/25, close outside $15 to $19 and hold the final week inside.\"",
+    "severity": "MEDIUM",
+    "id": "CO-26"
+   },
+   {
+    "where": "Playbook tab · hero card detail line · data/paper-ledger.json line 132, plan.phases[0].next_action_detail",
+    "rule": "Rule 5 (no colons, sentences of 20 words or fewer)",
+    "problem": "Current text: \"The thirds plan, not yet decided: sell both calendars 20 to 30 minutes after the open, then buy LEAPS units one third Monday, one third when the gap is at or under zero or on 10/2, and one third on a Cheap alert or on 10/16. No Phase 2.\" One colon and a 48-word first sentence.",
+    "fix": "\"The thirds plan is not yet decided. Sell both calendars 20 to 30 minutes after the open, then buy LEAPS units in thirds. One third Monday. One third when the gap is at or under zero or on 10/2. One third on a Cheap alert or on 10/16. No Phase 2.\"",
+    "severity": "MEDIUM",
+    "id": "CO-27"
+   },
+   {
+    "where": "Playbook tab · PHASE 1 · WHAT IS ON card footnote · data/paper-ledger.json line 45, plan.phases[0].positions",
+    "rule": "Rule 5 (no parenthetical asides, sentences of 20 words or fewer)",
+    "problem": "Current text: \"At the 9/18 close (MSTX $18.73) the two calendars model at about $23,800 at 135% vol, the vol that matched your 9/18 quote, against $16,975 paid. Break-evens at the 10/2 close are about $14.94 and $19.57 at 100% vol. The best stretch runs from $16 to $18.\" One parenthetical aside and a 26-word first sentence.",
+    "fix": "\"At the 9/18 close, MSTX $18.73, the two calendars model at about $23,800 at 135% vol against $16,975 paid. That 135% vol matched your 9/18 quote. Break-evens at the 10/2 close are about $14.94 and $19.57 at 100% vol. The best stretch runs from $16 to $18.\"",
+    "severity": "MEDIUM",
+    "id": "CO-28"
+   },
+   {
+    "where": "Playbook tab · LEAPS UNITS card footnote · data/paper-ledger.json line 126, plan.phases[0].units_note",
+    "rule": "Rule 5 (no semicolons, no parenthetical asides, 20 words or fewer)",
+    "problem": "Current text: \"At the Oct 2 close with no cash. Both shorts settle at intrinsic value; the Oct 9 $16 long is marked with 7 days left and the Oct 16 $18 long with 14, both at 100% vol. The unit is priced for Oct 2 from the real option prints (data/leaps-cost.json), and the count is whole units, rounded down.\" One semicolon, one parenthetical aside, a 30-word second sentence.",
+    "fix": "\"At the Oct 2 close with no cash. Both shorts settle at intrinsic value. The Oct 9 $16 long is marked with 7 days left, the Oct 16 $18 long with 14. Both sit at 100% vol. The unit is priced for Oct 2 from the real option prints in data/leaps-cost.json. The count is whole units, rounded down.\"",
+    "severity": "MEDIUM",
+    "id": "CO-29"
+   },
+   {
+    "where": "Ladder tab · ACTIVE INSTRUMENT card description · index.html line 270, LADDER[3].desc",
+    "rule": "Rule 5 (no colons, at most two visible sentences per card)",
+    "problem": "Current text: \"2× levered MSTR ETF diagonal. ~8× beta on the long leg. Bottom visits are short, bottom episodes ran 13 to 16 months: buy the 12 months.\" A colon used as punctuation, and three visible sentences on a card that already shows a three-sentence band line beneath it.",
+    "fix": "\"2× levered MSTR ETF diagonal with about 8× beta on the long leg. Bottom visits are short but bottom episodes ran 13 to 16 months, so buy the 12 months.\"",
+    "severity": "MEDIUM",
+    "id": "CO-30"
+   },
+   {
+    "where": "Ladder tab · ACTIVE INSTRUMENT card description, sell zone · index.html line 255, LADDER[0].desc",
+    "rule": "Rule 5 (no colons, no semicolons, at most two visible sentences per card)",
+    "problem": "Current text: \"Sell zone. Above the 85 line the BTC beta is sold and the proceeds sit in STRC: 12% on $100 par, no BTC beta. Last monthly close up here was March 2022; the 2024 top peaked at quantile 81 and never reached it.\" One colon, one semicolon, three visible sentences.",
+    "fix": "\"Sell zone. The BTC beta is sold above the 85 line and the proceeds sit in STRC at 12% on $100 par. The last monthly close up here was March 2022 and the 2024 top peaked at quantile 81, short of the 85 line.\" If the card must hold two visible sentences, cut the third.",
+    "severity": "MEDIUM",
+    "id": "CO-31"
+   },
+   {
+    "where": "Ladder tab · ACTIVE INSTRUMENT card description, IBIT band · index.html line 260, LADDER[1].desc",
+    "rule": "Rule 5 (sentences of 20 words or fewer, at most two visible sentences per card)",
+    "problem": "Current text: \"Spot BTC ETF diagonal. ~2× beta on the long leg. If 2024 is the shape of a top, the upper half of the cycle plays out here and Rich readings are the sell.\" Three visible sentences and a 23-word third sentence.",
+    "fix": "\"Spot BTC ETF diagonal with about 2× beta on the long leg. If 2024 is the shape of a top, the upper half of the cycle plays out here.\" Move \"Rich readings here are the sell.\" behind a \"more\" toggle or cut it.",
+    "severity": "MEDIUM",
+    "id": "CO-32"
+   },
+   {
+    "where": "Playbook tab · WEEKLY MACD card read line · index.html lines 1331 to 1332",
+    "rule": "Rule 5 (at most two visible sentences per card)",
+    "problem": "Renders as: \"Falling since 9/6. Crossed 7/26, 7 weeks ago. Last bar 9/13.\" Three visible sentences on a card that also needs a legend line added.",
+    "fix": "{(rising ? \"Rising since \" : \"Falling since \") + (md(rise)||UNK) + \". It crossed \" + (md(xd0)||UNK) + \", \" + (isNaN(wkN) ? UNK : wkN) + \" weeks ago, and the last bar is \" + (bars.length ? (md(bars[bars.length-1].bar) || bars[bars.length-1].bar) : UNK) + \".\"} Renders as: \"Falling since 9/6. It crossed 7/26, 7 weeks ago, and the last bar is 9/13.\"",
+    "severity": "MEDIUM",
+    "id": "CO-33"
+   },
+   {
+    "where": "MSTX tab · DETAILS section · data/mstr-model.json line 3333, regime.read_lines[1]",
+    "rule": "Rule 5 (no colons)",
+    "problem": "Current text: \"Four episodes: a rule to trade by, not a proof.\" A colon inside the sentence. It renders as the second read line in the DETAILS panel at index.html line 1741.",
+    "fix": "\"Four episodes make a rule to trade by, not a proof.\" The same colon appears in the companion regime.read field at line 3330, which should read \"Four episodes make a rule to trade by, not a proof, and the monitor's log is the live test.\"",
+    "severity": "MEDIUM",
+    "id": "CO-34"
+   },
+   {
+    "where": "MSTX tab · TWO YEARS table, MIDDLE HALF column on a phone · index.html line 1725",
+    "rule": "Rule 5 (say \"to\" for ranges, no en dashes)",
+    "problem": "The narrow branch renders the range with an en dash, so a phone shows \"1.54–2.24\" and \"0.89–1.06\" while the desktop shows \"1.54 to 2.24\". The en dash is doing punctuation work and the two widths disagree.",
+    "fix": "Replace (narrow ? \"–\" : \" to \") with \" to \" so both widths read \"1.54 to 2.24\".",
+    "severity": "MEDIUM",
+    "id": "CO-35"
+   },
+   {
+    "where": "Playbook tab · hero card, phase 2 steps · data/paper-ledger.json line 154, plan.phases[1].next_action_steps[0]",
+    "rule": "Rule 5 (no colons)",
+    "problem": "Current text: \"On settlement day, 70% of the sleeve: Jan long one strike above the close, Dec 18 short at about 1.67x.\" A colon inside the sentence. This becomes the hero card copy from 9/26.",
+    "fix": "\"On settlement day put 70% of the sleeve on. Jan long one strike above the close, Dec 18 short at about 1.67x.\"",
+    "severity": "MEDIUM",
+    "id": "CO-36"
+   },
+   {
+    "where": "Playbook tab · hero card, phase 3 steps · data/paper-ledger.json lines 165 to 170, plan.phases[2].next_action_steps",
+    "rule": "Rule 5 (no colons, no parenthetical asides)",
+    "problem": "Steps read \"1. The band on the monthly close picks the ticker (Ladder tab).\", \"2. 60% of the sleeve: long 12 months at 0.75 delta, short 90 days at the band ceiling.\", \"3. 10% lag sleeve, 10% swing sleeve, the rest is the cash floor.\", \"4. Gate flips down: roll the short down and closer, keep the long.\" One parenthetical aside and two colons. These become the hero card copy from 12/19.",
+    "fix": "\"The band on the monthly close picks the ticker on the Ladder tab.\", \"Put 60% of the sleeve on, long 12 months at 0.75 delta and short 90 days at the band ceiling.\", \"10% lag sleeve, 10% swing sleeve, the rest is the cash floor.\", \"If the gate flips down, roll the short down and closer and keep the long.\" Drop the leading \"1. \" to \"4. \" numbers, since the card already stacks the steps.",
+    "severity": "MEDIUM",
+    "id": "CO-37"
+   },
+   {
+    "where": "Playbook tab · hero card fallback text · data/paper-ledger.json line 8, plan.phases[0].next_action",
+    "rule": "Rule 5 (no colons)",
+    "problem": "Current text: \"Hold both calendars into Monday's decision. Tripwire until 9/25: a daily close above $20 or under $15 closes it the next morning. Checkpoint Fri 9/25: outside $15 to $19 close, inside hold the final week. Decision date Fri 10/2.\" Two colons. This renders as the hero headline whenever next_action_steps is empty (index.html lines 1141 and 1147).",
+    "fix": "\"Hold both calendars into Monday's decision. The tripwire runs until 9/25, a daily close above $20 or under $15 closes it the next morning. On Fri 9/25, close outside $15 to $19 and hold the final week inside. The decision date is Fri 10/2.\"",
+    "severity": "LOW",
+    "id": "CO-38"
+   },
+   {
+    "where": "Ladder tab · ACTIVE INSTRUMENT card · debt line · index.html line 2155, with values at lines 254, 259, 264 and 269",
+    "rule": "Rule 5 (no colons, words instead of symbols)",
+    "problem": "Renders as \"Max interest rate: < 12%\". A colon inside the line, and a maths operator standing in for a word.",
+    "fix": "Change the line at 2155 to read \"Max interest rate · {tier.debt}\" and change the four debt values to \"under 3%\", \"under 6%\", \"under 9%\" and \"under 12%\", so the line reads \"Max interest rate · under 12%\".",
+    "severity": "LOW",
+    "id": "CO-39"
+   },
+   {
+    "where": "MSTX tab · LEVEL card · BEST ESTIMATE, 1 WEEK tile sub line · index.html line 1558",
+    "rule": "Rule 5 (cut words that carry nothing, no abbreviations doing sentence work)",
+    "problem": "Renders as: \"1 month $16.97 · flat Bitcoin, incl. 2x decay\". The abbreviation \"incl.\" sits inside a meta line that otherwise uses middle dots.",
+    "fix": "\"1 month \"+msUsd(aheadMstx(28))+\" · flat Bitcoin · after 2x decay\"",
+    "severity": "LOW",
+    "id": "CO-40"
+   },
+   {
+    "where": "Ladder tab · ACTIVE INSTRUMENT card · band line · index.html lines 2174 to 2178",
+    "rule": "Rule 5 (at most two visible sentences per card)",
+    "problem": "Renders as: \"Band set by the Aug 2026 monthly close, $79K at 10.6q. Live 11.5q. Rotate only when a monthly close crosses a line.\" Three sentences, stacked under a three-sentence instrument description on the same card.",
+    "fix": "\"Band set by the Aug 2026 monthly close, $79K at 10.6q, against live 11.5q. Rotate only when a monthly close crosses a line.\" Fold \"Live {q}q.\" into the first sentence in both branches of the ternary.",
+    "severity": "LOW",
+    "id": "CO-41"
+   },
+   {
+    "where": "Ladder tab · THE RULES card · ENTRY row · data/ladder-rules.json line 9, rules[4].rule",
+    "rule": "Rule 5 (at most two visible sentences)",
+    "problem": "Current text: \"Gap at or under zero. Cheap is the add. Never open a primary while Rich is on.\" Three sentences where two will carry every fact.",
+    "fix": "\"Gap at or under zero, and Cheap is the add. Never open a primary while Rich is on.\"",
+    "severity": "LOW",
+    "id": "CO-42"
+   },
+   {
+    "where": "Playbook tab · LEAPS UNITS AT THE END, BY ROUTE table · route 3 cell · tools/routes_refresh.py line 124",
+    "rule": "Rule 5 (no parenthetical asides)",
+    "problem": "The route label is built as \"Close now and buy LEAPS, after five cents of slippage on %d calendars (count fixed once bought)\" and renders in the table as a parenthetical aside inside a cell.",
+    "fix": "\"Close now and buy LEAPS after five cents of slippage on %d calendars, count fixed once bought\"",
+    "severity": "LOW",
+    "id": "CO-43"
+   },
+   {
+    "where": "Ladder tab · band chips under the instrument card · index.html line 2199",
+    "rule": "Rule 5 (say \"to\" for ranges, no en dashes)",
+    "problem": "The chips render \"MSTX 0–15\", \"MSTR 15–50\", \"IBIT 50–85\" and \"STRC 85–100\" with an en dash standing in for a range word, while every other range on the site reads \"13 to 16 months\" or \"$15 to $19\".",
+    "fix": "{t.qMin.toFixed(0)}{\" to \"}{Math.min(100,t.qMax).toFixed(0)} so the chips read \"MSTX 0 to 15\", \"MSTR 15 to 50\", \"IBIT 50 to 85\", \"STRC 85 to 100\".",
+    "severity": "LOW",
+    "id": "CO-44"
+   },
+   {
+    "where": "Playbook tab · BY MSTX CLOSE ON SETTLEMENT meta line · index.html line 1252",
+    "rule": "Rule 5 (cut words that carry nothing)",
+    "problem": "Renders as: \"At the 10/2 close · no cash · longs at 100% vol · unit priced for 10/2 · whole units\". \"unit priced for 10/2\" repeats \"At the 10/2 close\", which already opens the line.",
+    "fix": "\"At the 10/2 close · no cash · longs at 100% vol · whole units\"",
+    "severity": "LOW",
+    "id": "CO-45"
+   },
+   {
+    "where": "Playbook tab · LEAPS UNITS card · data/playbook.json (checked, no finding) and data/paper-ledger.json plan.phases[0].structure, status, note and dates_note (checked, no finding)",
+    "rule": "Rule 5 scope check",
+    "problem": "These strings carry colons and semicolons but nothing renders them, so they are out of scope for a copy fix. index.html reads only plan.objective, plan.routes_note, phases[].next_action, next_action_detail, next_action_steps, panel_title, spreads, positions, units_by_price and units_note; from data/playbook.json it reads only inputs[btc_weekly_macd_8_21_5_hist_rising].histogram_last16 and inputs[btc_weekly_macd_8_21_5_fresh_cross], no prose at all. The build_history note in tools/model_refresh.py lines 132 to 134 and btc_per_share_note at line 92 are likewise never rendered.",
+    "fix": "No change. Recorded so the punctuation in these fields is not mistaken for a missed finding, and so a future edit that starts rendering plan.phases[0].structure or status gets a copy pass first.",
+    "severity": "LOW",
+    "id": "CO-46"
+   }
+  ]
+ },
+ {
+  "area": "ladder",
+  "findings": [
+   {
+    "where": "Ladder tab, Power Law Bands card, index.html line 626 (chart geometry) plus lines 852, 860",
+    "rule": "Rule 3 (charts at least 180px tall on a phone, readable axis labels)",
+    "problem": "The SVG is fixed at viewBox 900 x 420 with height:auto, so on a 390px phone the card interior is about 314px wide and the chart renders about 146px tall. The axis labels are fontSize=\"11\" inside a 900-unit viewBox, which scales down to about 3.8px on the phone. phone-Ladder-2 shows the chart as an unreadable strip.",
+    "fix": "Mirror the pattern MstrTab already uses at line 1397. Add to PowerLawChart: `const [narrow, setNarrow] = useState(() => window.innerWidth < 560); useEffect(() => { const r = () => setNarrow(window.innerWidth < 560); window.addEventListener(\"resize\", r); return () => window.removeEventListener(\"resize\", r); }, []);` Then change line 626 from `const W = 900, H = 420, PAD = {t:30, r:20, b:40, l:65};` to `const W = narrow ? 430 : 900, H = narrow ? 310 : 420, PAD = {t:30, r:20, b:40, l: narrow ? 46 : 65};` That gives about 226px of height on a 314px card. Change line 852 and line 860 from `fontSize=\"11\"` to `fontSize={narrow ? 13 : 10}`.",
+    "severity": "HIGH",
+    "id": "LA-01"
+   },
+   {
+    "where": "Ladder tab, Forward Price Projections card, index.html line 408 to 416",
+    "rule": "Rule 3 (every chart or data block carries an always-visible legend) and Rule 4 (define the terms where they first appear)",
+    "problem": "The table has no legend and no definition anywhere. The row labels 99.9%, 95%, 85%, 50%, 15% and 0.1% are never explained, the 50% row is highlighted blue with no note that it is fair value, and the two grey columns 1YR AGO and 6MO AGO are never identified as past band levels. This is the owner's \"it's just not clear anywhere\".",
+    "fix": "Insert one definition line directly under the header row, above the `<div style={{overflowX:\"auto\"}}>` at line 415, styled `{fontSize:\"12px\",color:\"#7a9ab8\",marginTop:\"-4px\",marginBottom:\"10px\"}` with the text: `Each row is a power law band and the 50% row is fair value. The two grey columns are where those bands sat in the past.`",
+    "severity": "HIGH",
+    "id": "LA-02"
+   },
+   {
+    "where": "Ladder tab, Power Law Bands card, index.html lines 759 to 775",
+    "rule": "Rule 3 (legend row directly under the header)",
+    "problem": "The legend is on the same flex row as the header with justifyContent:\"space-between\", not under it. On a phone the seven legend items wrap to two rows and squeeze the header, so \"POWER LAW BANDS\" itself breaks onto two lines (phone-Ladder-1). There is also no line saying what the white line or the coloured bands are.",
+    "fix": "Change line 759 from `<div style={{display:\"flex\",alignItems:\"center\",justifyContent:\"space-between\",marginBottom:\"10px\"}}>` to `<div style={{marginBottom:\"10px\"}}>`, leave the header div as the first child, and give the legend wrapper at line 763 `style={{display:\"flex\",gap:\"10px\",flexWrap:\"wrap\",alignItems:\"center\",marginTop:\"8px\"}}` so it sits on its own row beneath the header. Under the legend add a line styled `{fontSize:\"12px\",color:\"#7a9ab8\",marginTop:\"8px\"}` reading: `The white line is Bitcoin's price and the coloured lines are model bands. The 50% band is fair value.`",
+    "severity": "HIGH",
+    "id": "LA-03"
+   },
+   {
+    "where": "Cross-tab, Ladder card header at index.html line 409 against the MSTX tab definition at line 1636",
+    "rule": "Rule 4 (define projected and best estimate) and cross-tab consistency",
+    "problem": "The Ladder card is called \"Forward Price Projections\" and means a power law band price at a future date. On the MSTX tab \"projected\" is defined at line 1636 as the mNAV formula price. The same root word carries two unrelated meanings across two tabs and the Ladder side never defines its own. A reader moving between tabs has no way to tell them apart.",
+    "fix": "Change line 409 from `Forward Price Projections` to `Forward Band Prices`. The definition line added under this header (see the Forward Price Projections finding) then carries the meaning and the word projected is left to mean only the MSTX mNAV formula price.",
+    "severity": "HIGH",
+    "id": "LA-04"
+   },
+   {
+    "where": "Page shell, global slider CSS, index.html lines 33 to 37 and 40 to 44",
+    "rule": "Rule 2 (16px thumb, identical everywhere)",
+    "problem": "The thumb is `width: 14px; height: 14px;` in the webkit block at line 33 and again `width: 14px; height: 14px;` in the moz block at line 41. The standard is 16px. The webkit thumb also sits on `margin-top: -5.5px`, which is centred for a 14px thumb on a 3px track.",
+    "fix": "In the webkit block set `width: 16px; height: 16px;` and `margin-top: -6px;`. In the moz block set `width: 16px; height: 16px;`.",
+    "severity": "HIGH",
+    "id": "LA-05"
+   },
+   {
+    "where": "Page shell, global slider CSS, index.html line 31 and line 39, plus the drawn tracks at index.html lines 2021 to 2024 (shell model slider) and 1265 to 1268 (Playbook units slider)",
+    "rule": "Rule 2 (visible track about 4px, dark blue, with a filled part in the accent colour)",
+    "problem": "`::-webkit-slider-runnable-track { height: 3px; background: transparent; }` and `::-moz-range-track { height: 3px; background: transparent; }` give the input no track of its own. Two sliders paint a substitute track by hand at `height:\"3px\"`, one at line 2021 with fill at 2023 and one at line 1265 with fill at 1267. Both are 3px, not the 4px the standard calls for.",
+    "fix": "Set the track height to `4px` in both CSS blocks (lines 31 and 39), keeping `background: transparent` so the hand-drawn fill still shows. Change `height:\"3px\"` to `height:\"4px\"` at index.html lines 2021, 2023, 1265 and 1267.",
+    "severity": "HIGH",
+    "id": "LA-06"
+   },
+   {
+    "where": "Cross-tab, Playbook LeapsCost vol slider, index.html line 1070",
+    "rule": "Rule 2 (every range slider shows a visible track, identical everywhere)",
+    "problem": "This slider is a bare `<input type=\"range\" ... style={{width:\"100%\",marginTop:8,accentColor:\"#22d3ee\"}}/>` with no wrapper. Because the global runnable-track is transparent (line 31), it renders as a floating dot with no track at all. This is the exact complaint. The other two sliders on the site draw their own track, so the same control looks different on two tabs.",
+    "fix": "Wrap it in the same markup the shell uses at index.html lines 2020 to 2028: an outer `<div style={{position:\"relative\",display:\"flex\",alignItems:\"center\",width:\"100%\",height:\"20px\",marginTop:8}}>`, then `<div style={{position:\"absolute\",left:0,right:0,height:\"4px\",background:\"#0d1e30\",borderRadius:\"3px\"}}/>`, then a fill div `<div style={{position:\"absolute\",left:0,width:`${((lkVol+0.3)/0.6)*100}%`,height:\"4px\",background:\"#22d3ee\",borderRadius:\"3px\",opacity:0.75}}/>`, then the input with `style={{position:\"absolute\",left:0,right:0,width:\"100%\",appearance:\"none\",WebkitAppearance:\"none\",background:\"transparent\",cursor:\"pointer\",margin:0,height:\"20px\"}}`.",
+    "severity": "HIGH",
+    "id": "LA-07"
+   },
+   {
+    "where": "Page shell, mobile style block, index.html line 2405",
+    "rule": "Rule 6 (equal spacing between cards)",
+    "problem": "`#root > div > div { padding-left: 12px !important; padding-right: 12px !important; }` matches every direct grandchild of #root, which on the Ladder tab is the header block, the tab bar, the price block, the main content stack, the forward table card, the price lookup card, the chart card and the footer. Cards nested one level deeper are not matched. Result on a phone: the tier card keeps 20px of side padding, the Structure and Rules cards keep 16px, and the Forward, Lookup and Power Law cards drop to 12px. Three interior paddings on one scroll (compare the header inset in phone-Ladder-0 against phone-Ladder-1).",
+    "fix": "Change line 2405 from `#root > div > div { padding-left: 12px !important; padding-right: 12px !important; }` to `#root > div { padding-left: 12px !important; padding-right: 12px !important; }` so only the page gutter narrows and every card keeps its own 14px 16px.",
+    "severity": "HIGH",
+    "id": "LA-08"
+   },
+   {
+    "where": "Ladder tab, Forward Price Projections table, index.html line 2401 against lines 416, 420 and 433",
+    "rule": "Rule 1 (within one table every cell uses the same size)",
+    "problem": "The mobile rule `#root [style*=\"grid-template-columns: 60px\"] { font-size: 10px !important; }` sets the grid container to 10px, but the header cells at line 420 and the row labels at line 433 carry inline `fontSize:\"11px\"`, which inline styles win. On a phone the body cells are 10px while the headers and row labels are 11px. On desktop the cells are 12px (line 416) and the headers and row labels are 11px. The table never has one cell size.",
+    "fix": "Set the header cells at lines 418 and 420 to `fontSize:\"10px\"` with `color:\"#5a8fc0\"` and `letterSpacing:\"0.12em\"` so they match LAB (line 873). Set the row label at line 433 to `fontSize:\"12px\"` so it matches the body cells at line 416. Delete the mobile rule at line 2401 entirely, since the card already scrolls horizontally via line 415.",
+    "severity": "HIGH",
+    "id": "LA-09"
+   },
+   {
+    "where": "Ladder tab, Forward Price Projections card header, index.html line 408",
+    "rule": "Rule 1 (card headers are 12px uppercase) and cross-tab consistency",
+    "problem": "`fontSize:\"11px\",color:\"#5a8fc0\",letterSpacing:\"0.12em\"`. Every other card header on the site uses the HD constant at line 874, which is `fontSize:12, color:\"#7ab8d8\", letterSpacing:\"0.1em\"` (Structure at line 2224, The Rules at line 929, Margin Framework at line 2259, and every MSTX and Playbook card). This header is a size and a colour off.",
+    "fix": "Change line 408 to `<div style={{fontSize:\"12px\",color:\"#7ab8d8\",textTransform:\"uppercase\",letterSpacing:\"0.1em\",fontWeight:600}}>`",
+    "severity": "MEDIUM",
+    "id": "LA-10"
+   },
+   {
+    "where": "Ladder tab, Price Lookup card header, index.html line 538",
+    "rule": "Rule 1 (card headers are 12px uppercase) and cross-tab consistency",
+    "problem": "`fontSize:\"11px\",color:\"#5a8fc0\",letterSpacing:\"0.12em\"`, the same miss as the Forward card. Site standard is HD at line 874.",
+    "fix": "Change line 538 to `<div style={{fontSize:\"12px\",color:\"#7ab8d8\",textTransform:\"uppercase\",letterSpacing:\"0.1em\",fontWeight:600}}>`",
+    "severity": "MEDIUM",
+    "id": "LA-11"
+   },
+   {
+    "where": "Ladder tab, Power Law Bands card header, index.html line 760",
+    "rule": "Rule 1 (card headers are 12px uppercase) and cross-tab consistency",
+    "problem": "`fontSize:\"11px\",color:\"#5a8fc0\",letterSpacing:\"0.12em\"`, the third card header off the site standard set by HD at line 874.",
+    "fix": "Change line 760 to `<div style={{fontSize:\"12px\",color:\"#7ab8d8\",textTransform:\"uppercase\",letterSpacing:\"0.1em\",fontWeight:600}}>`",
+    "severity": "MEDIUM",
+    "id": "LA-12"
+   },
+   {
+    "where": "Ladder tab, Price Lookup card header text, index.html line 539, against the MSTX tab card at index.html line 1635",
+    "rule": "Cross-tab consistency and Rule 4 (terms must be clear)",
+    "problem": "The Ladder card is titled \"Price Lookup\" and returns band prices at a chosen date. The MSTX tab has a different card titled \"BITCOIN PRICE LOOKUP\" that returns projected and best estimate MSTR and MSTX prices. The Structure card at line 2246 points the reader to \"BITCOIN PRICE LOOKUP on the MSTX tab\" while a card named \"PRICE LOOKUP\" sits two cards below it on the same page. The names are too close to tell apart.",
+    "fix": "Change line 539 from `Price Lookup` to `Band Price Lookup`.",
+    "severity": "MEDIUM",
+    "id": "LA-13"
+   },
+   {
+    "where": "Ladder tab, price row label, index.html line 2066",
+    "rule": "Rule 1 (10px uppercase labels, no 13px)",
+    "problem": "`fontSize:\"13px\",color:\"#a0b8cc\",letterSpacing:\"0.1em\"` on the uppercase word PRICE. Every other uppercase label on the page is 10px with colour #5a8fc0 and letterSpacing 0.12em, including the four stat card labels immediately below it at lines 2124 and 2137. In desk-Ladder-0 the word PRICE is visibly larger than the PRICE label inside the card under it.",
+    "fix": "Change line 2066 to `<span style={{fontSize:\"10px\",color:\"#5a8fc0\",textTransform:\"uppercase\",letterSpacing:\"0.12em\",fontWeight:600}}>Price</span>`",
+    "severity": "MEDIUM",
+    "id": "LA-14"
+   },
+   {
+    "where": "Ladder tab, price stepper and live buttons, index.html lines 2070, 2083 and 2089",
+    "rule": "Rule 1 (no 15px) and Rule 2 (buttons share one height and one style per kind)",
+    "problem": "The −5K button is `fontSize:\"15px\"` with `borderRadius:\"4px\"` and `padding:\"6px 12px\"`, the +5K button is identical, and the Live button beside them is `fontSize:\"12px\"` with `borderRadius:\"3px\"` and `padding:\"6px 10px\"`. Three buttons in one row at two sizes, two radii and two paddings, so they do not line up in height.",
+    "fix": "Set line 2070 and line 2083 to `fontSize:\"14px\"` and keep `borderRadius:\"4px\"`, `padding:\"6px 12px\"`. Set line 2089 to `fontSize:\"14px\"`, change the `borderRadius:\"3px\"` on line 2088 to `\"4px\"` and the padding to `\"6px 12px\"`.",
+    "severity": "MEDIUM",
+    "id": "LA-15"
+   },
+   {
+    "where": "Ladder tab, price input dollar prefix, index.html line 2074",
+    "rule": "Rule 1 (no 16px)",
+    "problem": "`color:\"#7a8fa8\",fontSize:\"16px\"` on the $ sign that prefixes the 22px price input. 16px is not on the scale and reads as a third size inside one control.",
+    "fix": "Change line 2074 to `color:\"#7a8fa8\",fontSize:\"14px\"`",
+    "severity": "MEDIUM",
+    "id": "LA-16"
+   },
+   {
+    "where": "Ladder tab, Structure card leg rows, index.html lines 2234, 2236, 2237, 2238, 2240 and 2241",
+    "rule": "Rule 1 (within one row every cell uses the same size unless it is the single emphasized number, and no 11, 13 or 15)",
+    "problem": "One row carries six different sizes: leg label 11px (2234), delta or quantile 15px (2236), month 13px (2237), day count 11px (2238), price 15px (2240) and the sub line 10px (2241). Three of those sizes are off the scale. desk-Ladder-0 shows the LONG row stepping through four visible type sizes left to right.",
+    "fix": "Line 2234 `fontSize:\"11px\"` to `fontSize:\"10px\"`. Line 2236 `fontSize:\"15px\"` to `fontSize:\"14px\"`. Line 2237 `fontSize:\"13px\"` to `fontSize:\"12px\"`. Line 2238 `fontSize:\"11px\"` to `fontSize:\"10px\"`. Line 2240 `fontSize:\"15px\"` to `fontSize:\"14px\"`. Line 2241 stays at 10px.",
+    "severity": "MEDIUM",
+    "id": "LA-17"
+   },
+   {
+    "where": "Ladder tab, Margin Framework tiles, index.html lines 2269 and 2271",
+    "rule": "Rule 1 (22px tile numbers, no 18px)",
+    "problem": "The tile value is `fontSize:\"18px\"` at line 2271. Every other tile number on the site is 22px, including the four Ladder stat cards at line 2126 and the MSTX tiles at line 1514. The tile label on line 2269 also uses `letterSpacing:\"0.1em\"` where the stat card labels at lines 2124 and 2137 use 0.12em.",
+    "fix": "Change line 2271 `fontSize:\"18px\"` to `fontSize:\"22px\"`. Change the `letterSpacing:\"0.1em\"` on line 2270 to `letterSpacing:\"0.12em\"`.",
+    "severity": "MEDIUM",
+    "id": "LA-18"
+   },
+   {
+    "where": "Ladder tab, quantile rail chips, index.html line 2198 and the mobile override at index.html line 2396",
+    "rule": "Rule 1 (no size below 10px)",
+    "problem": "The range text inside each rail chip is `fontSize:\"9px\"` at line 2198, and the mobile block drops every chip span to `font-size: 8px !important` at line 2396. In phone-Ladder-0 the chip text MSTX 0-15 is close to illegible. The name beside it is 10px (line 2196), so the chip mixes two sizes too.",
+    "fix": "Change line 2198 `fontSize:\"9px\"` to `fontSize:\"10px\"`. Delete the rule at line 2396 so the chips stay at 10px on a phone, keeping the stacking rule at line 2395 and the taller 52px rail at line 2394.",
+    "severity": "MEDIUM",
+    "id": "LA-19"
+   },
+   {
+    "where": "Ladder tab, card spacing, index.html lines 2109, 535 and 758",
+    "rule": "Rule 6 (equal spacing between cards)",
+    "problem": "The stat card, tier, Structure and Rules stack uses `gap:\"11px\"` (line 2109) but that same div carries `marginBottom:\"14px\"`, so the gap before the Forward table is 14px. The Price Lookup card adds `marginTop:\"12px\"` (line 535) and the Power Law card adds `marginTop:\"14px\"` (line 758). Four different card gaps down one page: 11, 14, 12, 14.",
+    "fix": "Line 2109 `marginBottom:\"14px\"` to `marginBottom:\"11px\"`. Line 535 `marginTop:\"12px\"` to `marginTop:\"11px\"`. Line 758 `marginTop:\"14px\"` to `marginTop:\"11px\"`.",
+    "severity": "MEDIUM",
+    "id": "LA-20"
+   },
+   {
+    "where": "Ladder tab, Power Law Bands card padding, index.html line 758",
+    "rule": "Rule 6 (equal spacing between cards)",
+    "problem": "`padding:\"16px 18px\"`. Every other card on the site uses 14px 16px, set by TBL at line 877 and repeated at line 405 (Forward), line 535 (Price Lookup), line 928 (Rules) and line 2223 (Structure). The chart card is 2px looser on every side.",
+    "fix": "Change line 758 `padding:\"16px 18px\"` to `padding:\"14px 16px\"`.",
+    "severity": "MEDIUM",
+    "id": "LA-21"
+   },
+   {
+    "where": "Cross-tab, two-state toggle buttons: UnitPick at index.html lines 331 to 335, the model toggle at index.html lines 2004 to 2008, GST at index.html lines 880 to 882",
+    "rule": "Rule 2 (toggles and buttons share one height and one style per kind)",
+    "problem": "The same control, a two-state segmented toggle, is built three ways. UnitPick (Ladder, BTC and MSTR) is `fontSize:\"10px\"`, `padding:\"3px 9px\"`, `borderRadius:\"4px\"`. The model toggle (shell, STANDARD and WEIGHTED) is `fontSize:\"11px\"`, `padding:\"4px 10px\"`, `borderRadius:\"4px\"`. GST (MSTX gap chart, Playbook) is `fontSize:11`, `padding:\"4px 8px\"`, `borderRadius:3`. Three sizes, three paddings, two radii, so the same kind of control is a different height on each tab. Compare desk-Ladder-1 (BTC and MSTR) against desk-MSTX-0 (VS PROJECTED and VS BEST ESTIMATE).",
+    "fix": "Set all three to one shape: `fontSize:10`, `padding:\"4px 9px\"`, `borderRadius:4`, `fontWeight:700`, `letterSpacing:\"0.06em\"`, `textTransform:\"uppercase\"`. Apply at line 332 (change 10px padding 3px 9px to padding 4px 9px), lines 2004 and 2006 (11px to 10px, padding 4px 10px to 4px 9px), and line 881 (fontSize 11 to 10, borderRadius 3 to 4, padding 4px 8px to 4px 9px).",
+    "severity": "MEDIUM",
+    "id": "LA-22"
+   },
+   {
+    "where": "Cross-tab, text inputs: INP at index.html line 878, PriceLookup inputStyle at index.html line 530, the MSTX and Playbook overrides at index.html lines 1596, 1640, 1643 and 1646",
+    "rule": "Rule 2 (one style per kind of control) and Rule 1 (no 11px or 13px)",
+    "problem": "INP is `fontSize:11, padding:\"4px 6px\", borderRadius:4, border:\"1px solid #0f2a42\"`, but every call site overrides it to `fontSize:13, padding:\"6px 8px\"`. The Ladder Price Lookup builds its own inputStyle at `fontSize:\"14px\", padding:\"6px 10px\"`. LeapsCost builds a third at line 1057 with `fontSize:13, borderRadius:6, border:\"1px solid #0f2035\"`. Text inputs run 11, 13 and 14px across three tabs with two border colours and two radii.",
+    "fix": "Set INP at line 878 to `fontSize:14, padding:\"6px 10px\"`, delete the `fontSize:13,padding:\"6px 8px\"` overrides at lines 1596, 1640, 1643 and 1646, set the LeapsCost IN object at line 1057 to `fontSize:14, borderRadius:4, border:\"1px solid #0f2a42\", padding:\"6px 10px\"`, and leave the Ladder inputStyle at line 530 as it is since it already matches.",
+    "severity": "MEDIUM",
+    "id": "LA-23"
+   },
+   {
+    "where": "Cross-tab, body sentences: BODY at index.html line 876, the rules text at index.html line 939, the tier description at index.html line 2153",
+    "rule": "Rule 1 (14px body sentences, no 13px)",
+    "problem": "All three are `fontSize:13`. BODY is the shared body constant used across MSTX and Playbook, line 939 is the Ladder rules prose and line 2153 is the tier description. 13 is not on the scale and these are the longest sentences on the site.",
+    "fix": "Line 876 `fontSize:13` to `fontSize:14`. Line 939 `fontSize:\"13px\"` to `fontSize:\"14px\"`. Line 2153 `fontSize:\"13px\"` to `fontSize:\"14px\"`.",
+    "severity": "MEDIUM",
+    "id": "LA-24"
+   },
+   {
+    "where": "Cross-tab, footnote constants: index.html line 1510 (MSTX FT), line 1199 (Playbook FT), line 2245 (Ladder Structure note), line 452 (Ladder MSTR note)",
+    "rule": "Rule 1 (12px footnotes)",
+    "problem": "Two constants share the name FT and disagree: MSTX is `fontSize:11` at line 1510, Playbook is `fontSize:10` at line 1199. The Ladder writes its own at 11px (line 2245) and 10px (line 452). The same kind of line renders at two sizes depending on which tab you are on and neither is 12px.",
+    "fix": "Line 1510 `fontSize:11` to `fontSize:12`. Line 1199 `fontSize:10` to `fontSize:12`. Line 2245 `fontSize:\"11px\"` to `fontSize:\"12px\"`. Line 452 `fontSize:\"10px\"` to `fontSize:\"12px\"`.",
+    "severity": "MEDIUM",
+    "id": "LA-25"
+   },
+   {
+    "where": "Ladder tab, The Rules card, GATE row. Data file data/ladder-rules.json, rules entry with key \"gate\"",
+    "rule": "Rule 5 (no colons or semicolons inside sentences)",
+    "problem": "Current text: \"BTC daily close vs its 50-day. Above: long structures allowed. Below: no new money; open positions run their own exits.\" Two colons and one semicolon.",
+    "fix": "Replace the value with: `BTC daily close against its 50-day. Above it long structures are allowed. Below it no new money goes in and open positions run their own exits.`",
+    "severity": "MEDIUM",
+    "id": "LA-26"
+   },
+   {
+    "where": "Ladder tab, The Rules card, EXIT row. Data file data/ladder-rules.json, rules entry with key \"exit\"",
+    "rule": "Rule 5 (no colons or semicolons inside sentences, no parenthetical asides, 20 words or fewer)",
+    "problem": "Current text: \"The band crossing on the monthly close; the short strike is the trigger. Gate flips down: roll the short call down and closer (30 to 45 days), keep the long. At the 85 line: sell the BTC beta into it and rotate down.\" One semicolon, two colons and one parenthetical aside.",
+    "fix": "Replace the value with: `The band crossing on the monthly close is the exit and the short strike is the trigger. When the gate flips down roll the short call down and closer to 30 to 45 days. Keep the long. At the 85 line sell the BTC beta into it and rotate down.`",
+    "severity": "MEDIUM",
+    "id": "LA-27"
+   },
+   {
+    "where": "Ladder tab, Active Instrument card description, index.html line 270 (MSTX PMCC desc)",
+    "rule": "Rule 5 (no colons inside sentences)",
+    "problem": "Current text ends \"Bottom visits are short, bottom episodes ran 13 to 16 months: buy the 12 months.\" A colon inside the sentence. This is the description on screen today (desk-Ladder-0).",
+    "fix": "Replace the desc value with: `2× levered MSTR ETF diagonal. ~8× beta on the long leg. Bottom visits are short and bottom episodes ran 13 to 16 months, so buy the 12 months.`",
+    "severity": "MEDIUM",
+    "id": "LA-28"
+   },
+   {
+    "where": "Ladder tab, Active Instrument card, index.html lines 2154 to 2156",
+    "rule": "Rule 5 (no colons inside sentences, middle dot allowed on meta lines)",
+    "problem": "Renders as \"Max interest rate: < 12%\". A colon inside running text.",
+    "fix": "Change the literal on line 2155 from `Max interest rate: ` to `Max interest rate · ` so the label and value are separated by the middle dot the standard allows.",
+    "severity": "MEDIUM",
+    "id": "LA-29"
+   },
+   {
+    "where": "Page shell, header status row, index.html lines 1983, 1990 and 1994",
+    "rule": "Rule 1 (within one row every cell uses the same size) and Rule 1 (10px uppercase labels, 12px secondary text)",
+    "problem": "Three sizes in one row: the status badge is `fontSize:\"11px\"` (line 1983), the time stamp is `fontSize:\"10px\"` (line 1990) and the date is `fontSize:\"12px\"` (line 1994). In desk-Ladder-0 \"7:36 PM ET\" is visibly smaller than \"Sep 19, 2026\" sitting right beside it.",
+    "fix": "Line 1983 `fontSize:\"11px\"` to `fontSize:\"10px\"` since the badge text is uppercase. Line 1990 `fontSize:\"10px\"` to `fontSize:\"12px\"` so the time matches the date. Line 1994 stays at 12px.",
+    "severity": "MEDIUM",
+    "id": "LA-30"
+   },
+   {
+    "where": "Page shell, MODEL label, index.html line 2001",
+    "rule": "Rule 1 (10px uppercase labels)",
+    "problem": "`fontSize:\"11px\",color:\"#94b8d0\",letterSpacing:\"0.1em\"` on the uppercase word MODEL. Every other uppercase label on the site is the LAB shape at line 873, `fontSize:10, color:\"#5a8fc0\", letterSpacing:\"0.12em\"`. A fourth label colour appears nowhere else.",
+    "fix": "Change the label span on line 2001 to `style={{fontSize:\"10px\",color:\"#5a8fc0\",textTransform:\"uppercase\",letterSpacing:\"0.12em\",fontWeight:600,marginRight:\"2px\"}}`",
+    "severity": "MEDIUM",
+    "id": "LA-31"
+   },
+   {
+    "where": "Page shell, tab bar, index.html line 2057",
+    "rule": "Rule 1 (10px uppercase labels) and cross-tab consistency",
+    "problem": "`fontSize:\"11px\"` on LADDER, MSTX and PLAYBOOK, all uppercase. 11 is off the scale and these sit directly above the 10px stat card labels.",
+    "fix": "Change line 2057 `fontSize:\"11px\"` to `fontSize:\"10px\"`.",
+    "severity": "MEDIUM",
+    "id": "LA-32"
+   },
+   {
+    "where": "Page shell, weighted model control, index.html lines 2012, 2019, 2032 and 2033",
+    "rule": "Rule 1 (within one row every cell uses the same size)",
+    "problem": "One control row carries four sizes: the FV readout is `fontSize:\"10px\"` (line 2012), \"Recent\" is `fontSize:\"11px\"` (line 2019), \"Historical\" is `fontSize:\"11px\"` (line 2032) and the year count is `fontSize:\"12px\"` (line 2033). Only visible in WEIGHTED mode but it is the same row.",
+    "fix": "Set lines 2012, 2019 and 2032 to `fontSize:\"12px\"` and leave line 2033 at 12px so the whole row is one size, with the year count carrying the emphasis through its existing fontWeight:700 and cyan colour.",
+    "severity": "MEDIUM",
+    "id": "LA-33"
+   },
+   {
+    "where": "Ladder tab, Power Law Bands legend, index.html lines 767 and 772",
+    "rule": "Rule 1 (legends are 12px)",
+    "problem": "Both the BTC swatch label and the six band labels are `fontSize:\"11px\"`, which is off the scale.",
+    "fix": "Change line 767 and line 772 from `fontSize:\"11px\"` to `fontSize:\"12px\"`.",
+    "severity": "MEDIUM",
+    "id": "LA-34"
+   },
+   {
+    "where": "Ladder tab, Power Law Bands chart text, index.html lines 807, 828 and 842",
+    "rule": "Rule 1 (10px chart axis text, 12px secondary)",
+    "problem": "The TODAY marker is `fontSize=\"11\"` (line 807) and the two in-chart price labels are `fontSize=\"13\"` (lines 828 and 842). Neither 11 nor 13 is on the scale, and the price labels are the largest text in the chart.",
+    "fix": "Line 807 `fontSize=\"11\"` to `fontSize=\"10\"`. Line 828 `fontSize=\"13\"` to `fontSize=\"12\"`. Line 842 `fontSize=\"13\"` to `fontSize=\"12\"`. The label background rects at lines 827 and 840 use `String(...).length*8+12` for width, so change the 8 to 7 in both so the pill still fits the shorter text.",
+    "severity": "MEDIUM",
+    "id": "LA-35"
+   },
+   {
+    "where": "Ladder tab, Price Lookup band tiles, index.html lines 582 and 586",
+    "rule": "Rule 1 (10px labels, 12px tile sub lines)",
+    "problem": "The band label is `fontSize:\"11px\"` (line 582) and the \"from today\" sub line is `fontSize:\"10px\"` (line 586). The label should be 10px and the sub line 12px, so the two are currently inverted against the scale.",
+    "fix": "Line 582 `fontSize:\"11px\"` to `fontSize:\"10px\"`. Line 586 `fontSize:\"10px\"` to `fontSize:\"12px\"`. Apply the same 12px to the MSTX tile sub line at index.html line 1514 (`fontSize:10` to `fontSize:12`) so the two tabs stay matched.",
+    "severity": "MEDIUM",
+    "id": "LA-36"
+   },
+   {
+    "where": "Ladder tab, Price Lookup held-quantile row, index.html lines 609, 611 and 612",
+    "rule": "Rule 1 (within one row every cell uses the same size unless it is the single emphasized number)",
+    "problem": "Three sizes in one row: the label is `fontSize:\"11px\"` (line 609), the price is `fontSize:\"14px\"` (line 611) and the change is `fontSize:\"10px\"` (line 612).",
+    "fix": "Line 609 `fontSize:\"11px\"` to `fontSize:\"10px\"` since the label is uppercase. Line 612 `fontSize:\"10px\"` to `fontSize:\"12px\"`. Line 611 stays at 14px as the single emphasized number.",
+    "severity": "MEDIUM",
+    "id": "LA-37"
+   },
+   {
+    "where": "Ladder tab, Price Lookup control group, index.html lines 543 and 547",
+    "rule": "Rule 2 (buttons share one height and one style per kind) and Rule 6 (layout)",
+    "problem": "The two opex arrow buttons spread inputStyle then override it to `padding:\"6px 9px\", fontSize:\"12px\"` while the date input beside them keeps `fontSize:\"14px\", padding:\"6px 10px\"` from line 530. The buttons come out shorter than the input. On a phone the group breaks so that BTC, MSTR and ◀ sit on one row and the date and ▶ on the next, splitting one control across two lines (phone-Ladder-1).",
+    "fix": "Remove the `fontSize:\"12px\"` and `padding:\"6px 9px\"` overrides from lines 543 and 547 so both buttons inherit inputStyle at 14px and padding 6px 10px. Move the UnitPick call at line 541 out of the inner flex div so the date stepper stays a single unbroken group, or give the inner div at line 537 `flexWrap:\"nowrap\"` on the date, arrow, arrow trio.",
+    "severity": "MEDIUM",
+    "id": "LA-38"
+   },
+   {
+    "where": "Ladder tab, price preset row, index.html line 2382",
+    "rule": "Rule 6 (no text cut off, layout)",
+    "problem": "The mobile block forces `flex-wrap: nowrap !important; overflow-x: auto !important` and then hides the scrollbar with `scrollbar-width: none`. In phone-Ladder-0 the row ends with $200K sliced through and no cue that $225K and $250K exist. The inline style at line 2097 already sets flexWrap:\"wrap\".",
+    "fix": "Delete the nowrap block at index.html lines 2381 to 2386 and the scrollbar-hiding rule at line 2387, so the eight presets wrap to two rows on a phone and all eight stay visible.",
+    "severity": "MEDIUM",
+    "id": "LA-39"
+   },
+   {
+    "where": "Ladder tab, Active Instrument type badges, index.html line 2145",
+    "rule": "Rule 1 (10px uppercase labels)",
+    "problem": "`fontSize:\"11px\", fontWeight:600, letterSpacing:\"0.07em\"` on the uppercase badges LONG 12 MO and SHORT 90 D, ROLLED. 11 is off the scale and the 0.07em tracking matches no other label.",
+    "fix": "Change line 2145 to `fontSize:\"10px\", fontWeight:600, letterSpacing:\"0.12em\",`",
+    "severity": "LOW",
+    "id": "LA-40"
+   },
+   {
+    "where": "Page shell, page title and subtitle, index.html lines 1973 and 1975",
+    "rule": "Rule 1 (22px, or 28px and over only for a headline word, no 11px or 20px)",
+    "problem": "The h1 is `fontSize:\"20px\"` and the subtitle beside it is `fontSize:\"11px\"`. Neither size exists on the scale. On a phone both wrap, giving a two-line title next to a two-line subtitle (phone-Ladder-0).",
+    "fix": "Line 1973 `fontSize:\"20px\"` to `fontSize:\"22px\"`. Line 1975 `fontSize:\"11px\"` to `fontSize:\"12px\"`.",
+    "severity": "LOW",
+    "id": "LA-41"
+   },
+   {
+    "where": "Page shell, theme toggle, index.html lines 2044 to 2046",
+    "rule": "Rule 2 (toggles and buttons share one height and one style per kind)",
+    "problem": "`background:\"transparent\",border:\"none\"` with `padding:\"4px 6px\",fontSize:\"16px\"`. It is the only control in the model row with no border and the only one at 16px, so it stands taller than the STANDARD and WEIGHTED buttons next to it.",
+    "fix": "Change lines 2045 to 2046 to `padding:\"4px 9px\",fontSize:\"14px\",lineHeight:1,opacity:0.75` and change `border:\"none\"` on line 2044 to `border:\"1px solid #0f2133\",borderRadius:\"4px\"` so it matches the inactive model toggle button.",
+    "severity": "LOW",
+    "id": "LA-42"
+   },
+   {
+    "where": "Ladder tab, Price Lookup day offset chip, index.html line 564, and the actual-price readout at index.html line 557",
+    "rule": "Rule 1 (10px uppercase labels, 12px secondary text)",
+    "problem": "The +26D chip is `fontSize:\"11px\"` uppercase (line 564) and the historical \"Actual\" readout is `fontSize:\"11px\"` (line 557). Both are off the scale. On a phone the +26D chip also lands alone on its own line under the date because of the space-between wrap (phone-Ladder-1).",
+    "fix": "Line 564 `fontSize:\"11px\"` to `fontSize:\"10px\"`. Line 557 `fontSize:\"11px\"` to `fontSize:\"12px\"`.",
+    "severity": "LOW",
+    "id": "LA-43"
+   },
+   {
+    "where": "Ladder tab, Forward Price Projections header cells, index.html line 420",
+    "rule": "Rule 6 (aligned columns in every table, no text that breaks the row height)",
+    "problem": "The header cells have no whiteSpace rule, so on a phone 1YR AGO and 6MO AGO wrap to two lines while every other header stays on one, making the header row twice as tall and pushing the first data row out of line (phone-Ladder-1).",
+    "fix": "Add `whiteSpace:\"nowrap\"` to the header cell style object on line 420. The card already scrolls horizontally via line 415, so nothing is lost.",
+    "severity": "LOW",
+    "id": "LA-44"
+   },
+   {
+    "where": "Ladder tab, Active Instrument card description for the STRC Margin tier, index.html line 255",
+    "rule": "Rule 5 (no colons or semicolons inside sentences, 20 words or fewer)",
+    "problem": "Current text: \"Sell zone. Above the 85 line the BTC beta is sold and the proceeds sit in STRC: 12% on $100 par, no BTC beta. Last monthly close up here was March 2022; the 2024 top peaked at quantile 81 and never reached it.\" One colon, one semicolon and a 24-word sentence. Not visible today but it renders whenever the band is above 85.",
+    "fix": "Replace the desc value with: `Sell zone. Above the 85 line the BTC beta is sold and the proceeds sit in STRC at 12% on $100 par. The last monthly close up here was March 2022. The 2024 top peaked at quantile 81 and never reached it.`",
+    "severity": "LOW",
+    "id": "LA-45"
+   }
+  ]
+ },
+ {
+  "area": "critic",
+  "findings": [
+   {
+    "where": "MSTX tab, GAP CHART · MSTX card, index.html lines 1573 to 1591 (insert after the header row that ends at 1576)",
+    "rule": "Rule 3 (every chart has an always-visible legend row, never hidden behind a more toggle)",
+    "problem": "This is the one chart on the site with no legend at all. The four other reviewers gave the gap chart a projected-versus-best-estimate definition but no swatch row. The only explanation of what is drawn is the collapsed More line at 1589 to 1590, \"Tap for a day. Dashed lines are Cheap and Rich; the gap scale is stretched near zero.\", which is exactly the hidden-behind-more case the standard bans, and the white line at 1584 is never named anywhere.",
+    "fix": "Insert an always-visible legend row between line 1576 and line 1577, styled like the tile labels at 12px: a white 14x2.5px swatch labelled \"daily gap\", a red dashed swatch labelled \"Rich line\", a green dashed swatch labelled \"Cheap line\". In the vs best estimate view show only the white swatch plus a grey \"zero line\" swatch, matching the conditional at line 1581.",
+    "severity": "HIGH",
+    "id": "CR-01"
+   },
+   {
+    "where": "Every tab, the More disclosure component, index.html lines 962, 972 and 974",
+    "rule": "Rule 5 (at most two visible sentences per card, the rest behind the existing more toggle) and Rule 6 (no text that wraps mid-word)",
+    "problem": "Line 974 sets whiteSpace nowrap with textOverflow ellipsis for every More that is not a step, so the collapsed preview is one line cut at whatever character hits the card edge. That is the ragged \"…\" the screenshots are full of: \"MSTX is a 2x daily fund. For today's date it is twice the day's mov…\", \"White: mNAV, weekly. Amber: its 90-day average. Cyan: projected mNAV. Red shading: bear market, Bitcoin below its 200-day average. mNAV …\", \"1 lag alert scored · 100% beat BTC at 60 mi…\", \"Cyan: proje…\". Line 961 already computes the first full sentence but line 962 only uses it when step is true.",
+    "fix": "Line 962 becomes const short = text.length > 140 ? (first ? first[0].trim() : text.slice(0,140) + \"…\") : text; line 972 becomes const canExpand = hide || text.length > 140; line 974 becomes whiteSpace:\"normal\". Every collapsed preview then ends on a complete sentence and nothing is cut mid-word.",
+    "severity": "HIGH",
+    "id": "CR-02"
+   },
+   {
+    "where": "Page shell, mobile style block, index.html line 2366",
+    "rule": "Rule 6 (layout) and Rule 1 (type scale)",
+    "problem": "The phone breakpoint is not one number. Line 2366 is const mobile = window.innerWidth <= 700, while the MSTX narrow flag at line 1397 and the Playbook MACD width at line 1183 both use < 560 and the CSS media query at line 53 uses max-width:559px. Between 560px and 700px the page gets the phone CSS (two-column stat grid, 22px headlines, scrolling preset row, 12px gutters) while every React component still renders the desktop layout with 880-wide charts and five-column tables. That window is a small laptop or a landscape phone, and it looks broken.",
+    "fix": "Line 2366 becomes const mobile = window.innerWidth < 560; so all four places agree on 560.",
+    "severity": "HIGH",
+    "id": "CR-03"
+   },
+   {
+    "where": "Page shell, mobile style block, index.html line 2403",
+    "rule": "Rule 1 (28px or larger only for a card's one headline word; 22px is the tile number size)",
+    "problem": "The rule is #root [style*=\"font-size: 28px\"] { font-size: 22px !important; } with the comment \"Instrument name: smaller on mobile\", but it is an attribute-substring selector, so it hits every 28px element on the site: the LEVEL headline at 1555, the Playbook trigger word at 1211 and the instrument name at 2139. On a phone FAIR and ENTRY OFF render at 22px, the same size as the tile numbers beside them, so the headline no longer outranks the numbers. MSTX NOW escapes because line 1548 uses a clamp string, so OFF HOURS stays at 32px while FAIR drops to 22px in the card directly below it.",
+    "fix": "Change line 2403 to 24px and scope it to the instrument name only, for example #root [style*=\"font-size: 28px\"][style*=\"letter-spacing\"] { font-size: 24px !important; }, then give line 1548 a matching clamp ceiling of 28px so both headlines land on one size at phone width.",
+    "severity": "HIGH",
+    "id": "CR-04"
+   },
+   {
+    "where": "MSTX tab, BITCOIN PRICE LOOKUP card, control grid, index.html line 1637",
+    "rule": "Rule 6 (aligned columns, equal spacing)",
+    "problem": "The grid is repeat(auto-fit,minmax(140px,1fr)) with no alignItems. The third label at line 1644, \"YOUR mNAV INCLUDING DEBT AND PREFERRED · NOW 1.17\", wraps to two lines while IF BITCOIN IS AT and BY THIS DATE stay on one, so on the desktop shot the third input box sits about 13px lower than the other two. Three boxes in one row on three different baselines.",
+    "fix": "Line 1637 becomes <div style={{display:\"grid\",gridTemplateColumns:\"repeat(auto-fit,minmax(140px,1fr))\",gap:10,alignItems:\"end\"}}> so all three input boxes share one bottom edge whatever the label does.",
+    "severity": "MEDIUM",
+    "id": "CR-05"
+   },
+   {
+    "where": "Playbook tab, BY MSTX CLOSE ON SETTLEMENT table, body cells, index.html line 1258",
+    "rule": "Rule 1 (within one row or one table every cell uses the same size and weight unless it is the single emphasized number)",
+    "problem": "The cell style is color:hl?AC:i===3?\"#d0dde8\":\"#8aaac8\",fontWeight:(hl||i===3)?600:400. The whole LEAPS column, twenty cells, is bold 600 and a brighter grey while MSTX, POSITION VALUE and UNIT PRICE in the same rows are 400 and dimmer. That is a column emphasized, not a single number, and it makes every row look half-finished.",
+    "fix": "Line 1258 becomes color:hl?AC:\"#8aaac8\",fontWeight:hl?600:400 so only the selected row is emphasized and all four columns in a row match.",
+    "severity": "MEDIUM",
+    "id": "CR-06"
+   },
+   {
+    "where": "Playbook tab, LEAPS UNITS AT THE END, BY ROUTE table, body cells, index.html line 1291",
+    "rule": "Rule 1 (within one row or one table every cell uses the same size and weight unless it is the single emphasized number)",
+    "problem": "fontWeight:i?600:400 makes both number columns bold while the route text in the same row is 400, so each row has two weights and no single emphasized number. Same defect as the settlement table above, different card.",
+    "fix": "Line 1291 becomes fontWeight:400 and leave the colour split at line 1290 (i===1 in the accent colour) to carry the emphasis.",
+    "severity": "MEDIUM",
+    "id": "CR-07"
+   },
+   {
+    "where": "Playbook tab, chart tooltip, index.html line 1339",
+    "rule": "Rule 1 (12px secondary text, no 11)",
+    "problem": "The one tooltip on the site is fontSize:11 inside the style block at lines 1336 to 1340. It is the only floating text on the page and it is off the scale by one step.",
+    "fix": "Line 1339 becomes fontSize:12,color:\"#e2e8f0\",lineHeight:1.45.",
+    "severity": "MEDIUM",
+    "id": "CR-08"
+   },
+   {
+    "where": "All three tabs, chart viewBox widths, index.html line 994 (W = 720), line 1183 (CW = 760) and line 1524 (W = 880)",
+    "rule": "Rule 1 (10px chart axis text) and Rule 3 (readable axis labels)",
+    "problem": "Every chart declares fontSize 10 for axis text, but each svg has a different viewBox width scaled to the same card width, so 10 renders at a different size in every chart. On the Playbook tab the LEAPS chart (720 wide in a roughly 920px card) renders its axis text about 40 percent larger than the MACD histogram directly below it (760 wide but only 118 tall). On a phone the LEAPS chart scales 720 into about 322px, so its declared 10px axis text lands near 4.5px, which is the unreadable axis in phone-Playbook-1. Other reviewers flagged the heights of these charts, not the text scale.",
+    "fix": "Give every chart the same pair of viewBox widths the MSTX charts already use: line 994 becomes const W = narrow ? 440 : 880, and line 1183 becomes const CW = window.innerWidth < 560 ? 440 : 880, keeping each chart's own height. One scale factor per breakpoint means 10px renders as 10px everywhere.",
+    "severity": "MEDIUM",
+    "id": "CR-09"
+   },
+   {
+    "where": "Page shell, footer line, index.html line 2296",
+    "rule": "Rule 6 (equal spacing) and Rule 5 (labels and meta lines may use the middle dot separator)",
+    "problem": "The string is \"Kaim Power Law Model  ·  A=5.82  ·  B=−17.029  ·  v3 · bands on the monthly close · 12-month long, 3-month short\". The first three separators carry two spaces on each side and the rest carry one, so the footer reads with visibly uneven gaps, wide at the left and tight at the right. It is the last line on every tab.",
+    "fix": "Line 2296 becomes Kaim Power Law Model · A=5.82 · B=−17.029 · v3 · bands on the monthly close · 12-month long, 3-month short, one space on each side of every middle dot.",
+    "severity": "MEDIUM",
+    "id": "CR-10"
+   },
+   {
+    "where": "MSTX tab, PROJECTED AND BEST ESTIMATE table, phone Bitcoin column, index.html line 1673",
+    "rule": "Rule 1 (within one table every cell uses the same style) and Rule 6 (aligned columns)",
+    "problem": "narrow ? \"$\"+Math.round(b/1000)+\"k\" : usd0(b) prints $60k with a lowercase k on the phone, while the same figure is $60,000 on the desktop, the Ladder preset chips print $75K, and the forward table prints $254K, both uppercase. Three spellings of the same unit on one site, and the phone spelling is the only lowercase one.",
+    "fix": "Line 1673 becomes narrow ? \"$\"+Math.round(b/1000)+\"K\" : usd0(b).",
+    "severity": "MEDIUM",
+    "id": "CR-11"
+   },
+   {
+    "where": "Ladder tab, PRICE LOOKUP control row, index.html line 537",
+    "rule": "Rule 6 (layout, no orphaned control) and Rule 2 (controls share one style per kind)",
+    "problem": "The inner flex at line 537 has flexWrap wrap and holds five separate children: the card header, the BTC/MSTR toggle, the back arrow at 542, the date input at 544 and the forward arrow at 546. At 390px it wraps between the back arrow and the date, so phone-Ladder-1 shows the back arrow stranded on the header row and the date plus the forward arrow on the row below. The two halves of one stepper sit on different rows.",
+    "fix": "Wrap lines 542 to 547 in a single <div style={{display:\"flex\",alignItems:\"center\",gap:\"8px\",flexWrap:\"nowrap\"}}> so the back arrow, the date and the forward arrow always move as one block.",
+    "severity": "MEDIUM",
+    "id": "CR-12"
+   },
+   {
+    "where": "MSTX tab, BITCOIN PRICE LOOKUP card, phone table headers, index.html line 1672",
+    "rule": "Rule 4 (projected and best estimate are defined where the words appear) and Rule 5 (no parenthetical or abbreviated asides)",
+    "problem": "narrow ? [\"BTC\",\"MSTR PROJ.\",\"MSTR BEST\",\"MSTX PROJ.\",\"MSTX BEST\"] shortens the two terms the owner says are never defined down to PROJ. with a trailing period and BEST with the noun dropped, and each header still wraps to two lines in phone-MSTX-2. On a phone the words projected and best estimate never appear in this table at all.",
+    "fix": "Line 1672 becomes narrow ? [\"BTC\",\"MSTR PROJECTED\",\"MSTR BEST\",\"MSTX PROJECTED\",\"MSTX BEST\"] : [\"BITCOIN\",\"MSTR PROJECTED\",\"MSTR BEST ESTIMATE\",\"MSTX PROJECTED\",\"MSTX BEST ESTIMATE\"], and keep the definition line at 1636 visible above it on the phone.",
+    "severity": "MEDIUM",
+    "id": "CR-13"
+   },
+   {
+    "where": "MSTX tab, mNAV HISTORY card, SINCE STRC table phone headers, index.html line 1726",
+    "rule": "Rule 4 (projected and best estimate are defined where the words appear) and Rule 5 (no abbreviated asides)",
+    "problem": "narrow ? [\"MARKET\",\"DAYS\",\"PROJ.\",\"BEST EST.\"] renders as PROJ. and BEST EST. in phone-MSTX-3. This is the one table on the site that compares the two terms head to head, and on a phone both are abbreviated with trailing periods so the comparison reads as jargon.",
+    "fix": "Line 1726 becomes narrow ? [\"MARKET\",\"DAYS\",\"PROJECTED\",\"BEST EST.\"] with the grid at line 1698 changed from \"1fr 0.9fr 1.1fr 1.5fr\" to \"0.8fr 0.6fr 1fr 1fr\" so both full words fit at 390px.",
+    "severity": "MEDIUM",
+    "id": "CR-14"
+   },
+   {
+    "where": "Ladder tab, FORWARD PRICE PROJECTIONS table, index.html lines 413 to 416",
+    "rule": "Rule 6 (aligned columns, nothing silently cut)",
+    "problem": "The scroll box at 413 wraps a grid with minWidth 480px, so at 390px only five of the eleven columns are visible and the band-label column at line 432 scrolls away with everything else. phone-Ladder-1 shows the table cut hard at 1YR with no scrollbar, no fade and no hint that six more columns exist, and once you do scroll you lose the 99.9% to 0.1% labels that tell you which row you are reading.",
+    "fix": "On line 432 add position:\"sticky\",left:0,background:\"#040c1a\",zIndex:1 to the band-label cell and the same to the empty header cell at line 418, so the label column stays pinned while the year columns scroll.",
+    "severity": "MEDIUM",
+    "id": "CR-15"
+   },
+   {
+    "where": "MSTX tab, ALERT LOG card, KIND cell, index.html line 1519",
+    "rule": "Rule 5 (no parenthetical asides)",
+    "problem": "String(r.kind || UNK)+(r.muted ? \" (muted)\" : \"\") appends a parenthetical to the kind value inside a table cell. It is the only parenthesis left in the live data path on this tab.",
+    "fix": "Line 1519 becomes String(r.kind || UNK)+(r.muted ? \" · muted\" : \"\"), using the middle dot the rest of the meta lines use.",
+    "severity": "LOW",
+    "id": "CR-16"
+   },
+   {
+    "where": "Playbook tab, LEAPS UNITS card, slider readout, index.html lines 1275 to 1276",
+    "rule": "Rule 1 (one weight per role) and Rule 2 (controls identical everywhere)",
+    "problem": "The readout is fontSize:12,fontWeight:700 with minWidth 32px. Every other emphasized cell and readout on the site is 600, and $16.50 needs about 44px so the 32px minWidth does no work. The shell model slider readout at line 2033 and this one are the same kind of control with different weights.",
+    "fix": "Lines 1275 to 1276 become fontSize:12,fontWeight:600,color:AC,minWidth:\"44px\",textAlign:\"right\".",
+    "severity": "LOW",
+    "id": "CR-17"
+   },
+   {
+    "where": "MSTX tab, ALERT LOG card, column header, index.html line 1518",
+    "rule": "Rule 5 (no dashes used as punctuation; labels may use the middle dot separator)",
+    "problem": "The header array holds \"MSTR − BTC AFTER 60 MIN\", a minus glyph floating between two tickers. It reads as a dash rather than arithmetic, it is the longest header in the grid at line 1567 so it pushes the other four columns narrow, and on the phone layout at 1565 it stacks as a label against a value where the minus looks like a typo.",
+    "fix": "Line 1518 becomes const headers = [\"WHEN (ET)\",\"KIND\",\"LAG MSTX\",\"MSTX AFTER 60 MIN\",\"MSTR LESS BTC AFTER 60 MIN\"].",
+    "severity": "LOW",
+    "id": "CR-18"
+   }
+  ]
+ }
+]

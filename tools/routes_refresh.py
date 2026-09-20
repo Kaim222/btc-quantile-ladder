@@ -123,11 +123,11 @@ def main():
                {"route": "Hold to Fri %s, then the Jan/Dec diagonal, then LEAPS on %s" % (md(settle), md(buy_b)), "units_thesis": int(round(out["b_thesis"])), "units_market": int(round(out["b_market"]))},
                {"route": "Close now and buy LEAPS, after five cents of slippage on %d calendars (count fixed once bought)" % n_cal, "units_thesis": int(c_units), "units_market": int(c_units)}],
            "hold_beats_close_pct": {"market": int(round(100 * out["a_beats_market"])), "thesis": int(round(100 * out["a_beats_thesis"]))},
-           "note": ("Holding to %s ends with more units than closing now in %d%% of history's paths, and in %d%% on your view. "
-                    "Model averages, whole units at the model mid, bought the session after each settlement at the settlement close; a real fill buys fewer. Priced at the %s close, MSTX $%.2f, unit $%.2f, no cash. "
-                    "Market view is MSTX's own history: every %d-session and %d-session move since the fund listed, drift removed. Your view is the same prices one dollar higher. "
-                    "Phase 1 is marked at 100%% vol at the %s close, closing now at 135%% vol (position about $%s), Phase 2 at 120%% vol off the plan's strikes with 30%% held as cash. "
-                    "Averages hide the spread: Phase 1 pays most between $16 and $18 and little outside $15 to $19.")
+           "note": ("Holding to %s ends with more units than closing now in %d%% of history's paths. On your view it wins in %d%%. "
+                    "Model averages count whole units at the model mid. Units are bought the session after each settlement at the settlement close. A real fill buys fewer. Priced at the %s close, MSTX $%.2f, unit $%.2f, no cash. "
+                    "Market view is MSTX's own history. It uses every %d session and %d session move since the fund listed, drift removed. Your view is the same prices one dollar higher. "
+                    "Phase 1 is marked at 100%% vol at the %s close. Closing now uses 135%% vol, with the position about $%s. Phase 2 uses 120%% vol off the plan's strikes with 30%% held as cash. "
+                    "Averages hide the spread. Phase 1 pays most between $16 and $18 and little outside $15 to $19.")
                    % (md(settle), round(100 * out["a_beats_market"]), round(100 * out["a_beats_thesis"]), md(today), S0, float(unit(np.array([S0]), today)[0]), h1, h2, md(settle), format(int(round(now_val, -2)), ","))}
     json.dump(res, open(OUT, "w", encoding="utf-8", newline="\n"), indent=1, ensure_ascii=False)
     print(json.dumps({k: v for k, v in res.items() if k != "note"}, indent=1))

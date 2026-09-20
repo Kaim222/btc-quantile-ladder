@@ -135,7 +135,7 @@ def build_history(d, e):
     return res
 
 
-def build_evidence(e):
+def build_evidence(e, d_all):
     """What the record says, for the Playbook. Model marks only: Black-Scholes at 120% vol, no bid and ask, one market era."""
     import math
     def ncdf(x): return 0.5 * (1 + math.erf(x / math.sqrt(2)))
@@ -172,7 +172,14 @@ def build_evidence(e):
     cut = len(gp) - RECENT
     fade = {"recent_days": RECENT, "recent_after20": left(20, cut, len(gp)), "recent_after40": left(40, cut, len(gp)),
             "earlier_after20": left(20, 0, cut), "earlier_after40": left(40, 0, cut)}
-    return {"as_of": str(x["d"].iloc[-1]), "from": str(x["d"].iloc[0]), "horizon_sessions": H, "start_days": int(len(A)), "gap_fade": fade,
+    def drag(f):
+        f = f.dropna(subset=["mstr", "mstx"]); yrs = (pd.Timestamp(f["d"].iloc[-1]) - pd.Timestamp(f["d"].iloc[0])).days / 365
+        return (math.log(f["mstx"].iloc[-1] / f["mstx"].iloc[0]) - 2 * math.log(f["mstr"].iloc[-1] / f["mstr"].iloc[0])) / yrs
+    k1, k2 = -drag(d_all.tail(253)), -drag(d_all)
+    if not (0.2 < k1 < 3): raise RuntimeError("measured MSTX drag out of range: %s" % k1)
+    mdrag = {"k_1y": round(k1, 3), "k_all": round(k2, 3), "loss_1y_pct": int(round(100 * (1 - math.exp(-k1)))),
+             "mstr_vol_1y": round(float(np.log(d_all["mstr"]).diff().tail(252).std() * np.sqrt(252)), 3)}
+    return {"as_of": str(x["d"].iloc[-1]), "from": str(x["d"].iloc[0]), "horizon_sessions": H, "start_days": int(len(A)), "gap_fade": fade, "mstx_drag": mdrag,
             "guides": {"today": miss("today"), "projected": miss("projected"), "best": miss("best")},
             "gap_signal": {"over": band(A["g"] > 0.05), "within": band((A["g"] <= 0.05) & (A["g"] >= -0.05)), "under": band(A["g"] < -0.05)},
             "calendars": {"vol_pct": int(VOL * 100), "today": cal("today"), "projected": cal("projected"), "best": cal("best")},
@@ -194,7 +201,7 @@ def main():
     try:                       # build everything in memory first; one failure publishes nothing
         e, site = build_model(d, slope, cheap)
         res = build_history(d, e)
-        evid = build_evidence(e)
+        evid = build_evidence(e, d)
         if not (len(site["series"]) >= 200 and len(res["weekly"]) >= 50 and 0.2 < res["now"]["premium"] < 6): raise RuntimeError("outputs failed their checks")
     except Exception as ex:
         print("build failed (%s); nothing written" % ex); return 1

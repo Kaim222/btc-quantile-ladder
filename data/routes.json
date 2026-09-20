@@ -27,6 +27,7 @@
   "say": "CLOSE",
   "hold_wins_pct": 30,
   "hold_units": 34,
+  "phase2_units": 31,
   "close_units": 54,
   "settle": "10/2"
  },

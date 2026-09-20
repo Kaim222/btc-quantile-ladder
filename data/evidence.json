@@ -10,6 +10,12 @@
   "earlier_after20": 58,
   "earlier_after40": 5
  },
+ "mstx_drag": {
+  "k_1y": 0.983,
+  "k_all": 1.319,
+  "loss_1y_pct": 63,
+  "mstr_vol_1y": 0.807
+ },
  "guides": {
   "today": 19.6,
   "projected": 28.9,

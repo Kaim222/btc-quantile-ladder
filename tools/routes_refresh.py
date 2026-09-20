@@ -123,7 +123,7 @@ def main():
                {"route": "Hold to %s · Jan/Dec diagonal · LEAPS %s" % (md(settle), md(buy_b)), "units_thesis": int(round(out["b_thesis"])), "units_market": int(round(out["b_market"]))},
                {"route": "Close now · buy LEAPS", "units_thesis": int(c_units), "units_market": int(c_units)}],
            "verdict": {"say": "HOLD" if out["a_beats_market"] >= 0.5 else "CLOSE", "hold_wins_pct": int(round(100 * out["a_beats_market"])),
-                       "hold_units": int(round(out["a_market"])), "close_units": int(c_units), "settle": md(settle)},
+                       "hold_units": int(round(out["a_market"])), "phase2_units": int(round(out["b_market"])), "close_units": int(c_units), "settle": md(settle)},
            "hold_beats_close_pct": {"market": int(round(100 * out["a_beats_market"])), "thesis": int(round(100 * out["a_beats_thesis"]))},
            "note": ("Holding to %s wins more units in %d%% of market paths. On your view it wins in %d%%. "
                     "Model averages count whole units at the model mid. Units are bought the session after each settlement at the settlement close. A real fill buys fewer. Priced at the %s close. MSTX $%.2f and unit $%.2f. No cash is counted. "

@@ -29,7 +29,7 @@ async (page) => {
     await page.setViewportSize({ width: w, height: h });
     await page.goto('http://127.0.0.1:8765/index.html', { timeout: 120000 }); await page.waitForTimeout(800);
     await page.evaluate(() => { sessionStorage.setItem('bql_ok', '1'); }); await page.reload({ timeout: 120000 }); await page.waitForTimeout(9000);
-    for (const tab of ['Ladder', 'MSTX', 'Playbook']) {
+    for (const tab of ['Ladder', 'Strategy', 'Playbook']) {
       await page.evaluate(t => { [...document.querySelectorAll('button')].find(b => b.textContent.trim().toLowerCase() === t.toLowerCase()).click(); }, tab);
       await page.waitForTimeout(7000);
       res[name + '-' + tab] = await page.evaluate(measure);

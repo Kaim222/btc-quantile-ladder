@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-20T08:05:37Z",
+  "generated_at": "2026-09-20T14:45:26Z",
   "as_of_run_date": "2026-09-20",
   "inputs": {
     "btc_above_200d": {
@@ -8,9 +8,9 @@
       "source": "yahoo_daily",
       "as_of": "2026-09-20",
       "error": null,
-      "btc_close": 80393.171875,
-      "sma_200d": 70500.567734,
-      "gap_pct": 14.03195
+      "btc_close": 80597.601562,
+      "sma_200d": 70501.589883,
+      "gap_pct": 14.320261
     },
     "btc_above_200w": {
       "value": true,
@@ -18,9 +18,9 @@
       "source": "yahoo_weekly",
       "as_of": "2026-09-20 price vs week ending 2026-09-13",
       "error": null,
-      "btc_close": 80393.171875,
+      "btc_close": 80597.601562,
       "sma_200w": 65169.811279,
-      "gap_pct": 23.359528,
+      "gap_pct": 23.673216,
       "weeks": 559,
       "note": "SMA over completed calendar weeks only"
     },
@@ -135,19 +135,20 @@
       "note": "MACD 8,21,5 uses the same completed Monday to Sunday UTC weekly closes as the histogram rising row. EMA is seeded on the first value. The last complete histogram bar must be above zero. At least one of the three preceding bars must be at or below zero. This marks a bullish cross inside the last three weekly bars. cross_bar_date is the first bar after the most recent bar at or below zero. Entry timing, not a hold condition."
     },
     "ladder_quantile": {
-      "value": 10.947898,
+      "value": 11.497154,
       "pass": true,
-      "source": "site formula",
+      "source": "site formula, model v2",
       "as_of": "2026-09-20",
       "error": null,
       "band": "10 to 60",
-      "btc_close": 80393.171875,
-      "fair_value": 141277.245765,
-      "days_since_genesis": 6469.0,
-      "note": "the page's own priceToQuantile, ported into this script. Fair value is 10 ** (5.82 * log10(days since 2009-01-03) - 17.029), bands are offsets in log10(price / fair value), and the decaying bands cap their slope term at the run date. Passes when the quantile is not above the 85th fitted band. That is the 9/13 research's own line, not the ladder's 75 sell line."
+      "value_model_v1": 11.073253,
+      "btc_close": 80597.601562,
+      "fair_value": 121091.074214,
+      "days_since_clock": 6469.0,
+      "note": "the page's own priceToQuantile under model v2, ported into this script. The centre line is 10 ** (5.645315 * log10(days since 2009-01-03) - 16.430264) and the lines are offsets c * exp(-age / T) in log10(price / centre). Passes is judged on model v1's quantile, not above its 85th band, because the 9/13 research measured that line. It is not the ladder's 75 sell line."
     },
     "btc_price": {
-      "value": 80393.171875,
+      "value": 80597.601562,
       "pass": null,
       "source": "yahoo_daily",
       "as_of": "2026-09-20",

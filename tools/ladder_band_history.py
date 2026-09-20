@@ -8,7 +8,7 @@ Bitcoin before Sep 2014 comes from the CoinMetrics community file, after that fr
 import io, os, sys, urllib.request
 import numpy as np, pandas as pd, yfinance as yf
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from ladder_bands_study import quantile
+from ladder_model import quantile          # model v2 by default, LADDER_MODEL=v1 for the original
 
 CM = "https://raw.githubusercontent.com/coinmetrics/data/master/csv/btc.csv"
 

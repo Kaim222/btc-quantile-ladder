@@ -34,11 +34,7 @@ STRC band: shares only, 1.5× margin framework — ~15.6% net carry on equity at
 50% maintenance). Par break usually coincides with the preferred-ATM stall.
 
 ### Model
-Kaim Power Law: A=5.82, B=−17.029, genesis 2009-01-03.
-Band offsets per BAND_DEFS (99.9/95/85 decay linearly, frozen at today for
-forward projections; 50/15/0.1 constant). `quantileToPrice` inverts
-`priceToQuantile` by interpolating offsets in quantile space — round-trip
-exact within the 0.01–99.99 clamps.
+Kaim Power Law, model v2 since 2026-09-20: A=5.645315, B=-16.430264 on days since 2009-01-03, centre at the median of the gaps. Line offsets are c * exp(-age / T), age in years since the clock start (upper T 8.87, lower T 20.78), 50 at zero, Floor and Ceiling as envelopes of every close since 2014. `data/ladder-model.json` is the record. `?model=v1` shows the original (A=5.82, B=-17.029). See Model v2 below.
 
 ### Removed in v2
 SIGNALS page, EO TRACKER page, collector/, config/, data/ (stale since Jul).
@@ -250,3 +246,32 @@ more: no component is ADOPTED, so the funded stack cannot go live and the sleeve
 stays on paper until the 8-week record beats implied odds. The 2026-09-13
 research replaced it as `paper_trigger` and it now sits in the same file as
 `paper_trigger_previous`, kept for the record and no longer scored on the page.
+
+## Model v2 (2026-09-20)
+
+The quantile model moved from v1 (slope 5.82, intercept -17.029, fixed lower lines, upper lines on a straight-line decay
+frozen at page load) to v2. Reasons, from `tools/model_audit.py`: the v1 centre sat above price through the last four
+two-year checks, and its upper lines needed a freeze so they would not cross.
+
+- **Centre line.** `log10(price) = 5.645315 * log10(days since 2009-01-03) - 16.430264`. Least squares slope on every day
+  from Jul 2010, with the intercept lowered so half of all days sit under the line (bubbles pull a least squares line above
+  the median). `tools/model_refit_explore.py` scored clock starts and sample starts on forecasts from year-end fits 2014 to
+  2024, on the median gap of price over the line in the two years after each fit. This combination had a mean gap of -0.002
+  log10 and a mean absolute gap of 0.237, both the best tested. A Jan 2010 clock was tried and ran 0.11 to 0.14 log10 under the
+  prices that followed. The vintages overlap and come from one price path, so this is a tie-break, not a significance test.
+- **Lines.** Offsets `c * exp(-age / T)` in log10, age in years since the clock start, so both sides narrow with age and
+  never cross. Scales are fitted by pinball loss. 15, 85 and 95 are nominal pinball targets (observed shares of all days are recorded in
+  the model file) and do not hold inside a single cycle. Lower T (20.8 years) is fitted on all days. Upper T cannot be pinned by the data: all days say 13 years, the
+  four cycle highs say 6. The model uses their geometric mean, 8.9, as an open judgment that the yearly refit will move.
+  Floor and Ceiling are envelopes of every close from 2014 to the fit date, not percentiles and not support.
+- **One source.** `data/ladder-model.json` is written by `tools/model_refit.py --write`. The same constants are hard coded in
+  `index.html` (`MODEL_V2`), the monitor (`_BANDS`, `_MODEL_A`, `_MODEL_B`), `tools/playbook_refresh.py` (`LADDER2_*`) and read
+  by `tools/ladder_model.py`. The monitor test and the Playbook self-test pin the ports to the site's numbers.
+- **Yearly refit.** Run `python tools/model_refit.py --write` each January, then `python tools/model_sync.py <monitor clone>` to copy the constants into the three ports,
+  update the two pinned tests, then rerun `tools/ladder_band_history.py 10 60 75` for the rules history.
+- **Going back.** `index.html?model=v1` shows the original model in the browser without changing anything. To make v1 the
+  default again, revert the commit titled "Quantile model v2" in this repo and the monitor's commit of the same name. The tag
+  `model-v1` marks the last v1 commit here.
+- The ladder lines stay 10 / 60 / 75. The cut-point study was rerun on v2 quantiles. It is a retrospective scenario
+  comparison that uses today's fitted model on past dates, not an independent validation. The Playbook's 9/13 research leg
+  still passes on model v1's 85th band, because that is what was measured.

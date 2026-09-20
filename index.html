@@ -61,26 +61,46 @@
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// KAIM POWER LAW MODEL — CALIBRATION
+// KAIM POWER LAW MODEL
 //
-// Coefficients: A=5.82, B=-17.029
-// Verified: FV = $118,006 on Mar 7 2026
-//
-// Band offsets (log10 scale from fair value):
-//   99.9th → $220K  offset= +0.2687 (c=0.7434, m=-7.56e-5)
-//   95th   → $200K  offset= +0.2277 (c=0.5943, m=-5.84e-5)
-//   85th   → $152K  offset= +0.1072 (c=0.4318, m=-5.17e-5)
-//   50th   → $119K  offset= -0.0004  (fair value)
-//   15th   → $ 73K  offset= -0.2092
-//   0.1st  → $ 54K  offset= -0.3403
-//
-// Upper band C offsets synced with Excel v01(4) — tighter ceiling
+// Model v2, fitted 2026-09-19 by tools/model_refit.py and recorded in data/ladder-model.json. Refit once a year.
+//   centre line: log10(price) = 5.645315 * log10(days since 2009-01-03) - 16.430264
+//   Least squares slope on every day from Jul 2010, with the intercept lowered so half of all days sit under the line
+//   (bubbles pull a least squares line above the median). Scored on the median gap of price over the line in the two
+//   years after each year-end fit 2014 to 2024, this had a mean gap of -0.002 log10 and a mean absolute gap of 0.237,
+//   both the best tested. A clock started in Jan 2010 ran 0.11 to 0.14 log10 under the prices that followed. The
+//   vintages overlap and come from one price path, so that is a tie-break on bias, not a significance test.
+//   lines: offsets from the centre in log10, shaped c * exp(-age / T) with age in years since the clock start, so both
+//   sides narrow with age and never cross. The scales are fitted by pinball loss. 15, 85 and 95 are nominal targets
+//   (observed shares of all days are in data/ladder-model.json) and do not hold inside a single cycle. Lower T (20.8
+//   years) is fitted on all days. Upper T cannot be pinned: all
+//   days say 13 years, the four cycle highs say 6. The model uses their geometric mean, 8.9, as an open judgment.
+//   Floor and Ceiling are envelopes of every close from 2014 to the fit date. They are not percentiles or support.
+// Model v1 (the original, genesis clock, slope 5.82, straight-line decay frozen at page load) stays here for comparison.
+// Open the page with ?model=v1 to see it. tools/ladder_model.py is the same arithmetic in Python.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const GENESIS = new Date("2009-01-03T00:00:00Z");
 const GENESIS_MS = GENESIS.getTime();
-const JV_A = 5.82;
-const JV_B = -17.029;
+const MODEL_V2 = { name:"v2", clock:"2009-01-03", A:5.645315, B:-16.430264, minDays:0, centreOnMedian:true, bands:[
+  { q:99.9, label:"Ceiling", kind:"exp", p:[2.468226, 8.871781] },
+  { q:95, label:"95%", kind:"exp", p:[1.589109, 8.871781] },
+  { q:85, label:"85%", kind:"exp", p:[1.048162, 8.871781] },
+  { q:50, label:"50%", kind:"const", p:[0] },
+  { q:15, label:"15%", kind:"exp", p:[-0.339276, 20.784638] },
+  { q:0.1, label:"Floor", kind:"exp", p:[-0.659285, 20.784638] } ] };
+const MODEL_V1 = { name:"v1", clock:"2009-01-03", A:5.82, B:-17.029, minDays:0, bands:[
+  { q:99.9, label:"99.9%", kind:"lin",   p:[-0.0000756204, 0.7434] },
+  { q:95,   label:"95%",   kind:"lin",   p:[-0.0000583518, 0.5943] },
+  { q:85,   label:"85%",   kind:"lin",   p:[-0.0000516698, 0.4318] },
+  { q:50,   label:"50%",   kind:"const", p:[-0.0004] },
+  { q:15,   label:"15%",   kind:"const", p:[-0.2092] },
+  { q:0.1,  label:"0.1%",  kind:"const", p:[-0.3403] } ] };
+const MODEL = (() => { try { return new URLSearchParams(window.location.search).get("model") === "v1" ? MODEL_V1 : MODEL_V2; } catch (e) { return MODEL_V2; } })();
+const CLOCK_MS = Date.parse(MODEL.clock + "T00:00:00Z");
+const CLOCK_SHIFT_DAYS = (CLOCK_MS - GENESIS_MS) / 86400000;      // BTC_HISTORY and the chart count days from genesis
+const JV_A = MODEL.A;
+const JV_B = MODEL.B;
 
 // BTC monthly price history (seed data for EMA regression)
 const BTC_HISTORY = [
@@ -132,8 +152,10 @@ function fitEMA(halfLifeDays) {
   let sw=0, swx=0, swy=0, swxx=0, swxy=0;
   for (const {days, price} of BTC_HISTORY) {
     const age = todayDays - days;
+    const md = days - CLOCK_SHIFT_DAYS;                  // days on the model's clock
+    if (md <= 0 || md < MODEL.minDays) continue;          // the fit leaves out days too close to the clock start
     const w = Math.exp(-Math.LN2 * age / halfLifeDays);
-    const x = Math.log10(days);
+    const x = Math.log10(md);
     const y = Math.log10(price);
     sw   += w;
     swx  += w * x;
@@ -145,44 +167,42 @@ function fitEMA(halfLifeDays) {
   if (Math.abs(denom) < 1e-12) return { A: JV_A, B: JV_B };
   const A = (sw * swxy - swx * swy) / denom;
   const B = (swy - A * swx) / sw;
-  return { A, B };
+  if (!MODEL.centreOnMedian) return { A, B };
+  const r = [];
+  for (const {days, price} of BTC_HISTORY) { const md = days - CLOCK_SHIFT_DAYS; if (md <= 0 || md < MODEL.minDays) continue; r.push(Math.log10(price) - (A * Math.log10(md) + B)); }
+  r.sort((x, y) => x - y);
+  const med = r.length ? (r.length % 2 ? r[(r.length - 1) / 2] : (r[r.length / 2 - 1] + r[r.length / 2]) / 2) : 0;
+  return { A, B: B + med };
 }
 
 function daysFromGenesis(ts) {
   return (ts - GENESIS_MS) / 86400000;
 }
 function fairValueAt(ts, A=JV_A, B=JV_B) {
-  const d = daysFromGenesis(ts);
+  const d = daysFromGenesis(ts) - CLOCK_SHIFT_DAYS;
   return d > 0 ? Math.pow(10, A * Math.log10(d) + B) : 0;
 }
 
-// Band offsets — upper bands decay linearly over time (empirical fit)
-// offset(days) = m * days + c  for 99.9%, 95%, 85%
-// constant for 50%, 15%, 0.1%
-// Upper bands: cap decay at today's day count (matches Excel MIN(days,today) fix)
-// Without this, 99.9th crosses below 95th at ~day 9578 and 85th hits 50th at ~day 9171
+// Band offsets from the centre line in log10. exp = c * exp(-age / T), age in years since the model clock. const = c.
+// lin is model v1 only: m * days + c with the decay frozen at page load, which it needed so its lines would not cross.
 const TODAY_DAYS = (Date.now() - GENESIS_MS) / 86400000;
-function bandOffset(mSlope, cIntercept, ts) {
+function bandOffset(b, ts) {
+  if (b.kind === "const") return b.p[0];
+  if (b.kind === "exp") return b.p[0] * Math.exp(-((ts - CLOCK_MS) / 86400000 / 365.25) / b.p[1]);
+  if (b.kind !== "lin") throw new Error("unknown band kind " + b.kind);
   const days = (ts - GENESIS_MS) / 86400000;
-  // For decaying bands (m < 0), cap at today's value so projections don't collapse
-  const effectiveDays = mSlope < 0 ? Math.min(days, TODAY_DAYS) : days;
-  return mSlope * effectiveDays + cIntercept;
+  return b.p[0] * (b.p[0] < 0 ? Math.min(days, TODAY_DAYS) : days) + b.p[1];
 }
 
-const BAND_DEFS = [
-  { q: 99.9, m: -0.0000756204, c:  0.7434,  label: "99.9%", color: "#3b82f6", dash: "2,4", w: 0.8, dim: true },
-  { q: 95,   m: -0.0000583518, c:  0.5943,  label: "95%",   color: "#8b5cf6", dash: "2,4", w: 0.8, dim: true },
-  { q: 85,   m: -0.0000516698, c:  0.4318,  label: "85%",   color: "#22c55e", dash: "",    w: 1.4 },
-  { q: 50,   m:  0,            c: -0.000400, label: "50%",   color: "#22d3ee", dash: "",    w: 1.4 },
-  { q: 15,   m:  0,            c: -0.209200, label: "15%",   color: "#f97316", dash: "",    w: 1.4 },
-  { q: 0.1,  m:  0,            c: -0.340300, label: "0.1%",  color: "#ef4444", dash: "",    w: 1.4 },
-];
+const BAND_STYLE = { 99.9:{color:"#3b82f6",dash:"2,4",w:0.8,dim:true}, 95:{color:"#8b5cf6",dash:"2,4",w:0.8,dim:true}, 85:{color:"#22c55e",dash:"",w:1.4},
+  50:{color:"#22d3ee",dash:"",w:1.4}, 15:{color:"#f97316",dash:"",w:1.4}, 0.1:{color:"#ef4444",dash:"",w:1.4} };
+const BAND_DEFS = MODEL.bands.map(b => ({ ...b, ...BAND_STYLE[b.q] }));
 
 // BANDS with offset computed at current time (for gauge/quantile calc)
-const BANDS = BAND_DEFS.map(b => ({ ...b, offset: bandOffset(b.m, b.c, Date.now()) }));
+const BANDS = BAND_DEFS.map(b => ({ ...b, offset: bandOffset(b, Date.now()) }));
 
 function bandPriceAt(ts, bandDef, A=JV_A, B=JV_B) {
-  const offset = bandOffset(bandDef.m, bandDef.c, ts);
+  const offset = bandOffset(bandDef, ts);
   return fairValueAt(ts, A, B) * Math.pow(10, offset);
 }
 
@@ -191,7 +211,7 @@ function priceToQuantile(price, ts, A=JV_A, B=JV_B) {
   if (!fv || price <= 0) return 50;
   const res = Math.log10(price / fv);
   // Compute offsets fresh for the given timestamp (upper bands decay over time)
-  const bands = BAND_DEFS.map(b => ({ ...b, offset: bandOffset(b.m, b.c, ts) }));
+  const bands = BAND_DEFS.map(b => ({ ...b, offset: bandOffset(b, ts) }));
   // Interpolate between calibration points
   for (let i = 0; i < bands.length - 1; i++) {
     const hi = bands[i], lo = bands[i + 1];
@@ -201,11 +221,11 @@ function priceToQuantile(price, ts, A=JV_A, B=JV_B) {
     }
   }
   if (res > bands[0].offset) {
-    // Above 99.9th — extrapolate
+    // Above the top line — extrapolate
     const slope = (bands[0].q - bands[1].q) / (bands[0].offset - bands[1].offset);
     return Math.min(99.99, bands[0].q + slope * (res - bands[0].offset));
   }
-  // Below 0.1st — extrapolate
+  // Below the bottom line — extrapolate
   const slope = (bands[bands.length-2].q - bands[bands.length-1].q) /
                 (bands[bands.length-2].offset - bands[bands.length-1].offset);
   return Math.max(0.01, bands[bands.length-1].q + slope * (res - bands[bands.length-1].offset));
@@ -217,7 +237,7 @@ function priceToQuantile(price, ts, A=JV_A, B=JV_B) {
 // Quantile → price at any date (inverse of priceToQuantile; interpolates band offsets)
 function quantileToPrice(qq, ts, A=JV_A, B=JV_B) {
   const fv = fairValueAt(ts, A, B);
-  const bands = BAND_DEFS.map(b => ({ q: b.q, offset: bandOffset(b.m, b.c, ts) }));
+  const bands = BAND_DEFS.map(b => ({ q: b.q, offset: bandOffset(b, ts) }));
   let offset;
   if (qq >= bands[0].q) {
     const s = (bands[0].offset - bands[1].offset) / (bands[0].q - bands[1].q);
@@ -253,17 +273,17 @@ function fmtMonth(ts) { return new Date(ts).toLocaleDateString("en-US", { month:
 const LADDER = [
   { name:"STRC Margin", color:"#22c55e", darkBg:"#071a0f", qMin:75, qMax:100.01, kind:"margin",
     debt:"under 3%",
-    desc:"Sell zone at 75 and above. Sell the BTC beta into STRC at 12% on $100 par with no BTC beta. November 2024 and January 2025 closed in this zone.",
+    desc:"Sell zone at 75 and above. Sell the BTC beta into STRC at 12% on $100 par with no BTC beta. Seven monthly closes in 2024 and 2025 sat in this zone.",
     typeNote:"sell · proceeds to STRC · 1.5× margin",
     margin:{ leverage:1.5, yield:0.12, rate:0.0475, maint:0.50 } },
   { name:"IBIT PMCC", color:"#22d3ee", darkBg:"#0c1e26", qMin:60, qMax:75, kind:"pmcc",
     debt:"under 6%",
-    desc:"Spot BTC ETF diagonal with about 2× beta on the long leg. Visits have lasted one month at the median. The longest ran five months. Rich readings here are the sell.",
+    desc:"Spot BTC ETF diagonal with about 2× beta on the long leg. Visits have lasted one month at the median. The longest ran six months. Rich readings here are the sell.",
     typeNote:"long 12 mo · short 90 d, rolled",
     longQ:60, longMo:12, shortQ:75, shortDays:90 },
   { name:"MSTR PMCC", color:"#f97316", darkBg:"#1c0e00", qMin:10, qMax:60, kind:"pmcc",
     debt:"under 9%",
-    desc:"Strategy diagonal. About 4× beta on the long leg. The widest band. Runs here have lasted up to 14 months. That is the case for the 12 month long.",
+    desc:"Strategy diagonal. About 4× beta on the long leg. The widest band. Runs here have lasted up to 21 months. That is the case for the 12 month long.",
     typeNote:"long 12 mo · short 90 d, rolled",
     longQ:10, longMo:12, shortQ:60, shortDays:90 },
   { name:"MSTX PMCC", color:"#ef4444", darkBg:"#1c0505", qMin:0, qMax:10, kind:"pmcc",
@@ -525,13 +545,12 @@ function PriceLookup({ btcPrice, liveHistory, dateStr, setDateStr, units, setUni
     if (!dateStr) return null;
     const d = new Date(dateStr + "T00:00:00Z");
     if (isNaN(d)) return null;
-    const days = (d.getTime() - GENESIS_MS) / 86400000;
+    const days = (d.getTime() - GENESIS_MS) / 86400000 - CLOCK_SHIFT_DAYS;   // days on the model's clock
     if (days <= 0) return null;
     const now = new Date();
     const daysFromNow = Math.round((d.getTime() - now.getTime()) / 86400000);
     const bands = [...BAND_DEFS].reverse().map(b => {
-      const offset = bandOffset(b.m, b.c, d.getTime());
-      const price = Math.pow(10, modelA * Math.log10(days) + modelB + offset);
+      const price = bandPriceAt(d.getTime(), b, modelA, modelB);
       return { label: b.label, price, color: b.color, q: b.q };
     });
     return { bands, daysFromNow, days: Math.round(days), ts: d.getTime() };
@@ -783,7 +802,7 @@ function PowerLawChart({ btcPrice, todayTs, liveHistory, lookupTs, modelA=JV_A, 
           ))}
         </div>
       </div>
-      <div style={{fontSize:TYPE.secondary,color:"#7a9ab8",marginBottom:8}}><Sentences>The 50% band is fair value. Lines mark the model bands. Shading marks the ladder zones.</Sentences></div>
+      <div style={{fontSize:TYPE.secondary,color:"#7a9ab8",marginBottom:8}}><Sentences>{"The 50% band is fair value. Lines mark the model bands. Shading marks the ladder zones."+(MODEL.name === "v2" && modelA === JV_A ? " Floor and Ceiling hold every close from 2014 to the last refit." : "")}</Sentences></div>
       <div style={{overflowX:"auto"}}>
         <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",maxWidth:`${W}px`,height:"auto",display:"block"}}>
           {/* Background */}
@@ -2396,7 +2415,7 @@ function BTCPowerLaw() {
 
       <div style={{marginTop:"24px",paddingTop:"16px",borderTop:"1px solid #0a1628"}}>
         <div style={{fontSize:"10px",color:"#3a5a78",textAlign:"center",letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:500}}>
-          <span style={{display:"inline-block",whiteSpace:"nowrap",marginRight:12}}>Kaim Power Law Model · v3</span><span style={{display:"inline-block",whiteSpace:"nowrap",marginRight:12}}>A=5.82 · B=−17.029</span><span style={{display:"inline-block",whiteSpace:"nowrap",marginRight:12}}>Bands on the monthly close</span><span style={{display:"inline-block",whiteSpace:"nowrap"}}>12 month long · 3 month short</span>
+          <span style={{display:"inline-block",whiteSpace:"nowrap",marginRight:12}}>Kaim Power Law Model</span><span style={{display:"inline-block",whiteSpace:"nowrap",marginRight:12}}>{"Model "+MODEL.name+" · A="+JV_A.toFixed(2)+" · B="+String(JV_B.toFixed(3)).replace("-","−")+" · clock "+mdy(MODEL.clock)}</span><span style={{display:"inline-block",whiteSpace:"nowrap",marginRight:12}}>Bands on the monthly close</span><span style={{display:"inline-block",whiteSpace:"nowrap"}}>12 month long · 3 month short</span>
         </div>
       </div>
       </>)}

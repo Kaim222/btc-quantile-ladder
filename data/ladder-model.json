@@ -1,0 +1,99 @@
+{
+ "version": 2,
+ "fitted": "2026-09-19",
+ "clock_start": "2009-01-03",
+ "sample_start": "2010-07-18",
+ "slope": 5.645315,
+ "intercept": -16.430264,
+ "bands": [
+  {
+   "q": 99.9,
+   "label": "Ceiling",
+   "kind": "exp",
+   "p": [
+    2.468226,
+    8.871781
+   ]
+  },
+  {
+   "q": 95,
+   "label": "95%",
+   "kind": "exp",
+   "p": [
+    1.589109,
+    8.871781
+   ]
+  },
+  {
+   "q": 85,
+   "label": "85%",
+   "kind": "exp",
+   "p": [
+    1.048162,
+    8.871781
+   ]
+  },
+  {
+   "q": 50,
+   "label": "50%",
+   "kind": "const",
+   "p": [
+    0.0
+   ]
+  },
+  {
+   "q": 15,
+   "label": "15%",
+   "kind": "exp",
+   "p": [
+    -0.339276,
+    20.784638
+   ]
+  },
+  {
+   "q": 0.1,
+   "label": "Floor",
+   "kind": "exp",
+   "p": [
+    -0.659285,
+    20.784638
+   ]
+  }
+ ],
+ "note": "Centre line: least squares slope on log10(days since clock_start), intercept lowered to the median of the gaps. Offsets in log10 from the centre: const = p0, exp = p0 * exp(-age_years / p1), age in years of 365.25 days since clock_start. 15, 85 and 95 are nominal pinball targets: the observed share of all days under each line is in evidence.coverage, and the labels do not hold inside a single cycle. Floor and Ceiling are envelopes of every daily close from 2014-01-01 to the fit date (CoinMetrics then Yahoo), not percentiles and not support. Their quantile values 0.1 and 99.9 are interpolation anchors only. Refit once a year.",
+ "evidence": {
+  "centre": "genesis clock on all days from Jul 2010 with the median intercept had a mean two-year gap of -0.002 log10 and a mean absolute gap of 0.237 across year-end fits 2014 to 2024, both the best of the combinations tested; a Jan 2010 clock ran 0.11 to 0.14 log10 under the prices that followed (tools/model_refit_explore.py). Overlapping vintages from one path: a tie-break, not a significance test",
+  "upper_decay_years": {
+   "all_days": 13.0,
+   "cycle_highs": 6.0,
+   "used_geometric_mean": 8.9
+  },
+  "lower_decay_years": 20.8,
+  "coverage": {
+   "95%": 93.8,
+   "85%": 84.1,
+   "50%": 50.0,
+   "15%": 15.0
+  },
+  "cycle_highs_over_centre": {
+   "2013-12": 12.99,
+   "2017-12": 7.59,
+   "2021-11": 3.42,
+   "2025-10": 1.41
+  },
+  "floor_binds_on": "2026-06-30",
+  "ceiling_binds_on": "2021-04-13"
+ },
+ "v1": {
+  "clock_start": "2009-01-03",
+  "slope": 5.82,
+  "intercept": -17.029
+ },
+ "vintages": [
+  {
+   "fitted": "2026-09-19",
+   "slope": 5.645315,
+   "intercept": -16.430264
+  }
+ ]
+}

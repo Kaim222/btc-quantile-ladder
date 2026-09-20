@@ -1,6 +1,6 @@
 {
  "as_of": "2026-09-20",
- "note": "The ladder rules agreed the morning of 9/17. The band lines moved from 15, 50 and 85 to 10, 60 and 75 on 9/20 after the cut-point study on real prices since 2020 (tools/ladder_cutpoints_study.py). The Ladder tab renders this file; the monitor's pushes carry the same plays. Edit here, not in index.html.",
+ "note": "The ladder rules agreed the morning of 9/17. The band lines moved from 15, 50 and 85 to 10, 60 and 75 on 9/20 after the cut-point study on real prices since 2020 (tools/ladder_cutpoints_study.py). The same day the quantile model moved to v2 (data/ladder-model.json: genesis clock, slope 5.65, centre at the median, lines that narrow with age). The cut-point study was rerun on v2 quantiles, see BUILD-NOTES.md. The Ladder tab renders this file; the monitor's pushes carry the same plays. Edit here, not in index.html.",
  "rules": [
   {"k": "gate", "rule": "New longs only with BTC's daily close above its 50 day. Below it no new money enters. Open positions keep their own exits."},
   {"k": "band", "rule": "Under 10 uses MSTX. 10 to 60 uses MSTR. 60 to 75 uses IBIT. 75 and up is the sell zone. Rotate bands only on monthly closes. A touch does not trigger rotation."},
@@ -17,12 +17,12 @@
  ],
  "phase_note": "Phase 2 (Jan long / Dec 18 short, decided 9/15) stays as written at 70%. The time and strike rules bind from Phase 3, the LEAPS, on.",
  "history": {
-  "note": "monthly closes since 2013 on the ladder's own bands, recomputed on the 10, 60 and 75 lines with tools/ladder_band_history.py on 2026-09-20",
+  "note": "monthly closes since 2013 on the ladder's own bands, recomputed on model v2 and the 10, 60 and 75 lines with tools/ladder_band_history.py on 2026-09-20",
   "bands": [
-   {"band": "MSTX, under 10", "visits": 7, "median_months": 2, "longest_months": 2, "note": "no visit under 10 has lasted past two monthly closes. The last ran 2026-06 to 2026-07."},
-   {"band": "MSTR, 10 to 60", "visits": 15, "median_months": 5, "longest_months": 14, "note": "the live band since the 2026-08 close at quantile 10.7. Runs of up to 14 months are the case for the 12-month long."},
-   {"band": "IBIT, 60 to 75", "visits": 10, "median_months": 1, "longest_months": 5},
-   {"band": "75 and up", "visits": 6, "median_months": 7, "longest_months": 19, "note": "the three bull runs lasted 19, 14 and 17 months, plus three single-month pokes in 2019-06, 2024-11 and 2025-01; last monthly close at or above 75: 2025-01"}
+   {"band": "MSTX, under 10", "visits": 3, "median_months": 2, "longest_months": 2, "note": "three visits, 2015-09, 2022-11 to 2022-12 and 2026-06 to 2026-07. None lasted past two monthly closes."},
+   {"band": "MSTR, 10 to 60", "visits": 11, "median_months": 6, "longest_months": 21, "note": "the live band since the 2026-08 close at quantile 11.2. Runs of up to 21 months are the case for the 12-month long."},
+   {"band": "IBIT, 60 to 75", "visits": 15, "median_months": 1, "longest_months": 6},
+   {"band": "75 and up", "visits": 9, "median_months": 3, "longest_months": 17, "note": "runs of 9, 10 and 17 months at the 2013, 2017 and 2021 tops, then 1, 3 and 3 months in 2024 and 2025, plus single months in 2013-04, 2018-07 and 2019-06; last monthly close at or above 75: 2025-07"}
   ],
   "tops": [
    {"cycle": "2013-14", "peak_q": 122},
@@ -31,6 +31,6 @@
    {"cycle": "2021 fall", "peak_q": 105},
    {"cycle": "2024-25", "peak_q": 81}
   ],
-  "tops_note": "The peaks step down. On a monthly close the 2024-25 top never reached 85. It closed above the 75 line twice, 2024-11 and 2025-01, both near quantile 78 on the site's own function. The 75 line is where the BTC beta gets sold, not a place to sit. The peak_q list predates the 9/20 line move and its basis was not rechecked."
+  "tops_note": "On model v2 the 2024-25 top closed seven months at or above the 75 line and peaked at quantile 84 on the 2025-01 close. The 75 line is where the BTC beta gets sold, not a place to sit. The peak_q list is from model v1 and was not recomputed."
  }
 }

@@ -16,7 +16,7 @@ three or four cycles. Read the shape.
 import math, os, sys, itertools
 import numpy as np, pandas as pd, yfinance as yf
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from ladder_bands_study import quantile
+from ladder_model import quantile          # model v2 by default, LADDER_MODEL=v1 for the original
 
 RF = 0.04
 IV = {"ibit": (0.52, 0.45), "mstr": (0.82, 0.78), "mstx": (1.25, 1.40)}     # 12 month and 90 day
@@ -92,7 +92,7 @@ def yearly(x, H): return 100 * (math.exp(x * 365 / H) - 1)
 
 
 SWITCH_2X = "2024-11-01"      # MSTX ran at 1.75x from its Aug 2024 launch and moved to 2x at the end of Oct 2024
-CANDS = [(15, 50, 85), (25, 50, 75), (10, 50, 85), (10, 60, 85), (10, 60, 75), (10, 60, 65), (10, 50, 65), (15, 50, 65), (10, 65, 65)]
+CANDS = [(15, 50, 85), (25, 50, 75), (10, 60, 85), (10, 60, 75), (15, 60, 75), (10, 60, 65), (10, 65, 65), (10, 70, 70), (15, 70, 70)]
 
 
 def real_series(drag_mult=1.0):

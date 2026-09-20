@@ -186,6 +186,31 @@ def price_to_quantile(price: float, when, today_days: float | None = None) -> fl
     return price_to_quantile_days(price, ladder_days(when), today_days)
 
 
+# Model v2 (site default since 2026-09-20, constants from data/ladder-model.json). The functions above are model v1 and stay
+# because the 9/13 research leg was measured on v1's 85th band.
+LADDER2_CLOCK = datetime(2009, 1, 3, tzinfo=timezone.utc)
+LADDER2_A, LADDER2_B = 5.645315, -16.430264
+LADDER2_BANDS = [(99.9, 2.468226, 8.871781), (95, 1.589109, 8.871781), (85, 1.048162, 8.871781), (50, 0.0, None), (15, -0.339276, 20.784638), (0.1, -0.659285, 20.784638)]
+
+
+def price_to_quantile_v2(price: float, when) -> float:
+    d = when if isinstance(when, datetime) else datetime(when.year, when.month, when.day, tzinfo=timezone.utc)
+    d = d if d.tzinfo else d.replace(tzinfo=timezone.utc)
+    days = (d - LADDER2_CLOCK).total_seconds() / 86400.0
+    if days <= 0 or price <= 0:
+        raise RuntimeError(f"ladder quantile undefined at price {price} on {when}")
+    res = math.log10(price) - (LADDER2_A * math.log10(days) + LADDER2_B)
+    age = days / 365.25
+    bands = [(q, c if t is None else c * math.exp(-age / t)) for q, c, t in LADDER2_BANDS]
+    for (hq, ho), (lq, lo) in zip(bands, bands[1:]):
+        if lo <= res <= ho:
+            return lq + (res - lo) / (ho - lo) * (hq - lq)
+    if res > bands[0][1]:
+        return min(99.99, bands[0][0] + (bands[0][0] - bands[1][0]) / (bands[0][1] - bands[1][1]) * (res - bands[0][1]))
+    a, z = bands[-2], bands[-1]
+    return max(0.01, z[0] + (a[0] - z[0]) / (a[1] - z[1]) * (res - z[1]))
+
+
 def ladder_band_label(q: float) -> str:
     """The ladder's four rungs as moved on 2026-09-20 (10, 60, 75). Not the fitted chart bands."""
     if q < 10.0:
@@ -966,7 +991,11 @@ def self_test() -> list[str]:
     assert abs(qq - 9.303) < 0.01, f"ladder port read {qq:.3f}, the site read 9.303"
     assert ladder_band_label(qq) == "below 10", f"9.3 labelled {ladder_band_label(qq)}"
     assert ladder_band_label(90.0) == "above 75" and ladder_band_label(65.0) == "60 to 75" and ladder_band_label(10.7) == "10 to 60"
-    checks.append("ladder port: 77,200 on 2026-09-12 reads 9.303q, below 10")
+    checks.append("ladder port, model v1: 77,200 on 2026-09-12 reads 9.303q, below 10")
+    q2 = price_to_quantile_v2(77200.0078125, date(2026, 9, 12))
+    assert abs(q2 - 9.808) < 0.01, f"model v2 port read {q2:.3f}, tools/ladder_model.py reads 9.808"
+    assert ladder_band_label(q2) == "below 10"
+    checks.append("ladder port, model v2: 77,200 on 2026-09-12 reads 9.808q, below 10")
 
     # ledger normalization: a Yahoo entry no longer blocks the AlphaQuery
     # observation on the same date.
@@ -1116,21 +1145,24 @@ def main() -> int:
         # the 9/13 research's ladder leg, from the page's own formula
         try:
             days = ladder_days(date.fromisoformat(last_dt))
-            quant = price_to_quantile_days(last_px, days)
+            quant_v1 = price_to_quantile_days(last_px, days)
+            quant = price_to_quantile_v2(last_px, date.fromisoformat(last_dt))
+            days2 = (datetime.fromisoformat(last_dt).replace(tzinfo=timezone.utc) - LADDER2_CLOCK).total_seconds() / 86400.0
             inputs["ladder_quantile"] = row(
                 f(quant),
-                passes=bool(quant <= 85.0),
-                source="site formula",
+                passes=bool(quant_v1 <= 85.0),
+                source="site formula, model v2",
                 as_of=last_dt,
                 band=ladder_band_label(quant),
+                value_model_v1=f(quant_v1),
                 btc_close=f(last_px),
-                fair_value=f(ladder_fair_value(days)),
-                days_since_genesis=f(days),
+                fair_value=f(10 ** (LADDER2_A * math.log10(days2) + LADDER2_B)),
+                days_since_clock=f(days2),
                 note=(
-                    "the page's own priceToQuantile, ported into this script. Fair value is "
-                    "10 ** (5.82 * log10(days since 2009-01-03) - 17.029), bands are offsets in "
-                    "log10(price / fair value), and the decaying bands cap their slope term at "
-                    "the run date. Passes when the quantile is not above the 85th fitted band. That is the 9/13 research's own line, not the ladder's 75 sell line."
+                    "the page's own priceToQuantile under model v2, ported into this script. The centre line is "
+                    "10 ** (5.645315 * log10(days since 2009-01-03) - 16.430264) and the lines are offsets "
+                    "c * exp(-age / T) in log10(price / centre). Passes is judged on model v1's quantile, not "
+                    "above its 85th band, because the 9/13 research measured that line. It is not the ladder's 75 sell line."
                 ),
             )
         except Exception as exc:

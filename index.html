@@ -1465,6 +1465,7 @@ function MstrTab({ liveBtc }) {
   const touched = useRef({});
   const [lkM, setLkM] = useState(""), [hist, setHist] = useState(null), [evd, setEvd] = useState(null);
   const [fade, setFade] = useLocal("bql_gap_fade", "measured", v => ["measured","slow","never"].includes(v) ? v : "measured");
+  const [dec, setDec] = useLocal("bql_mstx_decay", "measured", v => ["measured","calm","none"].includes(v) ? v : "measured");
   const [lkBtc, setLkBtc] = useState(""), [lkDay, setLkDay] = useNyDate("bql_lk_day");
   useEffect(() => {
     const resize = () => setNarrow(window.innerWidth < 560);
@@ -1568,7 +1569,13 @@ function MstrTab({ liveBtc }) {
   // gap_half_life_days (walk-forward test, 2026-09-19). MSTX = MSTX now x (MSTR ratio) squared, less 2x decay.
   const gf = evd && isObj(evd.gap_fade) ? evd.gap_fade : null;
   // MSTX loses ground to twice MSTR every year. Use the drag measured over the last year; the vol formula understates it.
-  const dragK = evd && isObj(evd.mstx_drag) && nm(evd.mstx_drag.k_1y) > 0 ? nm(evd.mstx_drag.k_1y) : 1.0;
+  const md_ = evd && isObj(evd.mstx_drag) ? evd.mstx_drag : null;
+  const regBelow = st.regime === "below", kReg = md_ ? nm(regBelow ? md_.k_below50 : md_.k_above50) : null;
+  const dragMeasured = kReg > 0 ? kReg : md_ && nm(md_.k_1y) > 0 ? nm(md_.k_1y) : 1.0, dragCalm = md_ && nm(md_.k_calm) > 0 ? nm(md_.k_calm) : 0.75;
+  const dragK = dec === "none" ? 0 : dec === "calm" ? dragCalm : dragMeasured;
+  const lossPct = k => Math.round((1-Math.exp(-k))*100);
+  const decFact = md_ && nm(md_.k_above50) > 0 && nm(md_.k_below50) > 0
+    ? "MSTX squares MSTR's move, so a rally pays more than double. Decay comes on top. Last year it ran "+lossPct(nm(md_.k_above50))+"% with Bitcoin above its 50 day and "+lossPct(nm(md_.k_below50))+"% below it." : "";
   const fadeLine = fade === "never" ? "You set the gap to never fade, so it keeps all of today's gap."
     : fade === "slow" ? "You set a slow fade, so it keeps half of the gap after about four months."
     : "It keeps most of the gap next week and half of it in a month.";
@@ -1728,6 +1735,10 @@ function MstrTab({ liveBtc }) {
           {[["measured","as measured"],["slow","four times slower"],["never","never"]].map(([k,label]) =>
             <button key={k} aria-pressed={fade === k} onClick={() => setFade(k)} style={{...GST,color:fade === k ? "#e2e8f0" : "#4a7a9b",borderColor:fade === k ? "#2a5a8a" : "#162840"}}>{label}</button>)}</div>
         {fadeFact && <div style={{...FT,marginTop:0,marginBottom:10}}><Sentences>{fadeFact}</Sentences></div>}
+        <div style={{...ROW,gap:6,marginBottom:6}}><span style={{...LAB,marginRight:4}}>MSTX DECAY</span>
+          {[["measured",(regBelow ? "below" : "above")+" the 50 day "+lossPct(dragMeasured)+"%"],["calm","calm market "+lossPct(dragCalm)+"%"],["none","none"]].map(([k,label]) =>
+            <button key={k} aria-pressed={dec === k} onClick={() => setDec(k)} style={{...GST,color:dec === k ? "#e2e8f0" : "#4a7a9b",borderColor:dec === k ? "#2a5a8a" : "#162840"}}>{label}</button>)}</div>
+        {decFact && <div style={{...FT,marginTop:0,marginBottom:10}}><Sentences>{decFact}</Sentences></div>}
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10,alignItems:"end"}}>
           <label style={LAB}>IF BITCOIN IS AT
             <DollarInput value={grp(lkBtc)} inputMode="decimal" placeholder={btcI > 0 ? grp(Math.round(btcI)) : ""} onChange={e => setLkBtc(e.target.value.replace(/[^0-9.]/g,""))}
@@ -1772,7 +1783,7 @@ function MstrTab({ liveBtc }) {
         </div></div>
         <div style={FT}><More hide>{(yrs > 0 ? "Decay takes "+Math.round((1-decay)*100)+"% off MSTX by "+mdy(lkDay)+". " : "")
           + "MSTX is a 2x daily fund, so over time it moves with MSTR squared. "
-          + "Over the last year MSTX lost "+Math.round((1-Math.exp(-dragK))*100)+"% a year beyond twice MSTR's move. "
+          + "Decay here is set to "+lossPct(dragK)+"% a year. "
           + "Starting prices come from the WHAT IF boxes. "
           + "High is a steeper curve fitted to 2025 and it tested worse than projected."
           + (ops != null ? " Your mNAV counts "+usd2(ops)+" of debt and preferred per share." : "")}</More></div>

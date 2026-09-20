@@ -135,7 +135,7 @@ def build_history(d, e):
     return res
 
 
-def build_evidence(e, d_all):
+def build_evidence(e, d_all, btc_daily):
     """What the record says, for the Playbook. Model marks only: Black-Scholes at 120% vol, no bid and ask, one market era."""
     import math
     def ncdf(x): return 0.5 * (1 + math.erf(x / math.sqrt(2)))
@@ -177,7 +177,20 @@ def build_evidence(e, d_all):
         return (math.log(f["mstx"].iloc[-1] / f["mstx"].iloc[0]) - 2 * math.log(f["mstr"].iloc[-1] / f["mstr"].iloc[0])) / yrs
     k1, k2 = -drag(d_all.tail(253)), -drag(d_all)
     if not (0.2 < k1 < 3): raise RuntimeError("measured MSTX drag out of range: %s" % k1)
-    mdrag = {"k_1y": round(k1, 3), "k_all": round(k2, 3), "loss_1y_pct": int(round(100 * (1 - math.exp(-k1)))),
+    # the drag follows volatility, not direction: every 60 session window, split by what MSTR did
+    f = d_all.dropna(subset=["mstr", "mstx"]).reset_index(drop=True); W = 60; roll = []
+    for i in range(0, len(f) - W):
+        a, b = f.iloc[i], f.iloc[i + W]; yrs = (pd.Timestamp(b["d"]) - pd.Timestamp(a["d"])).days / 365
+        lm = math.log(b["mstr"] / a["mstr"]); roll.append((lm, -(math.log(b["mstx"] / a["mstx"]) - 2 * lm) / yrs))
+    roll = np.array(roll); loss = lambda k: int(round(100 * (1 - math.exp(-float(k)))))
+    up, dn = roll[roll[:, 0] >= math.log(1.2), 1], roll[roll[:, 0] <= math.log(0.8), 1]
+    fx = f.copy(); fx.index = pd.to_datetime(fx["d"]); dd = np.log(fx["mstx"]).diff() - 2 * np.log(fx["mstr"]).diff()
+    above = (btc_daily > btc_daily.rolling(50).mean()).shift(1).reindex(fx.index, method="ffill").fillna(False).astype(bool)
+    yr = fx.index > fx.index[-1] - pd.Timedelta(days=365)
+    kreg = lambda msk: round(-float(dd[msk & yr].dropna().mean() * 252), 3) if int((msk & yr).sum()) >= 40 else None
+    mdrag = {"k_1y": round(k1, 3), "k_all": round(k2, 3), "loss_1y_pct": int(round(100 * (1 - math.exp(-k1)))), "k_above50": kreg(above), "k_below50": kreg(~above),
+             "k_calm": round(float(np.percentile(roll[:, 1], 25)), 3), "windows": int(len(roll)),
+             "up20_loss_pct": loss(np.median(up)) if len(up) >= 20 else None, "down20_loss_pct": loss(np.median(dn)) if len(dn) >= 20 else None,
              "mstr_vol_1y": round(float(np.log(d_all["mstr"]).diff().tail(252).std() * np.sqrt(252)), 3)}
     return {"as_of": str(x["d"].iloc[-1]), "from": str(x["d"].iloc[0]), "horizon_sessions": H, "start_days": int(len(A)), "gap_fade": fade, "mstx_drag": mdrag,
             "guides": {"today": miss("today"), "projected": miss("projected"), "best": miss("best")},
@@ -201,7 +214,9 @@ def main():
     try:                       # build everything in memory first; one failure publishes nothing
         e, site = build_model(d, slope, cheap)
         res = build_history(d, e)
-        evid = build_evidence(e, d)
+        bd = yf.Ticker("BTC-USD").history(start=str((pd.Timestamp(d["d"].iloc[0]) - pd.Timedelta(days=120)).date()))["Close"]; bd.index = bd.index.tz_localize(None).normalize()
+        if len(bd) < 200: raise RuntimeError("Bitcoin history too short for the 50 day split")
+        evid = build_evidence(e, d, bd)
         if not (len(site["series"]) >= 200 and len(res["weekly"]) >= 50 and 0.2 < res["now"]["premium"] < 6): raise RuntimeError("outputs failed their checks")
     except Exception as ex:
         print("build failed (%s); nothing written" % ex); return 1

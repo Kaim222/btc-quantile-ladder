@@ -14,6 +14,12 @@
   "k_1y": 0.983,
   "k_all": 1.319,
   "loss_1y_pct": 63,
+  "k_above50": 0.86,
+  "k_below50": 1.092,
+  "k_calm": 0.786,
+  "windows": 442,
+  "up20_loss_pct": 74,
+  "down20_loss_pct": 60,
   "mstr_vol_1y": 0.807
  },
  "guides": {

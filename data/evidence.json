@@ -1,0 +1,47 @@
+{
+ "as_of": "2026-09-18",
+ "from": "2025-07-30",
+ "horizon_sessions": 10,
+ "start_days": 276,
+ "guides": {
+  "today": 19.6,
+  "projected": 28.9,
+  "best": 18.0
+ },
+ "gap_signal": {
+  "over": {
+   "days": 146,
+   "median_vs_btc": -13.2
+  },
+  "within": {
+   "days": 74,
+   "median_vs_btc": -2.7
+  },
+  "under": {
+   "days": 56,
+   "median_vs_btc": -4.9
+  }
+ },
+ "calendars": {
+  "vol_pct": 120,
+  "today": {
+   "trades": 56,
+   "won_pct": 39,
+   "median_pct": -51,
+   "average_pct": -7
+  },
+  "projected": {
+   "trades": 56,
+   "won_pct": 30,
+   "median_pct": -76,
+   "average_pct": -10
+  },
+  "best": {
+   "trades": 56,
+   "won_pct": 38,
+   "median_pct": -28,
+   "average_pct": -11
+  }
+ },
+ "note": "Every start day since STRC began. Guides are scored on MSTX ten sessions later. The gap bands use MSTR 5% from projected, about 10% on MSTX. Calendars are two week model trades opened every five sessions at 120% vol with no bid and ask. One market era only."
+}

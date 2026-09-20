@@ -23,6 +23,13 @@
    "units_market": 54
   }
  ],
+ "verdict": {
+  "say": "CLOSE",
+  "hold_wins_pct": 30,
+  "hold_units": 34,
+  "close_units": 54,
+  "settle": "10/2"
+ },
  "hold_beats_close_pct": {
   "market": 30,
   "thesis": 28

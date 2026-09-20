@@ -135,6 +135,44 @@ def build_history(d, e):
     return res
 
 
+def build_evidence(e):
+    """What the record says, for the Playbook. Model marks only: Black-Scholes at 120% vol, no bid and ask, one market era."""
+    import math
+    def ncdf(x): return 0.5 * (1 + math.erf(x / math.sqrt(2)))
+    def call(S, K, T, v, r=0.04):
+        if T <= 0: return max(S - K, 0.0)
+        d1 = (math.log(S / K) + (r + 0.5 * v * v) * T) / (v * math.sqrt(T)); return S * ncdf(d1) - K * math.exp(-r * T) * ncdf(d1 - v * math.sqrt(T))
+    x = e.dropna(subset=["mstx", "mstr", "proj", "btc"]).reset_index(drop=True)
+    H, VOLM, VOL = 10, 0.75, 1.20
+    rows = []
+    for i in range(1, len(x) - H):
+        a, b = x.iloc[i], x.iloc[i + H]
+        days = (pd.Timestamp(b["d"]) - pd.Timestamp(a["d"])).days
+        g = a["mstr"] / a["proj"] - 1; decay = math.exp(-VOLM * VOLM * days / 365)
+        rows.append({"g": g, "s0": a["mstx"], "s1": b["mstx"], "btc": b["btc"] / a["btc"] - 1, "today": a["mstx"],
+                     "projected": a["mstx"] * (a["proj"] / a["mstr"]) ** 2 * decay,
+                     "best": a["mstx"] * ((a["proj"] * (1 + g * 0.5 ** (days / HALF_LIFE))) / a["mstr"]) ** 2 * decay})
+    A = pd.DataFrame(rows)
+    if len(A) < 100: raise RuntimeError("too few days for the evidence file")
+    miss = lambda col: round(100 * float(np.median(np.abs(np.log(A["s1"] / A[col])))), 1)
+    rel = np.log(A["s1"] / A["s0"]) - 2 * np.log(1 + A["btc"])          # MSTX's move beyond twice Bitcoin's
+    def band(m): return {"days": int(m.sum()), "median_vs_btc": round(100 * float(np.median(rel[m])), 1)}
+    def cal(col):
+        pl = []
+        for k in range(0, len(A), 5):
+            K = max(0.5, round(A[col].iloc[k] * 2) / 2); s0, s1 = A["s0"].iloc[k], A["s1"].iloc[k]
+            deb = call(s0, K, 21 / 365, VOL) - call(s0, K, 14 / 365, VOL)
+            if deb < 0.03: continue
+            pl.append((call(s1, K, 7 / 365, VOL) - max(s1 - K, 0.0)) / deb - 1)
+        pl = np.array(pl); return {"trades": int(len(pl)), "won_pct": int(round(100 * float((pl > 0).mean()))), "median_pct": int(round(100 * float(np.median(pl)))), "average_pct": int(round(100 * float(pl.mean())))}
+    return {"as_of": str(x["d"].iloc[-1]), "from": str(x["d"].iloc[0]), "horizon_sessions": H, "start_days": int(len(A)),
+            "guides": {"today": miss("today"), "projected": miss("projected"), "best": miss("best")},
+            "gap_signal": {"over": band(A["g"] > 0.05), "within": band((A["g"] <= 0.05) & (A["g"] >= -0.05)), "under": band(A["g"] < -0.05)},
+            "calendars": {"vol_pct": int(VOL * 100), "today": cal("today"), "projected": cal("projected"), "best": cal("best")},
+            "note": ("Every start day since STRC began. Guides are scored on MSTX ten sessions later. The gap bands use MSTR 5% from projected, about 10% on MSTX. "
+                     "Calendars are two week model trades opened every five sessions at 120% vol with no bid and ask. One market era only.")}
+
+
 def main():
     cfg = json.load(open(D("mstr-config.json"), encoding="utf-8"))
     slope, cheap = float(cfg.get("btc_slope_per_2500", 0.025)), float(cfg.get("cheap_threshold", -0.03)) * 100
@@ -149,12 +187,14 @@ def main():
     try:                       # build everything in memory first; one failure publishes nothing
         e, site = build_model(d, slope, cheap)
         res = build_history(d, e)
+        evid = build_evidence(e)
         if not (len(site["series"]) >= 200 and len(res["weekly"]) >= 50 and 0.2 < res["now"]["premium"] < 6): raise RuntimeError("outputs failed their checks")
     except Exception as ex:
         print("build failed (%s); nothing written" % ex); return 1
     if added: d.to_csv(D("mstr-daily.csv"), index=False, lineterminator="\n")
     json.dump(site, open(D("mstr-model.json"), "w", encoding="utf-8", newline="\n"), indent=0)
     json.dump(res, open(D("mnav-history.json"), "w", encoding="utf-8", newline="\n"), indent=1)
+    json.dump(evid, open(D("evidence.json"), "w", encoding="utf-8", newline="\n"), indent=1)
     print("rows added %d; daily file ends %s; model %d rows; history through %s, mNAV %.3f" % (added, d["d"].iloc[-1], len(e), res["as_of"], res["now"]["premium"]))
     return 0
 

@@ -5,7 +5,7 @@
     "id": 1,
     "dates": "2026-09-15 to 2026-10-02",
     "structure": "Double calendar. The first holds 275 long Oct 9 $16 calls against short Oct 2 $16 calls. Net debit was $0.21 for $5,775. The second holds 175 long Oct 16 $18 calls against short Oct 2 $18 calls. Debit was $0.64 for $11,200. Total calendar cost was $16,975. The spare $1,000 funded the 9/18 credit spread. Its maximum loss leaves no counted cash.",
-    "next_action": "Hold both calendars into Monday's decision. The tripwire runs until 9/25. A daily close above $20 or under $15 closes it the next morning. On Fri 9/25 close outside $15 to $19. Hold the final week inside. The decision date is Fri 10/2.",
+    "next_action": "A daily close above $20 or under $15 closes the position the next morning. On Fri 9/25 a close outside $15 to $19 closes it. The decision date is Fri 10/2.",
     "roll_rules": "none",
     "status": "LIVE. Hold 275 Oct 9 $16 / Oct 2 $16 calendars. Hold 175 Oct 16 $18 / Oct 2 $18 calendars. MSTX closed 9/18 at $18.73 on the upper strike.",
     "panel_title": "PHASE 1 · SETTLES FRI OCT 2",
@@ -125,11 +125,11 @@
     ],
     "units_note": "At the Oct 2 close with no cash. Both shorts settle at intrinsic value. The Oct 9 $16 long has 7 days left. The Oct 16 $18 long has 14. Both use 100% vol. Real option prints in data/leaps-cost.json price the unit for Oct 2. The count rounds down to whole units.",
     "next_action_steps": [
-     "Hold both calendars into Monday 9/21. Get broker bids and asks for both calendars and the LEAPS legs before the open. Decide whether to hold or sell both. Buy LEAPS in thirds if selling.",
-     "A daily close above $20 or under $15 closes the position the next morning. On Fri 9/25 close outside $15 to $19. Hold the final week inside.",
-     "On 10/2 close both as spread orders in the afternoon. Work the limits. Close the shorts before the bell if either strike is in play."
+     "A daily close above $20 or under $15 closes the position the next morning.",
+     "On Fri 9/25 a close outside $15 to $19 closes it.",
+     "The decision date is Fri 10/2."
     ],
-    "next_action_detail": "The thirds plan is undecided. Sell both calendars 20 to 30 minutes after the open. Buy LEAPS units in thirds. One third Monday. One third when the gap is at or under zero or on 10/2. One third on a Cheap alert or on 10/16. No Phase 2.",
+    "next_action_detail": "",
     "dates_note": "On 9/18 the long rolled up to Oct 9 $16. Then the Oct 16 / Oct 2 $18 calendar opened. The decision date stays 10/2."
    },
    {

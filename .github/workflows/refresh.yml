@@ -40,7 +40,7 @@ jobs:
         run: |
           git config user.name  "ladder-refresh"
           git config user.email "refresh@noreply"
-          git add data/leaps-cost.json data/playbook.json data/iv-ledger.json data/mstr-daily.csv data/mstr-model.json data/mnav-history.json data/routes.json
+          git add data/leaps-cost.json data/playbook.json data/iv-ledger.json data/mstr-daily.csv data/mstr-model.json data/mnav-history.json data/routes.json data/evidence.json
           if git diff --staged --quiet; then echo "nothing changed"; exit 0; fi
           git commit -q -m "data refresh: $(date -u +%Y-%m-%dT%H:%MZ)"
           for i in 1 2 3; do

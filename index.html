@@ -1141,7 +1141,7 @@ function LeapsCost({ lc }) {
 }
 
 function PlaybookTab({ todayTs, tier, q }) {
-  const [pb, setPb] = useState(null), [plg, setPlg] = useState(null), [lc, setLc] = useState(null), [rts, setRts] = useState(null);
+  const [pb, setPb] = useState(null), [plg, setPlg] = useState(null), [lc, setLc] = useState(null), [rts, setRts] = useState(null), [ev, setEv] = useState(null);
   const [failed, setFailed] = useState([]);
   useEffect(() => {
     let on = true;
@@ -1151,7 +1151,7 @@ function PlaybookTab({ todayTs, tier, q }) {
         const j = await r.json(); if (!isObj(j)) throw 0;
         if (on) { ok(j); setFailed(v => v.filter(x => x !== f)); }
       } catch (_) { if (on) setFailed(v => [...new Set([...v,f])]); } finally { pending.delete(f); } };
-    const refresh = () => { get("data/playbook.json",setPb); get("data/paper-ledger.json",setPlg); get("data/leaps-cost.json",setLc); get("data/routes.json",setRts); };
+    const refresh = () => { get("data/playbook.json",setPb); get("data/paper-ledger.json",setPlg); get("data/leaps-cost.json",setLc); get("data/routes.json",setRts); get("data/evidence.json",setEv); };
     const visible = () => { if (document.visibilityState === "visible") refresh(); };
     refresh(); const timer = setInterval(refresh,600000); document.addEventListener("visibilitychange",visible);
     return () => { on = false; clearInterval(timer); document.removeEventListener("visibilitychange",visible); };
@@ -1252,6 +1252,20 @@ function PlaybookTab({ todayTs, tier, q }) {
   const PNL = {background:tier?tier.darkBg:"#070f1f",border:"1px solid "+AC+"30",
     borderLeft:"3px solid "+AC,borderRadius:"6px",padding:"14px 16px",marginTop:0};
   const FT = {fontSize:TYPE.secondary,color:GRY,letterSpacing:"0.04em",marginTop:16};
+  // what the data says: the routes file carries the hold or close verdict, the evidence file carries the record
+  const vd = rLive && isObj(rts.verdict) && nm(rts.verdict.hold_wins_pct) != null && nm(rts.verdict.close_units) != null ? rts.verdict : null;
+  const evG = ev && isObj(ev.guides) ? ev.guides : null, evC = ev && isObj(ev.calendars) && isObj(ev.calendars.best) ? ev.calendars : null, evS = ev && isObj(ev.gap_signal) ? ev.gap_signal : null;
+  const nw = window.innerWidth < 560;
+  const pctTxt = v => nm(v) == null ? UNK : (nm(v) < 0 ? "\u2212" : "") + Math.abs(nm(v)) + "%";
+  const evRows = [
+    vd && [nw ? "Holding beats closing" : "Paths where holding beats closing now", vd.hold_wins_pct + "%", vd.hold_wins_pct >= 50 ? GRN : "#facc15"],
+    evC && [nw ? "Calendar wins · best estimate" : "Two week calendars that made money with the strike at best estimate", evC.best.won_pct + "% of " + evC.best.trades],
+    evC && isObj(evC.today) && [nw ? "Calendar wins · today's price" : "Two week calendars that made money with the strike at today's price", evC.today.won_pct + "% of " + evC.today.trades],
+    evG && [nw ? "Two week miss · best estimate" : "Typical miss two weeks out using best estimate", pctTxt(evG.best)],
+    evG && [nw ? "Two week miss · today's price" : "Typical miss two weeks out using today's price", pctTxt(evG.today)],
+    evG && [nw ? "Two week miss · projected" : "Typical miss two weeks out using projected alone", pctTxt(evG.projected), RD],
+    evS && isObj(evS.over) && [nw ? "Gap over 10% · MSTX vs Bitcoin" : "MSTX against Bitcoin two weeks after sitting 10% above projected", pctTxt(evS.over.median_vs_btc), RD],
+    evS && isObj(evS.within) && [nw ? "Small gap · MSTX vs Bitcoin" : "MSTX against Bitcoin two weeks after a gap inside 10%", pctTxt(evS.within.median_vs_btc)]].filter(Boolean);
   return (
     <div style={VIS_STACK}>
       {failed.map(file => <div key={file} style={{...BODY,marginBottom:8}}>{file + " failed to load."}</div>)}
@@ -1260,13 +1274,32 @@ function PlaybookTab({ todayTs, tier, q }) {
         borderLeft:"4px solid "+AC,borderRadius:"6px",padding:"14px 16px",
         boxShadow:"-4px 0 24px "+AC+"15, inset 1px 0 0 "+AC+"08"}}>
         <div style={{...ROW,justifyContent:"space-between",marginBottom:6}}>
-          <span style={LAB}>{tkr + " · TODAY"}</span>
+          <span style={LAB}>{tkr + (vd ? " · WHAT THE DATA SAYS" : " · TODAY")}</span>
           {genTxt && <span style={{fontSize:TYPE.label,letterSpacing:"0.06em",
             color:(todayTs-Date.parse(gen))/864e5 > 2 ? RD : genAge >= 1 ? "#facc15" : GRY}}>{genTxt}</span>}</div>
-        <div style={{fontSize:TYPE.headline,fontWeight:700,color:TCOL[trig],lineHeight:1,letterSpacing:"0.02em"}}>
-          {trig === "ENTRY" ? trig : "ENTRY " + trig}{ph && <span style={{display:"block",fontSize:TYPE.secondary,letterSpacing:"0.1em",marginTop:6,opacity:0.85}}>{"IN PHASE " + ph.id}</span>}</div>
-        <div style={{...BODY,lineHeight:1.5,marginTop:10}}><More step>{[actS.length ? actS.join(" ") : act1,act2].filter(Boolean).join(" ")}</More></div>
+        {vd ? <div>
+          <div style={{fontSize:TYPE.headline,fontWeight:700,color:vd.say === "HOLD" ? GRN : "#facc15",lineHeight:1,letterSpacing:"0.02em"}}>{vd.say === "HOLD" ? "HOLD" : "CLOSE"}</div>
+          <div style={{...BODY,lineHeight:1.5,marginTop:10}}><Sentences>{"Holding to "+vd.settle+" wins more units in "+vd.hold_wins_pct+"% of paths. Model marks, so your broker's quotes set the real count."}</Sentences></div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:10,marginTop:12}}>
+            {[["CLOSE NOW",vd.close_units+" units","#f1f5f9"],["HOLD TO "+vd.settle,vd.hold_units+" units","#f1f5f9"],["HOLD WINS",vd.hold_wins_pct+"%",vd.hold_wins_pct >= 50 ? GRN : "#facc15"],["ENTRY GATE",trig,TCOL[trig]]].map(([l,v,c]) =>
+              <div key={l} style={{background:"#070f1f",border:"1px solid #0f2035",borderRadius:6,padding:"12px 14px"}}>
+                <div style={LAB}>{l}</div><div style={{fontSize:TYPE.number,fontWeight:700,color:c,marginTop:6,whiteSpace:"nowrap"}}>{v}</div></div>)}
+          </div>
+        </div> : <div>
+          <div style={{fontSize:TYPE.headline,fontWeight:700,color:TCOL[trig],lineHeight:1,letterSpacing:"0.02em"}}>
+            {trig === "ENTRY" ? trig : "ENTRY " + trig}{ph && <span style={{display:"block",fontSize:TYPE.secondary,letterSpacing:"0.1em",marginTop:6,opacity:0.85}}>{"IN PHASE " + ph.id}</span>}</div>
+        </div>}
       </div>
+
+      {/* EVIDENCE: what the record says, numbers first */}
+      {evRows.length > 0 && <div style={VIS_CARD}>
+        <div style={{...HD,marginBottom:10}}>{"THE EVIDENCE" + (ev && ev.from ? " · SINCE " + mdy(ev.from) : "")}</div>
+        <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) auto"}}>
+          {evRows.map(([k,v,c],n) => [<div key={"k"+n} style={{fontSize:window.innerWidth < 560 ? TYPE.secondary : TYPE.body,color:"#b0c4d8",padding:"7px 0",borderTop:n?SEP:"none",minWidth:0}}>{k}</div>,
+            <div key={"v"+n} style={{fontSize:window.innerWidth < 560 ? TYPE.secondary : TYPE.body,fontWeight:600,color:c||"#f1f5f9",padding:"7px 0 7px 12px",borderTop:n?SEP:"none",textAlign:"right",whiteSpace:"nowrap"}}>{v}</div>])}
+        </div>
+        <div style={{...BODY,marginTop:9}}><More hide>{String((ev && ev.note)||"")}</More></div>
+      </div>}
 
       {/* PHASE 1 */}
       <div style={PNL}>
@@ -1279,6 +1312,7 @@ function PlaybookTab({ todayTs, tier, q }) {
               color:i ? "#d0dde8" : AC,fontWeight:i === 3 ? 600 : 400,minWidth:0}}>{v}</div>))}
         </div>}
         {!p1.length && <div style={{...BODY,padding:"7px 0"}}>No spreads in the ledger.</div>}
+        {actS.length > 0 && <div style={{fontSize:TYPE.secondary,color:"#b0c4d8",lineHeight:1.6,marginTop:10}}><Sentences>{actS.join(" ")}</Sentences></div>}
         {ph1 && <div style={{...BODY,lineHeight:1.5,marginTop:9}}><More hide>{ph1.positions}</More></div>}
       </div>
 
@@ -1543,7 +1577,7 @@ function MstrTab() {
   const levelRead = word === "STALE" ? "Monitor overdue. These are its last numbers." : verdict(gap) === "RICH"
     ? "Ahead of projected. Six earlier Rich starts. After the four in 2025 MSTX was lower a month later. After the two in 2026 it ran 39% and 44%. Not a sell on its own."
     : verdict(gap) === "CHEAP" ? "Behind projected. Cheap is the add only with Bitcoin above its 50 day."
-    : verdict(gap) === "FAIR" ? "Cheap is under "+usd2(projected*(1+cheap/100))+". Rich is over "+usd2(projected*(1+rich/100))+" at today's projected." : "";
+    : verdict(gap) === "FAIR" ? "Cheap is under "+usd2(projected*(1+cheap/100))+" and Rich is over "+usd2(projected*(1+rich/100))+"." : "";
   const SC = {background:"#070f1f",border:"1px solid #0f2035",borderRadius:6,padding:narrow ? "10px 8px" : "12px 14px"};
   const FT = {fontSize:TYPE.secondary,color:GRY,lineHeight:1.5,marginTop:9};
   const labTxt = t => String(t).split("mNAV").flatMap((part,i) => i ? [<span key={i} style={{textTransform:"none"}}>mNAV</span>, part] : [part]);
@@ -1592,7 +1626,11 @@ function MstrTab() {
     <div style={stateCard(gapColor(gap))}>
       <div style={HD}>LEVEL</div><div style={{fontSize:TYPE.hero,fontWeight:800,color:word === "STALE" ? RD : gapColor(gap),marginTop:6}}>{word === "STALE" ? "STALE READ" : verdict(gap)}</div>
       {levelRead && <div style={{...BODY,lineHeight:1.5,marginTop:7}}><More step>{levelRead}</More></div>}
-      <div style={{...FT,marginTop:5}}><Sentences>Projected is the mNAV formula price. Best estimate adds today's fading gap.</Sentences></div>
+      <div style={{...FT,marginTop:5}}><Sentences>{projected > 0 && nm(prices.mstx) > 0 && gap != null
+        ? "Projected "+msUsd(projected)+" is what your mNAV formula says MSTX is worth at today's Bitcoin price. "
+          + "MSTX trades at "+msUsd(nm(prices.mstx))+", which is "+msPct(gap)+" against projected. That difference is the gap. "
+          + "Best estimate is where MSTX likely trades later. It keeps most of the gap next week and half of it in a month."
+        : "Projected is what your mNAV formula says MSTX is worth at today's Bitcoin price. Best estimate is where MSTX likely trades later."}</Sentences></div>
       {tiles([["GAP MSTX",msPct(gap),(barTs ? new Date(barTs).toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"numeric",minute:"2-digit"})+" ET" : UNK),gapColor(gap)], ["PROJECTED MSTX",msUsd(projected),"","#22d3ee"],
         ["BEST ESTIMATE 1 WEEK",msUsd(aheadMstx(7)),"1 month "+msUsd(aheadMstx(28)),"#e2e8f0"],
         ["BTC VS 50 DAY",st.regime || UNK,usd0(prices.btc),NEU]])}
@@ -1674,7 +1712,7 @@ function MstrTab() {
       return <div style={VIS_CARD}>
         <div style={HD}>BITCOIN PRICE LOOKUP</div>
         <Legend items={[["#22d3ee","Projected price"],["#e2e8f0","Best estimate"],[AMB,"High convex fit","dash"],[GRN,"Your mNAV"],["#f1f5f9","MSTR now","dot"],["#22d3ee","Selected best estimate","dot"]]}/>
-        <div style={{...BODY,lineHeight:1.5,marginTop:5,marginBottom:10}}><Sentences>{"The gap halves every "+halfLife+" days."}</Sentences></div>
+        <div style={{...BODY,lineHeight:1.5,marginTop:5,marginBottom:10}}><Sentences>{"Projected is the formula price at the Bitcoin price you enter. Best estimate adds today's gap, shrunk for the time until your date. The model assumes half the gap is left after "+halfLife+" days."}</Sentences></div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10,alignItems:"end"}}>
           <label style={LAB}>IF BITCOIN IS AT
             <DollarInput value={grp(lkBtc)} inputMode="decimal" placeholder={btcI > 0 ? grp(Math.round(btcI)) : ""} onChange={e => setLkBtc(e.target.value.replace(/[^0-9.]/g,""))}

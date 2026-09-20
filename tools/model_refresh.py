@@ -165,7 +165,14 @@ def build_evidence(e):
             if deb < 0.03: continue
             pl.append((call(s1, K, 7 / 365, VOL) - max(s1 - K, 0.0)) / deb - 1)
         pl = np.array(pl); return {"trades": int(len(pl)), "won_pct": int(round(100 * float((pl > 0).mean()))), "median_pct": int(round(100 * float(np.median(pl)))), "average_pct": int(round(100 * float(pl.mean())))}
-    return {"as_of": str(x["d"].iloc[-1]), "from": str(x["d"].iloc[0]), "horizon_sessions": H, "start_days": int(len(A)),
+    gp = (x["mstr"] / x["proj"] - 1).values; RECENT = 120
+    def left(h, lo, hi):
+        r = [gp[i + h] / gp[i] for i in range(max(lo, 0), min(hi, len(gp) - h)) if abs(gp[i]) > 0.05]
+        return None if len(r) < 10 else int(round(100 * float(np.median(r))))
+    cut = len(gp) - RECENT
+    fade = {"recent_days": RECENT, "recent_after20": left(20, cut, len(gp)), "recent_after40": left(40, cut, len(gp)),
+            "earlier_after20": left(20, 0, cut), "earlier_after40": left(40, 0, cut)}
+    return {"as_of": str(x["d"].iloc[-1]), "from": str(x["d"].iloc[0]), "horizon_sessions": H, "start_days": int(len(A)), "gap_fade": fade,
             "guides": {"today": miss("today"), "projected": miss("projected"), "best": miss("best")},
             "gap_signal": {"over": band(A["g"] > 0.05), "within": band((A["g"] <= 0.05) & (A["g"] >= -0.05)), "under": band(A["g"] < -0.05)},
             "calendars": {"vol_pct": int(VOL * 100), "today": cal("today"), "projected": cal("projected"), "best": cal("best")},

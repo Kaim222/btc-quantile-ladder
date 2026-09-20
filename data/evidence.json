@@ -3,6 +3,13 @@
  "from": "2025-07-30",
  "horizon_sessions": 10,
  "start_days": 276,
+ "gap_fade": {
+  "recent_days": 120,
+  "recent_after20": 60,
+  "recent_after40": 8,
+  "earlier_after20": 58,
+  "earlier_after40": 5
+ },
  "guides": {
   "today": 19.6,
   "projected": 28.9,

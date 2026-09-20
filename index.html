@@ -1673,7 +1673,8 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
       const B = nm(lkBtc) > 0 ? nm(lkBtc) : btcI > 0 ? btcI : null;
       // MSTR has spent long stretches above the rule, so also show the rule with today's gap carried along
       const gapBtc = touched.current.btc || touched.current.mstr || !(nm(prices.btc) > 0) ? btcI : nm(prices.btc);
-      const gapNow = gapBtc > 0 && mstrI > 0 ? mstrAt(gapBtc,tLo) > 0 ? mstrI/mstrAt(gapBtc, tLo)-1 : null : null;
+      const gapRaw = gapBtc > 0 && mstrI > 0 ? mstrAt(gapBtc,tLo) > 0 ? mstrI/mstrAt(gapBtc, tLo)-1 : null : null;
+      const gapNow = gapRaw != null && gapRaw > -0.75 && gapRaw < 3 ? gapRaw : null;   // a half typed WHAT IF price is not a gap worth carrying
       // best estimate: the rule carrying today's gap, which fades by half about every gap_half_life_days (tested 2026-09-19)
       const halfLife = halfLifeD, wGap = Math.pow(0.5, yrs*365/halfLife);
       const tHeld = b => gapNow == null || tLo(b) == null ? null : tLo(b)*(1+gapNow*wGap);
@@ -1728,7 +1729,8 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
           .concat(tMine ? [["AT ENTERPRISE mNAV "+myM.toFixed(2),usd0(mstrAt(B,tMine)),"MSTX "+(mstxAt(B,tMine) == null ? UNK : usd2(mstxAt(B,tMine))),GRN]] : []))}
         <svg viewBox={"0 0 "+W2+" "+H2} style={{width:"100%",height:"auto",minHeight:window.innerWidth < 560 ? 180 : 200,display:"block",marginTop:12}}>
           <rect x={P2.l} y={P2.t} width={cw2} height={ch2} fill="#070f1f" rx="2"/>
-          {Array.from({length:Math.floor(top/100)+1}, (_, n) => n*100).map(v => <g key={v}>
+          {(() => { const st = [100,200,500,1000,2000,5000].find(v => top/v <= 8) || Math.ceil(top/8/5000)*5000;
+            return Array.from({length:Math.floor(top/st)+1}, (_, n) => n*st); })().map(v => <g key={v}>
             <line x1={P2.l} x2={P2.l+cw2} y1={yb(v)} y2={yb(v)} stroke="#0f2035" strokeWidth="0.7"/>
             <text x={P2.l-5} y={yb(v)+3} fill="#7aa5c8" fontSize={TYPE.label} textAnchor="end">{usd0(v)}</text></g>)}
           {[60000,80000,100000,120000,140000].map(b => <text key={b} x={xb(b)} y={H2-7} fill="#7aa5c8" fontSize={TYPE.label} textAnchor="middle">{"$"+Math.round(b/1000)+"K"}</text>)}
@@ -1796,7 +1798,7 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
         <svg viewBox={"0 0 "+W3+" "+H3} style={{width:"100%",height:"auto",minHeight:window.innerWidth < 560 ? 180 : 200,display:"block",marginTop:12}}>
           <rect x={P3.l} y={P3.t} width={cw3} height={ch3} fill="#070f1f" rx="2"/>
           {wk.map((r,i) => r.bull === false && <rect key={"b"+i} x={Math.max(P3.l, x3(i)-bw3/2)} y={P3.t} width={Math.min(bw3, P3.l+cw3-Math.max(P3.l, x3(i)-bw3/2))} height={ch3} fill={RD} opacity="0.13"/>)}
-          {Array.from({length:top3+1}, (_, n) => n).map(v => <g key={v}>
+          {Array.from({length:Math.min(top3, 12)+1}, (_, n) => n).map(v => <g key={v}>
             <line x1={P3.l} x2={P3.l+cw3} y1={y3(v)} y2={y3(v)} stroke={v === 1 ? "#2a4a6a" : "#0f2035"} strokeWidth="0.7"/>
             <text x={P3.l-5} y={y3(v)+3} fill="#7aa5c8" fontSize={TYPE.label} textAnchor="end">{v.toFixed(1)}</text></g>)}
           {strcAt > 0 && <g><line x1={x3(strcAt)} x2={x3(strcAt)} y1={P3.t} y2={P3.t+ch3} stroke="#22d3ee" strokeWidth="0.7" strokeDasharray="3,3" opacity="0.7"/>

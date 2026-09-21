@@ -1422,7 +1422,7 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
   const [narrow, setNarrow] = useState(() => window.innerWidth < 560);
   const touched = useRef({});
   const [hist, setHist] = useState(null), [evd, setEvd] = useState(null);
-  const [lkDay, setLkDay] = useNyDate("bql_lk_day");
+  const [lkDay, setLkDay] = useNyDate();   // the date always starts at today: a remembered far date once made the card read like nonsense
   const [moreOpen, setMoreOpen] = useLocal("bql_strat_more", false, v => v === true);
   useEffect(() => { try { for (const key of ["bql_lk_view","bql_mstx_decay","bql_gap_fade"]) localStorage.removeItem(key); } catch(_) {} }, []);
   useEffect(() => {
@@ -1625,8 +1625,8 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
         if (touched.current.btc || typed.length) return (touched.current.btc ? "Bitcoin is your what if price. Live Bitcoin is "+usd0(referenceBtc)+". " : btcIsLive ? "Bitcoin is live. " : "")
           +(typed.length ? "You typed "+typed.join(" and ")+". " : "")+"Press reset to live to clear them.";
         return btcIsLive ? "Bitcoin is live. MSTR, MSTX and STRC are from "+(when || "the last close")+"." : when ? "All four are the monitor's reading from "+when+"." : "All four are the last model close."; })()}</Sentences></div>
-      {tiles([["FAIR VALUE MSTR",msUsd(projectedMstr),priceSub(projectedMstr,mstrI),AMB],
-        ["FAIR VALUE MSTX",msUsd(projectedMstx),priceSub(projectedMstx,mstxI),"#22d3ee"],
+      {tiles([["FAIR VALUE MSTR"+(later ? " ON "+mdy(lkDay) : ""),msUsd(projectedMstr),priceSub(projectedMstr,mstrI),AMB],
+        ["FAIR VALUE MSTX"+(later ? " ON "+mdy(lkDay) : ""),msUsd(projectedMstx),priceSub(projectedMstx,mstxI),"#22d3ee"],
         ["PAPER VALUE",holdings && holdings.ops > 0 && bps > 0 && btcI > 0 ? usd2(bps*btcI-holdings.ops) : UNK,
           holdings && holdings.ops > 0 && bps*btcI > holdings.ops && mstrI > 0 ? "MSTR is "+(mstrI/(bps*btcI-holdings.ops)).toFixed(2)+" times it" : "",NEU],
         ["VERDICT",verdict(verdictGap),verdict(verdictGap) === "RICH" ? "Rich means MSTR has lagged Bitcoin next, not that price falls"

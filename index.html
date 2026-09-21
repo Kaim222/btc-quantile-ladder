@@ -1133,6 +1133,8 @@ function PlaybookTab({ todayTs, tier, q }) {
   }, []);
   const inp = (pb && isObj(pb.inputs)) ? pb.inputs : {};
   const [tip, setTip] = useState(null), [hb, setHb] = useState(null);
+  const [showUnits, setShowUnits] = useLocal("bql_pb_show_units", false, v => v === true);
+  const [showEvidence, setShowEvidence] = useLocal("bql_pb_show_evidence", false, v => v === true);
   const [uSl, setUSl] = useLocal("bql_pb_mstx", 16.4, v => nm(v) == null ? 16.4 : nm(v));
   const d0 = nyDay(todayTs);
   // one tooltip for the tab: hover, or tap on touch
@@ -1221,8 +1223,6 @@ function PlaybookTab({ todayTs, tier, q }) {
   const routeSlip = routes.map(r => String(r.route || "").match(/five cents of slippage on (\d+) calendars/)).find(Boolean);
   const rNote = displayNote(rLive ? (rts.note || "") : ((plg && plg.plan && plg.plan.routes_note) || ""))
     + (routeSlip ? " Closing deducts five cents across "+routeSlip[1]+" calendars and fixes the unit count." : "");
-  const PNL = {background:tier?tier.darkBg:"#070f1f",border:"1px solid "+AC+"30",
-    borderLeft:"3px solid "+AC,borderRadius:"6px",padding:"14px 16px",marginTop:0};
   const FT = {fontSize:TYPE.secondary,color:GRY,letterSpacing:"0.04em",marginTop:16};
   // what the data says: the routes file carries the hold or close verdict, the evidence file carries the record
   const vd = rLive && isObj(rts.verdict) && nm(rts.verdict.hold_wins_pct) != null && nm(rts.verdict.close_units) != null ? rts.verdict : null;
@@ -1239,93 +1239,21 @@ function PlaybookTab({ todayTs, tier, q }) {
     evS && isObj(evS.over) && [nw ? "Gap over 10% · MSTX vs Bitcoin" : "MSTX against Bitcoin two weeks after sitting 10% above projected", pctTxt(evS.over.median_vs_btc), RD],
     evS && isObj(evS.within) && [nw ? "Small gap · MSTX vs Bitcoin" : "MSTX against Bitcoin two weeks after a gap inside 10%", pctTxt(evS.within.median_vs_btc)]].filter(Boolean);
   return (
-    <div style={VIS_STACK}>
+    <div data-playbook style={VIS_STACK}>
       {failed.map(file => <div key={file} style={{...BODY,marginBottom:8}}>{"A data feed failed to load."}</div>)}
-      {/* HERO */}
-      <div style={{background:tier?tier.darkBg:"#070f1f",border:"1px solid "+AC+"25",
-        borderLeft:"4px solid "+AC,borderRadius:"6px",padding:"14px 16px",
-        boxShadow:"-4px 0 24px "+AC+"15, inset 1px 0 0 "+AC+"08"}}>
-        <div style={{...ROW,justifyContent:"space-between",marginBottom:6}}>
-          <span style={LAB}>{"MSTX" + (vd ? " · WHAT THE DATA SAYS" : " · TODAY")}</span>
+      {/* LEAPS cost is the primary card. */}
+      <div data-card="leaps" style={{...stateCard(AC),background:tier?tier.darkBg:"#070f1f"}}>
+        <div style={{...ROW,justifyContent:"space-between",marginBottom:8}}>
+          <div style={HD}>LEAPS UNITS</div>
           {genTxt && <span style={{fontSize:TYPE.label,letterSpacing:"0.06em",
             color:(todayTs-Date.parse(gen))/864e5 > 2 ? RD : genAge >= 1 ? "#facc15" : GRY}}>{genTxt}</span>}</div>
-        {vd ? <div>
-          <div style={{fontSize:TYPE.headline,fontWeight:700,color:vd.say === "HOLD" ? GRN : "#facc15",lineHeight:1,letterSpacing:"0.02em"}}>{vd.say === "HOLD" ? "HOLD" : "CLOSE"}</div>
-          <div style={{...BODY,lineHeight:1.5,marginTop:10}}><Sentences>{"Model marks, so your broker's quotes set the real count."}</Sentences></div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:10,marginTop:12}}>
-            {[["CLOSE NOW",vd.close_units+" units","#f1f5f9"],["HOLD TO "+vd.settle,vd.hold_units+" units","#f1f5f9"]].concat(nm(vd.phase2_units) != null ? [["HOLD THEN PHASE 2",vd.phase2_units+" units","#f1f5f9"]] : []).concat([["HOLD WINS",vd.hold_wins_pct+"%",vd.hold_wins_pct >= 50 ? GRN : "#facc15"],["WEEKLY MACD",trig,TCOL[trig]]]).map(([l,v,c]) =>
-              <div key={l} style={{background:"#070f1f",border:"1px solid #0f2035",borderRadius:6,padding:"12px 14px"}}>
-                <div style={LAB}>{l}</div><div style={{fontSize:TYPE.tile,fontWeight:700,color:c,marginTop:6,whiteSpace:"nowrap"}}>{v}</div></div>)}
-          </div>
-        </div> : <div>
-          <div style={{fontSize:TYPE.headline,fontWeight:700,color:TCOL[trig],lineHeight:1,letterSpacing:"0.02em"}}>
-            {trig === "ENTRY" ? trig : "ENTRY " + trig}{ph && <span style={{display:"block",fontSize:TYPE.secondary,letterSpacing:"0.1em",marginTop:6,opacity:0.85}}>{"IN PHASE " + ph.id}</span>}</div>
-        </div>}
-      </div>
-
-      {/* EVIDENCE: what the record says, numbers first */}
-      {evRows.length > 0 && <div style={VIS_CARD}>
-        <div style={{...HD,marginBottom:10}}>{"THE EVIDENCE" + (ev && ev.from ? " · SINCE " + mdy(ev.from) : "")}</div>
-        <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) auto"}}>
-          {evRows.map(([k,v,c],n) => [<div key={"k"+n} style={{fontSize:window.innerWidth < 560 ? TYPE.secondary : TYPE.body,color:"#b0c4d8",padding:"7px 0",borderTop:n?SEP:"none",minWidth:0}}>{k}</div>,
-            <div key={"v"+n} style={{fontSize:window.innerWidth < 560 ? TYPE.secondary : TYPE.body,fontWeight:600,color:c||"#f1f5f9",padding:"7px 0 7px 12px",borderTop:n?SEP:"none",textAlign:"right",whiteSpace:"nowrap"}}>{v}</div>])}
-        </div>
-        <div style={{...BODY,marginTop:9}}><More hide>{String((ev && ev.note)||"")}</More></div>
-      </div>}
-
-      {/* PHASE 1 */}
-      <div style={PNL}>
-        <div style={{...HD,marginBottom:10}}>{(ph1 && ph1.panel_title) || "PHASE 1 \u00b7 WHAT IS ON"}</div>
-        {/* one table, one size: the spread name already says the legs, so the legs sentence is the row's tooltip */}
-        {p1.length > 0 && <div style={{display:"grid",gridTemplateColumns:window.innerWidth < 560 ? "minmax(0,1fr) 62px 48px 60px" : "minmax(0,2.2fr) minmax(0,1fr) minmax(0,0.8fr) minmax(0,1fr)",columnGap:0}}>
-          {["CALENDAR","CONTRACTS","DEBIT","COST"].map((h,i) => <div key={h} style={{...LAB,padding:"4px 0",textAlign:i?"right":"left"}}>{h}</div>)}
-          {p1.map(r => [String(r.k||UNK), String(r.contracts == null ? UNK : r.contracts), r.mid == null ? UNK : usd2(r.mid), r.cost == null ? UNK : fmtFull(r.cost)].map((v,i) =>
-            <div key={r.k+"-"+i} title={i ? undefined : (r.legs||"")} style={{whiteSpace:"nowrap",fontSize:window.innerWidth < 560 ? TYPE.secondary : TYPE.body,padding:"7px 0",borderTop:SEP,textAlign:i?"right":"left",
-              color:i ? "#d0dde8" : AC,fontWeight:i === 3 ? 600 : 400,minWidth:0}}>{v}</div>))}
-        </div>}
-        {!p1.length && <div style={{...BODY,padding:"7px 0"}}>No spreads in the ledger.</div>}
-        {actS.length > 0 && <div style={{fontSize:TYPE.secondary,color:"#b0c4d8",lineHeight:1.6,marginTop:10}}><Sentences>{actS.join(" ")}</Sentences></div>}
-        {ph1 && <div style={{...BODY,lineHeight:1.5,marginTop:9}}><More hide>{ph1.positions}</More></div>}
-      </div>
-
-      {/* UNITS */}
-      <div style={VIS_CARD}>
-        <div style={{...HD,marginBottom:8}}>LEAPS UNITS</div>
-        <div style={{...BODY,marginBottom:16}}><More hide>{String((plg && plg.plan && plg.plan.objective) || "")}</More></div>
         <div style={{fontSize:TYPE.body,color:"#22d3ee",marginBottom:16}}>{"Unit price · " + (md(lc && lc.model && lc.model.asof) || UNK) + " close · " + msUsd(nm(lc && lc.ref && lc.ref.today && lc.ref.today.unit))}</div>
-        <div style={{...HD,marginBottom:10}}>BY MSTX CLOSE ON SETTLEMENT</div>
-        <div style={{...FT,whiteSpace:window.innerWidth < 560 ? "normal" : "nowrap",letterSpacing:"-0.02em"}}>{(settlement ? md(settlement) : "settlement")+" close · no cash · calendars at 100% vol · whole units"}</div>
-        {p1.length > 0 && <div style={{...FT,marginTop:6}}><Sentences>{"Cost was "+usd0(p1.reduce((t,x) => t+(x.cost || 0),0))+"."+(ph1 && Array.isArray(ph1.break_evens) && ph1.break_evens.length === 2 ? " Break evens are "+usd2(ph1.break_evens[0])+" and "+usd2(ph1.break_evens[1])+"." : "")}</Sentences></div>}
-        {!unitModel && <div style={FT}>Live unit curve unavailable. Unit prices are the ledger's 9/19 copy.</div>}
-        <div style={{overflowX:"auto"}}><div style={{display:"grid",
-          gridTemplateColumns:"minmax(64px,1fr) minmax(96px,1fr) minmax(76px,1fr) minmax(56px,1fr)",minWidth:292}}>
-          {(window.innerWidth < 560 ? ["MSTX","VALUE","UNIT","UNITS"] : ["MSTX","POSITION VALUE","UNIT PRICE","UNITS"]).map((h,i) =>
-            <div key={h} style={{...LAB,fontSize:TYPE.label,fontWeight:400,padding:"4px 6px",textAlign:i?"right":"left"}}>{h}</div>)}
-          {uRows.map(r => { const hl = r.S === uSel;
-            return [usdS(r.S),
-              r.pv == null ? UNK : usd0(r.pv), r.up == null ? UNK : usd2(r.up),
-              r.n == null ? UNK : r.n.toFixed(0)].map((v,i) =>
-              <div key={r.S+"-"+i} style={{padding:"4px 6px",fontSize:TYPE.secondary,
-                borderBottom:"1px solid #070f1f",textAlign:i?"right":"left",
-                background:hl?AC+"14":"transparent",
-                color:hl?AC:"#8aaac8",fontWeight:hl?600:400}}>{v}</div>);
-          })}
-        </div></div>
-        <div style={{...ROW,gap:10,marginTop:16}}>
-          <span style={{...LAB,whiteSpace:"nowrap"}}>MSTX ON SETTLEMENT</span>
-          <Range aria-label="MSTX on settlement" min={uMin} max={uMax} step={0.25} value={uV}
-            onChange={e=>setUSl(parseFloat(e.target.value))} accent={AC} style={{flex:"1 1 110px",minWidth:88}}/>
-          <span style={{fontSize:TYPE.secondary,fontWeight:600,color:AC,minWidth:"44px",
-            textAlign:"right"}}>{usd2(uSel)}</span>
-        </div>
-        <div style={{fontSize:TYPE.secondary,color:"#b0c4d8",marginTop:7,whiteSpace:"nowrap",letterSpacing:"-0.02em"}}>{uRead}</div>
+        <div style={{...BODY,marginBottom:16}}><More hide>{String((plg && plg.plan && plg.plan.objective) || "")}</More></div>
         <LeapsCost lc={lc}/>
-        <div style={FT}><More hide>{[lc ? lc.note : "Using ledger unit prices and LEAPS counts.",
-          lc && ("Updated " + mdy(lc.updated) + "."), ph1 && ph1.units_note, rNote].filter(Boolean).join(" ")}</More></div>
       </div>
 
       {/* TRIGGER */}
-      <div style={{...VIS_CARD,display:"flex",gap:"14px",flexWrap:"wrap"}}>
+      <div data-card="histogram" style={{...VIS_CARD,display:"flex",gap:"14px",flexWrap:"wrap"}}>
         <div style={{flex:"1 1 250px",minWidth:0}}>
           <div style={{...HD,marginBottom:8}}>BITCOIN WEEKLY MACD HISTOGRAM</div>
           <Legend items={[[GRN,"Positive week"],[RD,"Negative week"],["#facc15","Cross, marked by the line"]]}/>
@@ -1359,6 +1287,83 @@ function PlaybookTab({ todayTs, tier, q }) {
               + "The last bar is " + (bars.length ? (md(bars[bars.length-1].bar) || bars[bars.length-1].bar) : UNK) + "."}</Sentences></div>
         </div>
       </div>
+
+      {/* PHASE 1 */}
+      <div data-card="calendar" style={VIS_CARD}>
+        <div style={{...HD,marginBottom:10}}>{(ph1 && ph1.panel_title) || "PHASE 1 \u00b7 WHAT IS ON"}</div>
+        {vd ? <div>
+          <div style={{fontSize:TYPE.tile,fontWeight:700,color:vd.say === "HOLD" ? GRN : "#facc15",lineHeight:1,letterSpacing:"0.02em"}}>{vd.say === "HOLD" ? "HOLD" : "CLOSE"}</div>
+          <div style={{...BODY,lineHeight:1.5,marginTop:10}}><Sentences>{"Model marks, so your broker's quotes set the real count."}</Sentences></div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:10,marginTop:12,marginBottom:12}}>
+            {[["CLOSE NOW",vd.close_units+" units","#f1f5f9"],["HOLD TO "+vd.settle,vd.hold_units+" units","#f1f5f9"]].concat(nm(vd.phase2_units) != null ? [["HOLD THEN PHASE 2",vd.phase2_units+" units","#f1f5f9"]] : []).concat([["HOLD WINS",vd.hold_wins_pct+"%",vd.hold_wins_pct >= 50 ? GRN : "#facc15"],["WEEKLY MACD",trig,TCOL[trig]]]).map(([l,v,c]) =>
+              <div key={l} style={{background:"#070f1f",border:"1px solid #0f2035",borderRadius:6,padding:"12px 14px"}}>
+                <div style={LAB}>{l}</div><div style={{fontSize:TYPE.tile,fontWeight:700,color:c,marginTop:6,whiteSpace:"nowrap"}}>{v}</div></div>)}
+          </div>
+        </div> : <div>
+          <div style={{fontSize:TYPE.tile,fontWeight:700,color:TCOL[trig],lineHeight:1,letterSpacing:"0.02em"}}>
+            {trig === "ENTRY" ? trig : "ENTRY " + trig}{ph && <span style={{display:"block",fontSize:TYPE.secondary,letterSpacing:"0.1em",marginTop:6,opacity:0.85}}>{"IN PHASE " + ph.id}</span>}</div>
+        </div>}
+        {/* one table, one size: the spread name already says the legs, so the legs sentence is the row's tooltip */}
+        {p1.length > 0 && <div style={{display:"grid",gridTemplateColumns:window.innerWidth < 560 ? "minmax(0,1fr) 62px 48px 60px" : "minmax(0,2.2fr) minmax(0,1fr) minmax(0,0.8fr) minmax(0,1fr)",columnGap:0}}>
+          {["CALENDAR","CONTRACTS","DEBIT","COST"].map((h,i) => <div key={h} style={{...LAB,padding:"4px 0",textAlign:i?"right":"left"}}>{h}</div>)}
+          {p1.map(r => [String(r.k||UNK), String(r.contracts == null ? UNK : r.contracts), r.mid == null ? UNK : usd2(r.mid), r.cost == null ? UNK : fmtFull(r.cost)].map((v,i) =>
+            <div key={r.k+"-"+i} title={i ? undefined : (r.legs||"")} style={{whiteSpace:"nowrap",fontSize:window.innerWidth < 560 ? TYPE.secondary : TYPE.body,padding:"7px 0",borderTop:SEP,textAlign:i?"right":"left",
+              color:i ? "#d0dde8" : AC,fontWeight:i === 3 ? 600 : 400,minWidth:0}}>{v}</div>))}
+        </div>}
+        {!p1.length && <div style={{...BODY,padding:"7px 0"}}>No spreads in the ledger.</div>}
+        {actS.length > 0 && <div style={{fontSize:TYPE.secondary,color:"#b0c4d8",lineHeight:1.6,marginTop:10}}><Sentences>{actS.join(" ")}</Sentences></div>}
+        {ph1 && <div style={{...BODY,lineHeight:1.5,marginTop:9}}><More hide>{ph1.positions}</More></div>}
+        <button type="button" aria-expanded={showUnits} aria-controls="playbook-units-by-close"
+          onClick={() => setShowUnits(v => !v)} style={{...GST,marginTop:12,textTransform:"none",letterSpacing:0}}>
+          {showUnits ? "hide units by MSTX close" : "show units by MSTX close"}</button>
+        {showUnits && <div id="playbook-units-by-close" style={{marginTop:16}}>
+          <div style={{fontSize:TYPE.secondary,color:BODY.color,marginBottom:10}}><Sentences>Each row is what the calendars are worth at that MSTX close and the units that buys.</Sentences></div>
+        <div style={{...HD,marginBottom:10}}>BY MSTX CLOSE ON SETTLEMENT</div>
+        <div style={{...FT,whiteSpace:window.innerWidth < 560 ? "normal" : "nowrap",letterSpacing:"-0.02em"}}>{(settlement ? md(settlement) : "settlement")+" close · no cash · calendars at 100% vol · whole units"}</div>
+        {p1.length > 0 && <div style={{...FT,marginTop:6}}><Sentences>{"Cost was "+usd0(p1.reduce((t,x) => t+(x.cost || 0),0))+"."+(ph1 && Array.isArray(ph1.break_evens) && ph1.break_evens.length === 2 ? " Break evens are "+usd2(ph1.break_evens[0])+" and "+usd2(ph1.break_evens[1])+"." : "")}</Sentences></div>}
+        {!unitModel && <div style={FT}>Live unit curve unavailable. Unit prices are the ledger's 9/19 copy.</div>}
+        <div style={{overflowX:"auto"}}><div style={{display:"grid",
+          gridTemplateColumns:"minmax(64px,1fr) minmax(96px,1fr) minmax(76px,1fr) minmax(56px,1fr)",minWidth:292}}>
+          {(window.innerWidth < 560 ? ["MSTX","VALUE","UNIT","UNITS"] : ["MSTX","POSITION VALUE","UNIT PRICE","UNITS"]).map((h,i) =>
+            <div key={h} style={{...LAB,fontSize:TYPE.label,fontWeight:400,padding:"4px 6px",textAlign:i?"right":"left"}}>{h}</div>)}
+          {uRows.map(r => { const hl = r.S === uSel;
+            return [usdS(r.S),
+              r.pv == null ? UNK : usd0(r.pv), r.up == null ? UNK : usd2(r.up),
+              r.n == null ? UNK : r.n.toFixed(0)].map((v,i) =>
+              <div key={r.S+"-"+i} style={{padding:"4px 6px",fontSize:TYPE.secondary,
+                borderBottom:"1px solid #070f1f",textAlign:i?"right":"left",
+                background:hl?AC+"14":"transparent",
+                color:hl?AC:"#8aaac8",fontWeight:hl?600:400}}>{v}</div>);
+          })}
+        </div></div>
+        <div style={{...ROW,gap:10,marginTop:16}}>
+          <span style={{...LAB,whiteSpace:"nowrap"}}>MSTX ON SETTLEMENT</span>
+          <Range aria-label="MSTX on settlement" min={uMin} max={uMax} step={0.25} value={uV}
+            onChange={e=>setUSl(parseFloat(e.target.value))} accent={AC} style={{flex:"1 1 110px",minWidth:88}}/>
+          <span style={{fontSize:TYPE.secondary,fontWeight:600,color:AC,minWidth:"44px",
+            textAlign:"right"}}>{usd2(uSel)}</span>
+        </div>
+        <div style={{fontSize:TYPE.secondary,color:"#b0c4d8",marginTop:7,whiteSpace:"nowrap",letterSpacing:"-0.02em"}}>{uRead}</div>
+        <div style={FT}><More hide>{[lc ? lc.note : "Using ledger unit prices and LEAPS counts.",
+          lc && ("Updated " + mdy(lc.updated) + "."), ph1 && ph1.units_note, rNote].filter(Boolean).join(" ")}</More></div>
+        </div>}
+      </div>
+
+      <button type="button" aria-expanded={showEvidence} aria-controls="playbook-evidence"
+        onClick={() => setShowEvidence(v => !v)} style={{...GST,alignSelf:"flex-start",textTransform:"none",letterSpacing:0}}>
+        {showEvidence ? "hide the evidence" : "show the evidence"}</button>
+      {showEvidence && <div id="playbook-evidence" style={VIS_STACK}>
+      {/* EVIDENCE: what the record says, numbers first */}
+      {evRows.length > 0 && <div style={VIS_CARD}>
+        <div style={{...HD,marginBottom:10}}>{"THE EVIDENCE" + (ev && ev.from ? " · SINCE " + mdy(ev.from) : "")}</div>
+        <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) auto"}}>
+          {evRows.map(([k,v,c],n) => [<div key={"k"+n} style={{fontSize:window.innerWidth < 560 ? TYPE.secondary : TYPE.body,color:"#b0c4d8",padding:"7px 0",borderTop:n?SEP:"none",minWidth:0}}>{k}</div>,
+            <div key={"v"+n} style={{fontSize:window.innerWidth < 560 ? TYPE.secondary : TYPE.body,fontWeight:600,color:c||"#f1f5f9",padding:"7px 0 7px 12px",borderTop:n?SEP:"none",textAlign:"right",whiteSpace:"nowrap"}}>{v}</div>])}
+        </div>
+        <div style={{...BODY,marginTop:9}}><More hide>{String((ev && ev.note)||"")}</More></div>
+      </div>}
+
+      </div>}
 
       {tip && <div style={{position:"fixed",left:tip.x,top:tip.y-10,zIndex:60,
         transform:"translate(-50%,-100%)",pointerEvents:"none",maxWidth:"264px",

@@ -1,44 +1,40 @@
 {
-  "generated_at": "2026-09-20T14:45:26Z",
-  "as_of_run_date": "2026-09-20",
+  "generated_at": "2026-09-21T13:23:55Z",
+  "as_of_run_date": "2026-09-21",
   "inputs": {
     "btc_above_200d": {
       "value": true,
       "pass": true,
       "source": "yahoo_daily",
-      "as_of": "2026-09-20",
+      "as_of": "2026-09-21",
       "error": null,
-      "btc_close": 80597.601562,
-      "sma_200d": 70501.589883,
-      "gap_pct": 14.320261
+      "btc_close": 85119.078125,
+      "sma_200d": 70575.704687,
+      "gap_pct": 20.60677
     },
     "btc_above_200w": {
       "value": true,
       "pass": true,
       "source": "yahoo_weekly",
-      "as_of": "2026-09-20 price vs week ending 2026-09-13",
+      "as_of": "2026-09-21 price vs week ending 2026-09-20",
       "error": null,
-      "btc_close": 80597.601562,
-      "sma_200w": 65169.811279,
-      "gap_pct": 23.673216,
-      "weeks": 559,
+      "btc_close": 85119.078125,
+      "sma_200w": 65494.065166,
+      "gap_pct": 29.964567,
+      "weeks": 560,
       "note": "SMA over completed calendar weeks only"
     },
     "btc_weekly_macd_8_21_5_hist_rising": {
       "value": false,
       "pass": false,
       "source": "yahoo_weekly",
-      "as_of": "week ending 2026-09-13",
+      "as_of": "week ending 2026-09-20",
       "error": null,
-      "histogram": 1947.020697,
-      "histogram_prev": 2379.228808,
-      "bar_date": "2026-09-13",
-      "prev_bar_date": "2026-09-06",
+      "histogram": 1910.751621,
+      "histogram_prev": 1947.020697,
+      "bar_date": "2026-09-20",
+      "prev_bar_date": "2026-09-13",
       "histogram_last16": [
-        {
-          "bar": "2026-05-31",
-          "hist": 899.887208
-        },
         {
           "bar": "2026-06-07",
           "hist": -356.8677
@@ -98,26 +94,26 @@
         {
           "bar": "2026-09-13",
           "hist": 1947.020697
+        },
+        {
+          "bar": "2026-09-20",
+          "hist": 1910.751621
         }
       ],
-      "weeks": 559,
+      "weeks": 560,
       "note": "MACD 8,21,5 on completed Monday to Sunday UTC weekly closes. EMA is seeded on the first value. Passes when the last complete bar's histogram is above zero and above the prior complete bar's."
     },
     "btc_weekly_macd_8_21_5_fresh_cross": {
       "value": false,
       "pass": false,
       "source": "yahoo_weekly",
-      "as_of": "week ending 2026-09-13",
+      "as_of": "week ending 2026-09-20",
       "error": null,
-      "histogram": 1947.020697,
-      "bar_date": "2026-09-13",
+      "histogram": 1910.751621,
+      "bar_date": "2026-09-20",
       "cross_bar_date": "2026-07-26",
       "bars_since_cross": null,
       "histogram_last4": [
-        {
-          "bar": "2026-08-23",
-          "hist": 1661.652661
-        },
         {
           "bar": "2026-08-30",
           "hist": 2125.723557
@@ -129,29 +125,33 @@
         {
           "bar": "2026-09-13",
           "hist": 1947.020697
+        },
+        {
+          "bar": "2026-09-20",
+          "hist": 1910.751621
         }
       ],
-      "weeks": 559,
+      "weeks": 560,
       "note": "MACD 8,21,5 uses the same completed Monday to Sunday UTC weekly closes as the histogram rising row. EMA is seeded on the first value. The last complete histogram bar must be above zero. At least one of the three preceding bars must be at or below zero. This marks a bullish cross inside the last three weekly bars. cross_bar_date is the first bar after the most recent bar at or below zero. Entry timing, not a hold condition."
     },
     "ladder_quantile": {
-      "value": 11.497154,
+      "value": 14.041397,
       "pass": true,
       "source": "site formula, model v2",
-      "as_of": "2026-09-20",
+      "as_of": "2026-09-21",
       "error": null,
       "band": "10 to 60",
-      "value_model_v1": 11.073253,
-      "btc_close": 80597.601562,
-      "fair_value": 121091.074214,
-      "days_since_clock": 6469.0,
+      "value_model_v1": 13.722987,
+      "btc_close": 85119.078125,
+      "fair_value": 121196.784949,
+      "days_since_clock": 6470.0,
       "note": "the page's own priceToQuantile under model v2, ported into this script. The centre line is 10 ** (5.645315 * log10(days since 2009-01-03) - 16.430264) and the lines are offsets c * exp(-age / T) in log10(price / centre). Passes is judged on model v1's quantile, not above its 85th band, because the 9/13 research measured that line. It is not the ladder's 75 sell line."
     },
     "btc_price": {
-      "value": 80597.601562,
+      "value": 85119.078125,
       "pass": null,
       "source": "yahoo_daily",
-      "as_of": "2026-09-20",
+      "as_of": "2026-09-21",
       "error": null,
       "note": "Yahoo daily close, not a live quote. The page's own live feed is separate."
     },
@@ -167,11 +167,11 @@
       "value": true,
       "pass": true,
       "source": "yahoo_weekly",
-      "as_of": "week ending 2026-09-13",
+      "as_of": "week ending 2026-09-20",
       "error": null,
-      "macd": -12.162739,
-      "signal": -18.961587,
-      "histogram": 6.798848,
+      "macd": -8.471081,
+      "signal": -16.863486,
+      "histogram": 8.392404,
       "note": "MACD(12,26,9) on completed weekly closes"
     },
     "mstr_hidden_bull_div": {
@@ -216,16 +216,16 @@
       "note": "Yahoo daily close, delayed. Not a live quote."
     },
     "mstr_atm_iv_30d": {
-      "value": 0.702182,
+      "value": 0.003916,
       "pass": null,
       "source": "yahoo_option_chain",
-      "as_of": "2026-09-20",
+      "as_of": "2026-09-21",
       "error": null,
       "expiry": "2026-10-23",
-      "dte": 33,
+      "dte": 32,
       "strike": 155.0,
-      "call_iv": 0.716983,
-      "put_iv": 0.687381,
+      "call_iv": 0.007822,
+      "put_iv": 1e-05,
       "spot": 153.919998,
       "note": "mid of the ATM call and put impliedVolatility Yahoo reports, nearest expiry to 30 days"
     },
@@ -236,7 +236,7 @@
       "as_of": "2026-09-18",
       "error": null,
       "stale": false,
-      "as_of_fetch": "2026-09-20",
+      "as_of_fetch": "2026-09-21",
       "n_days": 67,
       "iv": 0.696263,
       "iv_min": 0.64101,
@@ -248,10 +248,10 @@
       "note": "rank = (current - window min) / (window max - window min). The window is the trailing 67 trading days of AlphaQuery 30-day mean IV out of 67 on file. 252 days would make it a 52-week rank."
     },
     "days_to_next_event": {
-      "value": 24,
+      "value": 23,
       "pass": null,
       "source": "tools/events.json",
-      "as_of": "2026-09-20",
+      "as_of": "2026-09-21",
       "error": null,
       "event": {
         "date": "2026-10-14",
@@ -260,14 +260,14 @@
         "verified": true,
         "source": "https://www.bls.gov/schedule/news_release/cpi.htm",
         "note": null,
-        "days_to": 24
+        "days_to": 23
       },
       "all_verified": false,
       "note": "hand-maintained calendar. verified=false rows are placeholders, confirm before sizing on them."
     }
   },
   "iv": {
-    "as_of_run": "2026-09-20",
+    "as_of_run": "2026-09-21",
     "source": "AlphaQuery option-statistic chart endpoint, keyless, 30-day mean IV. Free tier returns about 63 trading days per call; data/iv-ledger.json accumulates.",
     "errors": null,
     "reference": {
@@ -311,7 +311,7 @@
       },
       "note": "rank = (current - window min) / (window max - window min). The window is the trailing 67 trading days of AlphaQuery 30-day mean IV out of 67 on file. 252 days would make it a 52-week rank.",
       "error": null,
-      "as_of_fetch": "2026-09-20",
+      "as_of_fetch": "2026-09-21",
       "stale": false,
       "rank_52w": {
         "value": 24.411765,
@@ -356,7 +356,7 @@
       },
       "note": "rank = (current - window min) / (window max - window min). The window is the trailing 67 trading days of AlphaQuery 30-day mean IV out of 67 on file. 252 days would make it a 52-week rank.",
       "error": null,
-      "as_of_fetch": "2026-09-20",
+      "as_of_fetch": "2026-09-21",
       "stale": false
     },
     "ibit": {
@@ -390,7 +390,7 @@
       },
       "note": "rank = (current - window min) / (window max - window min). The window is the trailing 67 trading days of AlphaQuery 30-day mean IV out of 67 on file. 252 days would make it a 52-week rank.",
       "error": null,
-      "as_of_fetch": "2026-09-20",
+      "as_of_fetch": "2026-09-21",
       "stale": false
     },
     "stale": false,
@@ -409,7 +409,7 @@
       "verified": true,
       "source": "https://www.bls.gov/schedule/news_release/cpi.htm",
       "note": null,
-      "days_to": 24
+      "days_to": 23
     },
     {
       "date": "2026-10-28",
@@ -418,7 +418,7 @@
       "verified": true,
       "source": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
       "note": null,
-      "days_to": 38
+      "days_to": 37
     },
     {
       "date": "2026-11-04",
@@ -427,7 +427,7 @@
       "verified": false,
       "source": "https://www.tipranks.com/stocks/mstr/earnings",
       "note": "third-party calendar; confirm on the IR page",
-      "days_to": 45
+      "days_to": 44
     }
   ],
   "events_upcoming": [
@@ -438,7 +438,7 @@
       "verified": true,
       "source": "https://www.bls.gov/schedule/news_release/cpi.htm",
       "note": null,
-      "days_to": 24
+      "days_to": 23
     },
     {
       "date": "2026-10-28",
@@ -447,7 +447,7 @@
       "verified": true,
       "source": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
       "note": null,
-      "days_to": 38
+      "days_to": 37
     },
     {
       "date": "2026-11-04",
@@ -456,7 +456,7 @@
       "verified": false,
       "source": "https://www.tipranks.com/stocks/mstr/earnings",
       "note": "third-party calendar; confirm on the IR page",
-      "days_to": 45
+      "days_to": 44
     },
     {
       "date": "2026-11-10",
@@ -465,7 +465,7 @@
       "verified": true,
       "source": "https://www.bls.gov/schedule/news_release/cpi.htm",
       "note": null,
-      "days_to": 51
+      "days_to": 50
     },
     {
       "date": "2026-12-09",
@@ -474,7 +474,7 @@
       "verified": true,
       "source": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
       "note": null,
-      "days_to": 80
+      "days_to": 79
     },
     {
       "date": "2026-12-10",
@@ -483,7 +483,7 @@
       "verified": true,
       "source": "https://www.bls.gov/schedule/news_release/cpi.htm",
       "note": null,
-      "days_to": 81
+      "days_to": 80
     }
   ],
   "rules": {

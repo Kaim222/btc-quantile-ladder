@@ -843,6 +843,16 @@
         "strike": 155.0,
         "spot": 153.919998
       }
+    },
+    "2026-09-21": {
+      "yahoo_option_chain": {
+        "iv": 0.003916,
+        "source": "yahoo_option_chain",
+        "expiry": "2026-10-23",
+        "dte": 32,
+        "strike": 155.0,
+        "spot": 153.919998
+      }
     }
   },
   "MSTX": {

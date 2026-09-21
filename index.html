@@ -974,7 +974,7 @@ function DollarInput({ style, ...props }) {
     <input {...props} style={{...style,marginTop:0,paddingLeft:24}}/>
   </span>;
 }
-function More({ children, step = false, hide = false, label = "more" }) {
+function More({ children, step = false, hide = false, label = "more", linkStyle }) {
   const [expanded, setExpanded] = useState(false);
   const text = displayNote(children);
   const first = text.match(/^.*?[.!?](?:\s|$)/);
@@ -985,7 +985,7 @@ function More({ children, step = false, hide = false, label = "more" }) {
       overflow:"hidden",textOverflow:"ellipsis",overflowWrap:"normal",wordBreak:"normal"}}><Sentences>{expanded ? text : short}</Sentences></span>
     {(canExpand || expanded) && <button type="button" aria-expanded={expanded}
       onClick={() => setExpanded(v => !v)} style={{...GST,textTransform:"none",letterSpacing:0,
-        color:"#8aaac8",border:"none",padding:0,marginTop:6,fontSize:TYPE.secondary,lineHeight:1.2,display:"block"}}>{expanded ? "less" : label}</button>}
+        color:"#8aaac8",border:"none",padding:0,marginTop:6,fontSize:TYPE.secondary,lineHeight:1.2,display:"block",...linkStyle}}>{expanded ? "less" : label}</button>}
   </span>;
 }
 const VIS_CARD = {...TBL,marginTop:0,padding:"14px 16px",minWidth:0};
@@ -1572,9 +1572,9 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
   const SC = {background:"#070f1f",border:"1px solid #0f2035",borderRadius:6,padding:narrow ? "10px 8px" : "12px 14px"};
   const FT = {fontSize:TYPE.secondary,color:GRY,lineHeight:1.5,marginTop:9};
   const labTxt = t => String(t).split("mNAV").flatMap((part,i) => i ? [<span key={i} style={{textTransform:"none"}}>mNAV</span>, part] : [part]);
-  const tiles = items => <div style={{display:"grid",gridTemplateColumns:"repeat("+ (narrow ? 2 : items.length) +",minmax(0,1fr))",gap:10,marginTop:12}}>
+  const tiles = (items, fairValue = false) => <div style={{display:"grid",gridTemplateColumns:"repeat("+ (narrow ? 2 : items.length) +",minmax(0,1fr))",gap:10,marginTop:12}}>
     {items.map(([label,value,sub,color],ti) => <div key={label} style={narrow && items.length % 2 === 1 && ti === items.length-1 ? {...SC,gridColumn:"1 / -1"} : SC}>
-      <div style={LAB}>{labTxt(label)}</div><div style={{fontSize:label === "MONITOR" ? TYPE.secondary : TYPE.tile,whiteSpace:"nowrap",fontWeight:700,color,overflowWrap:"normal",wordBreak:"normal",marginTop:6}}>{label === "MONITOR" && <span aria-hidden="true" style={{display:"inline-block",width:7,height:7,borderRadius:"50%",marginRight:6,background:heartbeatColor === NEU ? GRN : heartbeatColor}}/>}{value}</div>
+      <div style={LAB}>{labTxt(label)}</div><div style={{fontSize:fairValue ? TYPE.headline : label === "MONITOR" ? TYPE.secondary : TYPE.tile,whiteSpace:"nowrap",fontWeight:fairValue ? 800 : 700,color,overflowWrap:"normal",wordBreak:"normal",marginTop:6}}>{label === "MONITOR" && <span aria-hidden="true" style={{display:"inline-block",width:7,height:7,borderRadius:"50%",marginRight:6,background:heartbeatColor === NEU ? GRN : heartbeatColor}}/>}{value}</div>
       {sub && <div style={{whiteSpace:"normal",fontSize:TYPE.secondary,color:SUB,marginTop:4}}>{sub}</div>}</div>)}</div>;
   const eventColor = (r,i,v) => i === 1 ? ({lag:"#22d3ee",rich:RD,cheap:GRN,watch:NEU}[r.kind] || NEU)
     : i >= 3 ? (parseFloat(v) > 0 ? GRN : parseFloat(v.replace("\u2212","-")) < 0 ? RD : NEU) : "#d0dde8";
@@ -1606,7 +1606,10 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
   return <div style={VIS_STACK}>
     {errors.map(file => <div key={file} style={FT}>{"A data feed failed to load."}</div>)}
     <div style={VIS_CARD} data-testid="fair-value">
-      <div style={{...HD,marginBottom:10}}>FAIR VALUE</div>
+      <div style={{...ROW,flexWrap:"nowrap",justifyContent:"space-between",marginBottom:12}}>
+        <div style={HD}>FAIR VALUE</div>
+        <button style={GST} onClick={() => { touched.current={}; seed(); }}>reset to live</button>
+      </div>
       <div style={{display:"grid",gridTemplateColumns:narrow ? "repeat(2,minmax(0,1fr))" : "minmax(0,1fr) minmax(250px,1.9fr) repeat(3,minmax(0,1fr))",gap:10}}>
         {[["btc","BITCOIN"],["date","DATE"],...MS_FLD.slice(1)].map(([k,label]) => k === "date" ? <label key={k} style={{...LAB,gridColumn:narrow ? "1 / -1" : "auto"}}>DATE
           <span style={{display:"flex",gap:6,marginTop:5}}>
@@ -1617,7 +1620,7 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
           <DollarInput value={grp(f[k])} inputMode="decimal" onChange={e => { touched.current[k]=true; setF(v => ({...v,[k]:e.target.value.replace(/[^0-9.\-]/g,"")})); }}
             style={{...INP,display:"block",width:"100%",marginTop:5}}/></label>)}
       </div>
-      <div style={{...FT,marginTop:8}}><Sentences>{(() => { const when = snapTs ? new Date(snapTs).toLocaleString("en-US",{timeZone:"America/New_York",weekday:"short",month:"numeric",day:"numeric",hour:"numeric",minute:"2-digit"}).replace(/,/g,"")+" ET" : null;
+      <div style={{...FT,marginTop:12}}><Sentences>{(() => { const when = snapTs ? new Date(snapTs).toLocaleString("en-US",{timeZone:"America/New_York",weekday:"short",month:"numeric",day:"numeric",hour:"numeric",minute:"2-digit"}).replace(/,/g,"")+" ET" : null;
         const typed = MS_FLD.filter(([k]) => k !== "btc" && touched.current[k]).map(([,label]) => label);
         if (touched.current.btc || typed.length) return (touched.current.btc ? "Bitcoin is your what if price. Live Bitcoin is "+usd0(referenceBtc)+". " : btcIsLive ? "Bitcoin is live. " : "")
           +(typed.length ? "You typed "+typed.join(" and ")+". " : "")+"Press reset to live to clear them.";
@@ -1627,14 +1630,14 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
         ["PAPER VALUE",holdings && holdings.ops > 0 && bps > 0 && btcI > 0 ? usd2(bps*btcI-holdings.ops) : UNK,
           holdings && holdings.ops > 0 && bps*btcI > holdings.ops && mstrI > 0 ? "MSTR is "+(mstrI/(bps*btcI-holdings.ops)).toFixed(2)+" times it" : "",NEU],
         ["VERDICT",verdict(verdictGap),verdict(verdictGap) === "RICH" ? "Rich means MSTR has lagged Bitcoin next, not that price falls"
-          : verdict(verdictGap) === "CHEAP" ? "Cheap means MSTR has led Bitcoin next, not that price rises" : "",gapColor(verdictGap)]])}
-      {target > 0 && fair > 0 && <div style={{...BODY,lineHeight:1.5,marginTop:10}}><Sentences>{
+          : verdict(verdictGap) === "CHEAP" ? "Cheap means MSTR has led Bitcoin next, not that price rises" : "",gapColor(verdictGap)]],true)}
+      {target > 0 && fair > 0 && <div style={{...FT,marginTop:12}}><Sentences>{
         "The fitted line puts mNAV at "+target.toFixed(2)+" with Bitcoin at "+usd0(btcI)+" and STRC at "+usd2(strcI)+"."
         +(premiumAvg != null ? " MSTR has averaged "+Math.abs(premiumAvg*100).toFixed(1)+"% "+(premiumAvg < 0 ? "under" : "over")+" that line over the last "+premiumN+" sessions and fair value carries that forward."
           +" MSTR has sat within "+premiumMiss.toFixed(1)+"% of this fair value on a typical day." : " Recent premium is unavailable.")
         +(later && datedMiss.length === 3 ? " Dated values have missed MSTR by "+datedMiss[0].fair_value.median.toFixed(1)+"% at one week and "+datedMiss[1].fair_value.median.toFixed(1)+"% at one month." : "")
       }</Sentences></div>}
-      {target > 0 && fair > 0 && <div style={FT}><More hide>{
+      {target > 0 && fair > 0 && <div style={{...FT,marginTop:0}}><More hide linkStyle={{color:FT.color,lineHeight:FT.lineHeight}}>{
         "That mNAV starts at "+fit.a.toFixed(2)+"."
         +" Bitcoin at "+usd0(btcI)+(btcI >= 75000 ? " adds " : " takes ")+Math.abs(fit.b*(btcI-75000)/2500).toFixed(2)+"."
         +" STRC at "+usd2(strcI)+" takes "+Math.abs(fit.c*Math.max(0,fit.par-strcI)).toFixed(2)+"."
@@ -1644,18 +1647,16 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
         +(datedMiss.length === 3 ? " Two months out dated values have missed MSTR by "+datedMiss[2].fair_value.median.toFixed(1)+"%." : "")
         +" Every miss assumes the right Bitcoin price for that day."
       }</More></div>}
-      <div role="table" style={{display:"grid",gridTemplateColumns:"1.1fr 0.8fr 1fr 1fr",marginTop:12}}>
+      <div role="table" style={{display:"grid",gridTemplateColumns:narrow ? "minmax(78px,1.1fr) minmax(0,0.8fr) 1fr 1fr" : "1.1fr 0.8fr 1fr 1fr",marginTop:12}}>
         {["BITCOIN","QUANTILE","FAIR VALUE MSTR","FAIR VALUE MSTX"].map(h => <div role="columnheader" key={h} style={{...LAB,padding:"6px 3px",overflowWrap:"anywhere"}}>{h}</div>)}
         {[btcI,...Array.from({length:19},(_,i) => 60000+i*5000)].map((b,n) => [
           [b > 0 ? usd0(b) : UNK,changeFrom(b,referenceBtc),NEU],
           [qCell(b).txt,"",qCell(b).color],
           [msUsd(fairMstrAt(b)),changeFrom(fairMstrAt(b),mstrI),AMB],
           [msUsd(fairMstxAt(b)),changeFrom(fairMstxAt(b),mstxI),"#22d3ee"]].map(([v,pc,color],i) =>
-            <div role="cell" key={n+"_"+i} style={{fontSize:TYPE.secondary,padding:"7px 3px",minWidth:0,color,borderBottom:SEP,background:n === 0 ? "#0c2040" : "transparent"}}>
-              {v}{pc && <div style={{fontSize:TYPE.label,color:SUB,marginTop:3}}>{pc}</div>}</div>))}
+            <div role="cell" key={n+"_"+i} style={{fontSize:TYPE.body,fontWeight:700,whiteSpace:"nowrap",padding:"7px 3px",minWidth:0,color,borderBottom:SEP,background:n === 0 ? "#0c2040" : "transparent"}}>
+              {v}{pc && <div style={{fontSize:TYPE.secondary,fontWeight:400,color:FT.color,marginTop:3}}>{pc}</div>}</div>))}
       </div>
-      <div style={{...ROW,marginTop:12}}><button style={GST} onClick={() => { touched.current={}; seed(); }}>reset to live</button>
-        </div>
     </div>
     {(moreOpen || word === "BUY" || word === "STALE") && <div style={stateCard(word === "BUY" ? GRN : word === "STALE" ? RD : NEU)}>
       <div style={HD}>MSTX NOW</div>

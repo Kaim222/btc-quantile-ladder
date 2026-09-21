@@ -1522,7 +1522,7 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
     : ser.slice().reverse().find(r => r.d < sessionDay && Date.parse(sessionDay)-Date.parse(r.d) <= 5*86400000) || null;
   const whatPrice = dayMstx(fair, prevRow);
   // The level. Off hours the monitor's projected price was computed at its last bar's Bitcoin, so with a live Bitcoin price
-  // the card recomputes it the way WHAT IF does. The typed boxes never move the level.
+  // the card recomputes it the way the PROJECTED PRICE card does. The typed boxes never move the level.
   const seedFair = bps > 0 && seeds.btc > 0 && seeds.strc > 0 ? bps*seeds.btc*(msStrc(seeds.strc)+nm(cfg.btc_slope_per_2500)*(seeds.btc-75000)/2500) : null;
   const liveProj = btcIsLive ? dayMstx(seedFair, prevRow) : null;
   const monitorLevel = nm(st.gap_mstx) != null && nm(st.proj_mstx) > 0;
@@ -1593,6 +1593,27 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
   const selected = hov == null ? ser.length-1 : Math.min(hov,ser.length-1);
   return <div style={VIS_STACK}>
     {errors.map(file => <div key={file} style={FT}>{file.split("/").pop()+" failed to load."}</div>)}
+    <div style={VIS_CARD}>
+      <div style={{...HD,marginBottom:10}}>PROJECTED PRICE</div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(122px,1fr))",gap:10}}>
+        {MS_FLD.map(([k,label]) => <label key={k} style={LAB}>{label}
+          <DollarInput value={grp(f[k])} inputMode="decimal" onChange={e => { touched.current[k]=true; setF(v => ({...v,[k]:e.target.value.replace(/[^0-9.\-]/g,"")})); }}
+            style={{...INP,display:"block",width:"100%",marginTop:5}}/></label>)}
+      </div>
+      <div style={{...FT,marginTop:8}}>{(() => { const when = snapTs ? new Date(snapTs).toLocaleString("en-US",{timeZone:"America/New_York",weekday:"short",month:"numeric",day:"numeric",hour:"numeric",minute:"2-digit"}).replace(/,/g,"")+" ET" : null;
+        const typed = MS_FLD.filter(([k]) => touched.current[k]).map(([,label]) => label);
+        if (typed.length) return "You typed "+(typed.length === 4 ? "all four" : typed.join(" and "))+"."+(btcIsLive && !touched.current.btc ? " Bitcoin is live." : "")+" Press reset to live to clear them.";
+        return btcIsLive ? "Bitcoin is live. MSTR, MSTX and STRC are from "+(when || "the last close")+"." : when ? "All four are the monitor's reading from "+when+"." : "All four are the last model close."; })()}</div>
+      {tiles([["PROJECTED mNAV",target > 0 ? target.toFixed(2) : UNK,mstrI > 0 && bps > 0 && btcI > 0 ? "now "+(mstrI/(bps*btcI)).toFixed(2) : "",NEU],
+        ["PROJECTED MSTR",fair > 0 ? usd2(fair) : UNK,mstrI > 0 && fair > 0 ? "now "+usd2(mstrI)+" · "+msPct((mstrI/fair-1)*100) : "",AMB],
+        ["PROJECTED MSTX",msUsd(whatPrice),mstxI > 0 && whatGap != null ? "now "+usd2(mstxI)+" · "+msPct(whatGap) : "","#22d3ee"],
+        ["VERDICT",verdict(whatGap),verdict(whatGap) === "RICH" && hist && isObj(hist.gap_mstx) && nm(hist.gap_mstx.rich_share) != null ? "Rich on "+hist.gap_mstx.rich_share+"% of all days" : "",gapColor(whatGap)]])}
+      {target > 0 && fair > 0 && <div style={{...BODY,lineHeight:1.5,marginTop:10}}><Sentences>{"Projected mNAV "+target.toFixed(2)+" is "+msStrc(strcI).toFixed(2)+" from STRC at "+usd2(strcI)
+        +(target >= msStrc(strcI) ? " plus "+(target-msStrc(strcI)).toFixed(2) : " less "+(msStrc(strcI)-target).toFixed(2))+" from Bitcoin at "+usd0(btcI)+". Projected MSTR is that mNAV times "+usd2(bps*btcI)
+        +" of Bitcoin per share. Projected MSTX moves twice MSTR's percent change from the last close."}</Sentences></div>}
+      <div style={{...ROW,marginTop:12}}><button style={GST} onClick={() => { touched.current={}; seed(); }}>reset to live</button>
+        </div>
+    </div>
     <div style={stateCard(word === "BUY" ? GRN : word === "STALE" ? RD : NEU)}>
       <div style={HD}>MSTX NOW</div>
       <div style={{fontSize:TYPE.hero,fontWeight:800,color:word === "BUY" ? GRN : word === "STALE" ? RD : NEU,marginTop:7}}>{word}</div>
@@ -1642,20 +1663,6 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
       <div style={FT}><More hide>{gapRef === "best" ? "Each day uses the best estimate made five trading days earlier. It uses where Bitcoin and STRC actually went. Same scale as the projected view."
         : "Tap for a day. The gap scale is stretched near zero."}</More></div>
     </div>
-    <div style={VIS_CARD}>
-      <div style={{...HD,marginBottom:10}}>WHAT IF</div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(122px,1fr))",gap:10}}>
-        {MS_FLD.map(([k,label]) => <label key={k} style={LAB}>{label}
-          <DollarInput value={grp(f[k])} inputMode="decimal" onChange={e => { touched.current[k]=true; setF(v => ({...v,[k]:e.target.value.replace(/[^0-9.\-]/g,"")})); }}
-            style={{...INP,display:"block",width:"100%",marginTop:5}}/></label>)}
-      </div>
-      <div style={{...FT,marginTop:8}}>{(() => { const when = snapTs ? new Date(snapTs).toLocaleString("en-US",{timeZone:"America/New_York",weekday:"short",month:"numeric",day:"numeric",hour:"numeric",minute:"2-digit"}).replace(/,/g,"")+" ET" : null;
-        return btcIsLive ? "Bitcoin is live. MSTR, MSTX and STRC are from "+(when || "the last close")+"." : when ? "All four are the monitor's reading from "+when+"." : "All four are the last model close."; })()}</div>
-      {tiles([["PROJECTED MSTX",msUsd(whatPrice),"","#22d3ee"], ["GAP MSTX",msPct(whatGap),"",gapColor(whatGap)],
-        ["VERDICT",verdict(whatGap),"",gapColor(whatGap)]])}
-      <div style={{...ROW,marginTop:12}}><button style={GST} onClick={() => { touched.current={}; seed(); }}>reset to live</button>
-        </div>
-    </div>
     {bps > 0 && strcI > 0 && (() => {
       // Bitcoin price in, MSTR and MSTX out. Low end: the live rule. High end: the convex fit, above 75k only.
       const slope = nm(cfg.btc_slope_per_2500), cx = isObj(cfg.convex_fit) ? cfg.convex_fit : null, vol = nm(cfg.mstr_vol) > 0 ? nm(cfg.mstr_vol) : 0.75;
@@ -1674,7 +1681,7 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
       // MSTR has spent long stretches above the rule, so also show the rule with today's gap carried along
       const gapBtc = touched.current.btc || touched.current.mstr || !(nm(prices.btc) > 0) ? btcI : nm(prices.btc);
       const gapRaw = gapBtc > 0 && mstrI > 0 ? mstrAt(gapBtc,tLo) > 0 ? mstrI/mstrAt(gapBtc, tLo)-1 : null : null;
-      const gapNow = gapRaw != null && gapRaw > -0.75 && gapRaw < 3 ? gapRaw : null;   // a half typed WHAT IF price is not a gap worth carrying
+      const gapNow = gapRaw != null && gapRaw > -0.75 && gapRaw < 3 ? gapRaw : null;   // a half typed price in the PROJECTED PRICE card is not a gap worth carrying
       // best estimate: the rule carrying today's gap, which fades by half about every gap_half_life_days (tested 2026-09-19)
       const halfLife = halfLifeD, wGap = Math.pow(0.5, yrs*365/halfLife);
       const tHeld = b => gapNow == null || tLo(b) == null ? null : tLo(b)*(1+gapNow*wGap);
@@ -1723,7 +1730,7 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
             <input value={lkM} inputMode="decimal" placeholder={mImp == null ? UNK : mImp.toFixed(2)} onChange={e => setLkM(e.target.value.replace(/[^0-9.]/g,""))}
               style={{...INP,display:"block",width:"100%",marginTop:5}}/></label>}
         </div>
-        {(touched.current.btc || touched.current.mstr) && <div style={{...FT,marginTop:8}}><Sentences>{"Today's gap uses your WHAT IF numbers with Bitcoin at "+usd0(btcI)+". Press reset to live to use live prices."}</Sentences></div>}
+        {(touched.current.btc || touched.current.mstr) && <div style={{...FT,marginTop:8}}><Sentences>{"Today's gap uses the numbers you typed up top with Bitcoin at "+usd0(btcI)+". Press reset to live to use live prices."}</Sentences></div>}
         {tiles([["BEST ESTIMATE mNAV",x2(tHeld(B)),(gapBtc > 0 && mstrI > 0 ? "now "+x2(mstrI/(bps*gapBtc))+" · " : "")+"projected "+x2(tLo(B)),NEU],
           ["BEST ESTIMATE MSTR",usd0(mstrAt(B,tHeld)),(chg(mstrAt(B,tHeld),mstrI) ? chg(mstrAt(B,tHeld),mstrI)+" · " : "")+"projected "+usd0(mstrAt(B,tLo)),AMB],
           ["BEST ESTIMATE MSTX",mstxAt(B,tHeld) == null ? UNK : usd2(mstxAt(B,tHeld)),(chg(mstxAt(B,tHeld),mstxI) ? chg(mstxAt(B,tHeld),mstxI)+" · " : "")+"projected "+(mstxAt(B,tLo) == null ? UNK : usd2(mstxAt(B,tLo))),"#22d3ee"]]
@@ -1765,7 +1772,7 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
         <div style={FT}><More hide>{(yrs > 0 ? "Decay takes "+Math.round((1-decay)*100)+"% off MSTX by "+mdy(lkDay)+". " : "")
           + "MSTX is a 2x daily fund, so over time it moves with MSTR squared. "
           + "Decay here is set to "+lossPct(dragK)+"% a year. "
-          + "Starting prices come from the WHAT IF boxes. "
+          + "Starting prices come from the PROJECTED PRICE boxes. "
           + "High is a steeper curve fitted over the STRC era and it tested worse than projected."
           + (ops != null ? " Your mNAV counts "+usd2(ops)+" of debt and preferred per share." : "")}</More></div>
       </div>; })()}

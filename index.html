@@ -1427,6 +1427,7 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
   const [lkView, setLkView] = useLocal("bql_lk_view", "auto", v => ["auto","price","pct","both"].includes(v) ? v : "auto");
   const [dec, setDec] = useLocal("bql_mstx_decay", "measured", v => ["measured","calm","none"].includes(v) ? v : "measured");
   const [lkBtc, setLkBtc] = useState(""), [lkDay, setLkDay] = useNyDate("bql_lk_day");
+  const [moreOpen, setMoreOpen] = useLocal("bql_strat_more", false, v => v === true);
   useEffect(() => {
     const resize = () => setNarrow(window.innerWidth < 560);
     window.addEventListener("resize", resize);
@@ -1614,14 +1615,15 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
       <div style={{...ROW,marginTop:12}}><button style={GST} onClick={() => { touched.current={}; seed(); }}>reset to live</button>
         </div>
     </div>
-    <div style={stateCard(word === "BUY" ? GRN : word === "STALE" ? RD : NEU)}>
+    {(moreOpen || word === "BUY" || word === "STALE") && <div style={stateCard(word === "BUY" ? GRN : word === "STALE" ? RD : NEU)}>
       <div style={HD}>MSTX NOW</div>
       <div style={{fontSize:TYPE.hero,fontWeight:800,color:word === "BUY" ? GRN : word === "STALE" ? RD : NEU,marginTop:7}}>{word}</div>
       <div style={{...BODY,lineHeight:1.5,marginTop:9}}><Sentences>{why}</Sentences></div>
       {tiles([["MSTX",msUsd(prices.mstx),nm(st.mstx) != null ? "" : "model close "+mdy(last.d),AMB],
         ["LAG VS LAST HOUR",msPct(lag),"",lag != null && lag <= lagLine ? GRN : NEU],
         ["MONITOR",runTs ? msWhen(runTs)+" ET" : "NO RUN",runTs ? Math.max(0,Math.floor(runAge))+" min ago" : "",heartbeatColor]])}
-    </div>
+    </div>}
+    {moreOpen && <>
     <div style={stateCard(gapColor(gap))}>
       <div style={HD}>LEVEL</div><div style={{fontSize:TYPE.hero,fontWeight:800,color:word === "STALE" ? RD : gapColor(gap),marginTop:6}}>{word === "STALE" ? "STALE READ" : verdict(gap)}</div>
       {levelRead && <div style={{...BODY,lineHeight:1.5,marginTop:7}}><More step>{levelRead}</More></div>}
@@ -1663,6 +1665,7 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
       <div style={FT}><More hide>{gapRef === "best" ? "Each day uses the best estimate made five trading days earlier. It uses where Bitcoin and STRC actually went. Same scale as the projected view."
         : "Tap for a day. The gap scale is stretched near zero."}</More></div>
     </div>
+    </>}
     {bps > 0 && strcI > 0 && (() => {
       // Bitcoin price in, MSTR and MSTX out. Low end: the live rule. High end: the convex fit, above 75k only.
       const slope = nm(cfg.btc_slope_per_2500), cx = isObj(cfg.convex_fit) ? cfg.convex_fit : null, vol = nm(cfg.mstr_vol) > 0 ? nm(cfg.mstr_vol) : 0.75;
@@ -1776,7 +1779,8 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
           + "High is a steeper curve fitted over the STRC era and it tested worse than projected."
           + (ops != null ? " Your mNAV counts "+usd2(ops)+" of debt and preferred per share." : "")}</More></div>
       </div>; })()}
-    {hist && rowsOf(hist.weekly).length > 10 && (() => {
+    <div style={ROW}><button style={GST} aria-expanded={moreOpen} onClick={() => setMoreOpen(v => !v)}>{moreOpen ? "hide monitor, alerts and history" : "show monitor, alerts and history"}</button></div>
+    {moreOpen && hist && rowsOf(hist.weekly).length > 10 && (() => {
       // Two years of mNAV (MSTR over its Bitcoin per share), split by bull and bear market. Built by mstr-mnav-model/build_mnav_history.py.
       const wk = rowsOf(hist.weekly), all = rowsOf(hist.all), era = rowsOf(hist.era), per = rowsOf(hist.periods);
       const eraOf = n => era.find(r => r.name === n) || {}, bullE = eraOf("bull"), bearE = eraOf("bear"), allE = eraOf("all");

@@ -1627,6 +1627,8 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
         return btcIsLive ? "Bitcoin is live. MSTR, MSTX and STRC are from "+(when || "the last close")+"." : when ? "All four are the monitor's reading from "+when+"." : "All four are the last model close."; })()}</Sentences></div>
       {tiles([["FAIR VALUE MSTR"+(later ? " ON "+mdy(lkDay) : ""),msUsd(projectedMstr),priceSub(projectedMstr,mstrI),AMB],
         ["FAIR VALUE MSTX"+(later ? " ON "+mdy(lkDay) : ""),msUsd(projectedMstx),priceSub(projectedMstx,mstxI),"#22d3ee"],
+        ["mNAV NOW",mstrI > 0 && bps > 0 && referenceBtc > 0 ? (mstrI/(bps*referenceBtc)).toFixed(2) : UNK,
+          projectedMstr > 0 && bps > 0 && btcI > 0 ? "fair value mNAV "+(projectedMstr/(bps*btcI)).toFixed(2) : "",NEU],
         ["PAPER VALUE",holdings && holdings.ops > 0 && bps > 0 && btcI > 0 ? usd2(bps*btcI-holdings.ops) : UNK,
           holdings && holdings.ops > 0 && bps*btcI > holdings.ops && mstrI > 0 ? "MSTR is "+(mstrI/(bps*btcI-holdings.ops)).toFixed(2)+" times it" : "",NEU],
         ["VERDICT",verdict(verdictGap),verdict(verdictGap) === "RICH" ? "Rich means MSTR has lagged Bitcoin next, not that price falls"
@@ -1647,11 +1649,12 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
         +(datedMiss.length === 3 ? " Two months out dated values have missed MSTR by "+datedMiss[2].fair_value.median.toFixed(1)+"%." : "")
         +" Every miss assumes the right Bitcoin price for that day."
       }</More></div>}
-      <div role="table" style={{display:"grid",gridTemplateColumns:narrow ? "minmax(78px,1.1fr) minmax(0,0.8fr) 1fr 1fr" : "1.1fr 0.8fr 1fr 1fr",marginTop:12}}>
-        {["BITCOIN","QUANTILE","FAIR VALUE MSTR","FAIR VALUE MSTX"].map(h => <div role="columnheader" key={h} style={{...LAB,padding:"6px 3px",overflowWrap:"anywhere"}}>{h}</div>)}
+      <div role="table" style={{display:"grid",gridTemplateColumns:narrow ? "minmax(74px,1.1fr) minmax(0,0.6fr) minmax(0,0.6fr) 1fr 1fr" : "1.1fr 0.7fr 0.7fr 1fr 1fr",marginTop:12}}>
+        {["BITCOIN","QUANTILE","mNAV","FAIR VALUE MSTR","FAIR VALUE MSTX"].map(h => <div role="columnheader" key={h} style={{...LAB,padding:"6px 3px",overflowWrap:"anywhere"}}>{h}</div>)}
         {[btcI,...Array.from({length:19},(_,i) => 60000+i*5000)].map((b,n) => [
           [b > 0 ? usd0(b) : UNK,changeFrom(b,referenceBtc),NEU],
           [qCell(b).txt,"",qCell(b).color],
+          [fairMstrAt(b) > 0 && bps > 0 && b > 0 ? (fairMstrAt(b)/(bps*b)).toFixed(2) : UNK,"",NEU],
           [msUsd(fairMstrAt(b)),changeFrom(fairMstrAt(b),mstrI),AMB],
           [msUsd(fairMstxAt(b)),changeFrom(fairMstxAt(b),mstxI),"#22d3ee"]].map(([v,pc,color],i) =>
             <div role="cell" key={n+"_"+i} style={{fontSize:TYPE.body,fontWeight:700,whiteSpace:"nowrap",padding:"7px 3px",minWidth:0,color,borderBottom:SEP,background:n === 0 ? "#0c2040" : "transparent"}}>

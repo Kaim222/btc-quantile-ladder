@@ -1535,12 +1535,11 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
   const gf = evd && isObj(evd.gap_fade) ? evd.gap_fade : null;
   // MSTX loses ground to twice MSTR every year. Use the drag measured over the last year; the vol formula understates it.
   const md_ = evd && isObj(evd.mstx_drag) ? evd.mstx_drag : null;
-  const regBelow = st.regime === "below", kReg = md_ ? nm(regBelow ? md_.k_below50 : md_.k_above50) : null;
-  const dragMeasured = kReg > 0 ? kReg : md_ && nm(md_.k_1y) > 0 ? nm(md_.k_1y) : 1.0, dragCalm = md_ && nm(md_.k_calm) > 0 ? nm(md_.k_calm) : 0.75;
+  const dragMeasured = md_ && nm(md_.k_1y) > 0 ? nm(md_.k_1y) : 1.0, dragCalm = md_ && nm(md_.k_calm) > 0 ? nm(md_.k_calm) : 0.75;
   const dragK = dec === "none" ? 0 : dec === "calm" ? dragCalm : dragMeasured;
   const lossPct = k => Math.round((1-Math.exp(-k))*100);
-  const decFact = md_ && nm(md_.k_above50) > 0 && nm(md_.k_below50) > 0
-    ? "MSTX squares MSTR's move, so a rally pays more than double. Decay comes on top. Last year it ran "+lossPct(nm(md_.k_above50))+"% with Bitcoin above its 50 day and "+lossPct(nm(md_.k_below50))+"% below it." : "";
+  const decFact = md_ && nm(md_.k_1y) > 0
+    ? "MSTX squares MSTR's move, so a rally pays more than double. Decay comes on top. It ran "+lossPct(nm(md_.k_1y))+"% over the last year. The best case setting is the mildest quarter of past stretches and it has overpriced MSTX." : "";
   const fadeLine = fade === "never" ? "You set the gap to never fade, so it keeps all of today's gap."
     : fade === "slow" ? "You set a slow fade, so it keeps half of the gap after about four months."
     : "It keeps most of the gap next week and half of it in a month.";
@@ -1608,10 +1607,12 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
       {tiles([["PROJECTED mNAV",target > 0 ? target.toFixed(2) : UNK,mstrI > 0 && bps > 0 && btcI > 0 ? "now "+(mstrI/(bps*btcI)).toFixed(2) : "",NEU],
         ["PROJECTED MSTR",fair > 0 ? usd2(fair) : UNK,mstrI > 0 && fair > 0 ? "now "+usd2(mstrI)+" · "+msPct((mstrI/fair-1)*100) : "",AMB],
         ["PROJECTED MSTX",msUsd(whatPrice),mstxI > 0 && whatGap != null ? "now "+usd2(mstxI)+" · "+msPct(whatGap) : "","#22d3ee"],
+        ...(holdings && holdings.ops > 0 && bps > 0 && btcI > 0 ? [["PAPER VALUE",usd2(bps*btcI-holdings.ops),mstrI > 0 ? "MSTR is "+(mstrI/(bps*btcI-holdings.ops)).toFixed(2)+" times it" : "",NEU]] : []),
         ["VERDICT",verdict(whatGap),verdict(whatGap) === "RICH" && hist && isObj(hist.gap_mstx) && nm(hist.gap_mstx.rich_share) != null ? "Rich on "+hist.gap_mstx.rich_share+"% of all days" : "",gapColor(whatGap)]])}
       {target > 0 && fair > 0 && <div style={{...BODY,lineHeight:1.5,marginTop:10}}><Sentences>{"Projected mNAV "+target.toFixed(2)+" is "+msStrc(strcI).toFixed(2)+" from STRC at "+usd2(strcI)
         +(target >= msStrc(strcI) ? " plus "+(target-msStrc(strcI)).toFixed(2) : " less "+(msStrc(strcI)-target).toFixed(2))+" from Bitcoin at "+usd0(btcI)+". Projected MSTR is that mNAV times "+usd2(bps*btcI)
-        +" of Bitcoin per share. Projected MSTX moves twice MSTR's percent change from the last close."}</Sentences></div>}
+        +" of Bitcoin per share. Projected MSTX moves twice MSTR's percent change from the last close."
+        +(holdings && holdings.ops > 0 ? " Paper value is that Bitcoin per share less "+usd2(holdings.ops)+" of debt and preferred." : "")}</Sentences></div>}
       <div style={{...ROW,marginTop:12}}><button style={GST} onClick={() => { touched.current={}; seed(); }}>reset to live</button>
         </div>
     </div>
@@ -1715,7 +1716,7 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
             <button key={k} aria-pressed={fade === k} onClick={() => setFade(k)} style={{...GST,color:fade === k ? "#e2e8f0" : "#4a7a9b",borderColor:fade === k ? "#2a5a8a" : "#162840"}}>{label}</button>)}</div>
         {fadeFact && <div style={{...FT,marginTop:0,marginBottom:10}}><Sentences>{fadeFact}</Sentences></div>}
         <div style={{...ROW,gap:6,marginBottom:6}}><span style={{...LAB,marginRight:4}}>MSTX DECAY</span>
-          {[["measured",(regBelow ? "below" : "above")+" the 50 day "+lossPct(dragMeasured)+"%"],["calm","calm market "+lossPct(dragCalm)+"%"],["none","none"]].map(([k,label]) =>
+          {[["measured","last year "+lossPct(dragMeasured)+"%"],["calm","best case "+lossPct(dragCalm)+"%"],["none","none"]].map(([k,label]) =>
             <button key={k} aria-pressed={dec === k} onClick={() => setDec(k)} style={{...GST,color:dec === k ? "#e2e8f0" : "#4a7a9b",borderColor:dec === k ? "#2a5a8a" : "#162840"}}>{label}</button>)}</div>
         {decFact && <div style={{...FT,marginTop:0,marginBottom:10}}><Sentences>{decFact}</Sentences></div>}
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10,alignItems:"end"}}>
@@ -1738,6 +1739,7 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
           ["BEST ESTIMATE MSTR",usd0(mstrAt(B,tHeld)),(chg(mstrAt(B,tHeld),mstrI) ? chg(mstrAt(B,tHeld),mstrI)+" · " : "")+"projected "+usd0(mstrAt(B,tLo)),AMB],
           ["BEST ESTIMATE MSTX",mstxAt(B,tHeld) == null ? UNK : usd2(mstxAt(B,tHeld)),(chg(mstxAt(B,tHeld),mstxI) ? chg(mstxAt(B,tHeld),mstxI)+" · " : "")+"projected "+(mstxAt(B,tLo) == null ? UNK : usd2(mstxAt(B,tLo))),"#22d3ee"]]
           .concat(tMine ? [["AT ENTERPRISE mNAV "+myM.toFixed(2),usd0(mstrAt(B,tMine)),"MSTX "+(mstxAt(B,tMine) == null ? UNK : usd2(mstxAt(B,tMine))),GRN]] : []))}
+        <div style={{...FT,marginTop:8}}><Sentences>{"With the right Bitcoin price, best estimate has missed MSTR by about 4% a week out. It missed by 9% a month out and 12% two months out. MSTX misses run about double. Scored 9/20/2026."}</Sentences></div>
         <svg viewBox={"0 0 "+W2+" "+H2} style={{width:"100%",height:"auto",minHeight:window.innerWidth < 560 ? 180 : 200,display:"block",marginTop:12}}>
           <rect x={P2.l} y={P2.t} width={cw2} height={ch2} fill="#070f1f" rx="2"/>
           {(() => { const st = [100,200,500,1000,2000,5000].find(v => top/v <= 8) || Math.ceil(top/8/5000)*5000;

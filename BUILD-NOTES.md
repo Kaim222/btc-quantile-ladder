@@ -275,3 +275,5 @@ two-year checks, and its upper lines needed a freeze so they would not cross.
 - The ladder lines stay 10 / 60 / 75. The cut-point study was rerun on v2 quantiles. It is a retrospective scenario
   comparison that uses today's fitted model on past dates, not an independent validation. The Playbook's 9/13 research leg
   still passes on model v1's 85th band, because that is what was measured.
+
+Run `python tools/mnav_fit.py --write` monthly, then `python tools/model_refresh.py`, then copy the fitted config to the monitor.

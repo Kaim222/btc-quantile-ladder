@@ -5,10 +5,10 @@
  "start_days": 276,
  "gap_fade": {
   "recent_days": 120,
-  "recent_after20": 60,
-  "recent_after40": 8,
-  "earlier_after20": 58,
-  "earlier_after40": 5
+  "recent_after20": 35,
+  "recent_after40": 3,
+  "earlier_after20": 64,
+  "earlier_after40": -6
  },
  "mstx_drag": {
   "k_1y": 0.983,
@@ -24,21 +24,21 @@
  },
  "guides": {
   "today": 19.6,
-  "projected": 28.9,
-  "best": 18.0
+  "projected": 26.5,
+  "best": 18.4
  },
  "gap_signal": {
   "over": {
-   "days": 146,
-   "median_vs_btc": -13.2
+   "days": 102,
+   "median_vs_btc": -10.1
   },
   "within": {
    "days": 74,
-   "median_vs_btc": -2.7
+   "median_vs_btc": -12.8
   },
   "under": {
-   "days": 56,
-   "median_vs_btc": -4.9
+   "days": 100,
+   "median_vs_btc": -4.8
   }
  },
  "calendars": {
@@ -51,14 +51,14 @@
   },
   "projected": {
    "trades": 56,
-   "won_pct": 30,
-   "median_pct": -76,
-   "average_pct": -10
+   "won_pct": 27,
+   "median_pct": -75,
+   "average_pct": -8
   },
   "best": {
    "trades": 56,
-   "won_pct": 38,
-   "median_pct": -28,
+   "won_pct": 32,
+   "median_pct": -38,
    "average_pct": -11
   }
  },

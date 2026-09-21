@@ -30,3 +30,5 @@ Serve locally with `python -m http.server`; the browser normally loads CDN libra
 The separate [btc-monitor repository](https://github.com/Kaim222/btc-monitor) runs the alert monitor.
 It writes `mstr_state.json` (including `last_run`) and `mstr_ledger.json`, fetched by the Strategy tab.
 Notifications originate in that repository, not this site.
+
+Run `python tools/mnav_fit.py --write` monthly, then `python tools/model_refresh.py`, then copy the fitted config to the monitor.

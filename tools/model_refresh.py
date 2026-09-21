@@ -14,22 +14,14 @@ Bitcoin per share is stored per day and never rescaled afterwards, so history do
 import datetime as dt, json, os, sys, urllib.request
 import numpy as np, pandas as pd, yfinance as yf
 from zoneinfo import ZoneInfo
+from mnav_fit import target, atomic_text
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 D = lambda f: os.path.join(ROOT, "data", f)
 NY = ZoneInfo("America/New_York")
-HALF_LIFE, RICH_X = 28.0, 8.0
+HALF_LIFE = 28.0
 # NYSE full-day closures. A weekday outside this list is an expected session: if Yahoo has no row for it the append stops there.
 HOLIDAYS = {"2026-11-26", "2026-12-25", "2027-01-01", "2027-01-18", "2027-02-15", "2027-03-26", "2027-05-31", "2027-06-18", "2027-07-05", "2027-09-06", "2027-11-25", "2027-12-24"}
-
-
-def strc_rule(s):
-    if s >= 97.5: return 0.90
-    if s >= 95: return 0.875 + (s - 95) * 0.01
-    if s >= 92.5: return 0.85 + (s - 92.5) * 0.01
-    if s >= 87.5: return 0.825 + (s - 87.5) * 0.005
-    if s >= 82.5: return 0.80 + (s - 82.5) * 0.005
-    return max(0.775, 0.775 + (s - 77.5) * 0.005)
 
 
 def live_bps():
@@ -66,11 +58,11 @@ def append_days(d):
     return d, len(rows)
 
 
-def build_model(d, slope, cheap):
+def build_model(d, fit, cheap):
     e = d[d["strc"].notna()].reset_index(drop=True).copy()
-    e["target"] = [strc_rule(s) + slope * (b - 75000) / 2500 for s, b in zip(e["strc"], e["btc"])]
+    e["target"] = target(e["btc"], e["strc"], fit)
     e["proj"] = e["bps"] * e["btc"] * e["target"]; e["gap"] = e["mstr"] / e["proj"] - 1; e["mnav"] = e["mstr"] / (e["btc"] * e["bps"])
-    sig = (e["gap"] * 100 < cheap).values; eps, i = [], 0
+    sig = (e["gap"] * 100 <= cheap).values; eps, i = [], 0
     while i < len(e):
         if sig[i]:
             j = i
@@ -88,15 +80,15 @@ def build_model(d, slope, cheap):
             out["proj_%dd" % h] = None if f is None else round(100 * (f["proj"] / w["proj"] - 1), 1); out["gap_%dd" % h] = None if f is None else round(100 * f["gap"], 1)
         rows.append(out)
     old = json.load(open(D("mstr-model.json"), encoding="utf-8"))
-    site = {"as_of": e["d"].iloc[-1], "model": dict(old.get("model", {}), slope=slope,
+    site = {"as_of": e["d"].iloc[-1], "model": dict(slope=fit["b"], fit=fit, target_description="Fitted Bitcoin line with STRC shortfall below par and mNAV capped at 2",
                                                     btc_per_share_note="Bitcoin per share %.7f on the last row, live from strategy.com when the row was added" % float(e["bps"].iloc[-1])),
             "series": [{"d": r.d, "mstr": round(r.mstr, 2), "mstx": (None if pd.isna(r.mstx) else round(r.mstx, 2)), "btc": int(round(r.btc)), "strc": round(r.strc, 2),
-                        "mnav": round(r.mnav, 4), "target": round(r.target, 4), "proj": round(r.proj, 2), "gap": round(100 * r.gap, 2)} for r in e.itertuples()],
+                        "bps": float(r.bps), "mnav": round(r.mnav, 4), "target": round(r.target, 4), "proj": round(r.proj, 2), "gap": round(100 * r.gap, 2)} for r in e.itertuples()],
             "episodes": rows, "factors": old.get("factors"), "backtest": old.get("backtest"), "regime": old.get("regime")}
     return e, site
 
 
-def build_history(d, e):
+def build_history(d, e, rich):
     h = d.copy(); h.index = pd.to_datetime(h["d"]); h["prem"] = h["mstr"] / (h["btc"] * h["bps"])
     b = yf.Ticker("BTC-USD").history(start=str((h.index[0] - pd.Timedelta(days=330)).date()))["Close"]; b.index = b.index.tz_localize(None).normalize()
     if len(b) < 250: raise RuntimeError("Bitcoin history too short for the 200-day average")
@@ -105,7 +97,7 @@ def build_history(d, e):
     x = e.copy(); x.index = pd.to_datetime(x["d"]); x = x.join(h[["prem", "bull"]], how="inner")
     x["miss"] = (x["target"] / x["prem"] - 1).abs()
     days = pd.Series(x.index, index=x.index).diff(5).dt.days
-    x["best"] = x["target"] * (1 + x["gap"].shift(5) * 0.5 ** (days / HALF_LIFE)); x["miss_best"] = (x["best"] / x["prem"] - 1).abs()
+    x["best"] = np.minimum(2.0, x["target"] * (1 + x["gap"].shift(5) * 0.5 ** (days / HALF_LIFE))); x["miss_best"] = (x["best"] / x["prem"] - 1).abs()
     x["gap_x"] = (x["mstx"] / (x["mstx"].shift(1) * (1 + 2 * (x["proj"] / x["mstr"].shift(1) - 1))) - 1) * 100
     def block(f, name):
         return {"name": name, "days": int(len(f)), "median": round(float(f.prem.median()), 2), "low": round(float(f.prem.quantile(0.25)), 2),
@@ -120,8 +112,9 @@ def build_history(d, e):
            "all": [block(h[h.bull], "bull"), block(h[~h.bull], "bear")], "era": [era(x[x.bull], "bull"), era(x[~x.bull], "bear"), era(x, "all")],
            "now": {"premium": round(float(h.prem.iloc[-1]), 3), "avg30": cal(30), "avg90": cal(90), "avg365": cal(365), "avg_all": round(float(h.prem.mean()), 3), "target": round(float(x.target.iloc[-1]), 3)},
            "gap_mstx": {"all": round(float(gx.gap_x.median()), 1), "bull": round(float(gx[gx.bull].gap_x.median()), 1), "bear": round(float(gx[~gx.bull].gap_x.median()), 1),
-                        "last60": round(float(gx.gap_x.tail(60).median()), 1), "rich_share": int(round(100 * float((gx.gap_x >= RICH_X).mean()))),
-                        "rich_share_last60": int(round(100 * float((gx.gap_x.tail(60) >= RICH_X).mean())))}, "periods": []}
+                        "last60": round(float(gx.gap_x.tail(60).median()), 1), "rich_share": int(round(100 * float((gx.gap_x >= rich * 200).mean()))),
+                        "rich_share_last60": int(round(100 * float((gx.gap_x.tail(60) >= rich * 200).mean())))}, "gap_mstr": {"rich_share": int(round(100 * float((x.gap >= rich).mean()))),
+                        "rich_share_last60": int(round(100 * float((x.gap.tail(60) >= rich).mean())))}, "periods": []}
     for a, z, lab in (("2024-09", "2024-12", "late 2024"), ("2025-01", "2025-06", "early 2025"), ("2025-07", "2025-12", "late 2025"), ("2026-01", "2026-06", "early 2026"),
                       ("2026-07", "2026-12", "since July 2026"), ("2027-01", "2027-06", "early 2027"), ("2027-07", "2027-12", "late 2027")):
         q = h.loc[a:z]
@@ -151,7 +144,7 @@ def build_evidence(e, d_all, btc_daily):
         g = a["mstr"] / a["proj"] - 1; decay = math.exp(-VOLM * VOLM * days / 365)
         rows.append({"g": g, "s0": a["mstx"], "s1": b["mstx"], "btc": b["btc"] / a["btc"] - 1, "today": a["mstx"],
                      "projected": a["mstx"] * (a["proj"] / a["mstr"]) ** 2 * decay,
-                     "best": a["mstx"] * ((a["proj"] * (1 + g * 0.5 ** (days / HALF_LIFE))) / a["mstr"]) ** 2 * decay})
+                     "best": a["mstx"] * (min(2 * a["btc"] * a["bps"], a["proj"] * (1 + g * 0.5 ** (days / HALF_LIFE))) / a["mstr"]) ** 2 * decay})
     A = pd.DataFrame(rows)
     if len(A) < 100: raise RuntimeError("too few days for the evidence file")
     miss = lambda col: round(100 * float(np.median(np.abs(np.log(A["s1"] / A[col])))), 1)
@@ -202,7 +195,7 @@ def build_evidence(e, d_all, btc_daily):
 
 def main():
     cfg = json.load(open(D("mstr-config.json"), encoding="utf-8"))
-    slope, cheap = float(cfg.get("btc_slope_per_2500", 0.025)), float(cfg.get("cheap_threshold", -0.03)) * 100
+    fit, cheap = cfg["fit"], float(cfg["cheap_threshold"]) * 100
     d = pd.read_csv(D("mstr-daily.csv"))
     n0 = len(d)
     try:
@@ -212,18 +205,18 @@ def main():
     if len(d) < n0 or d["d"].duplicated().any() or not d["d"].is_monotonic_increasing:
         print("daily file failed its checks; nothing written"); return 1
     try:                       # build everything in memory first; one failure publishes nothing
-        e, site = build_model(d, slope, cheap)
-        res = build_history(d, e)
+        e, site = build_model(d, fit, cheap)
+        res = build_history(d, e, float(cfg["rich_threshold"]))
         bd = yf.Ticker("BTC-USD").history(start=str((pd.Timestamp(d["d"].iloc[0]) - pd.Timedelta(days=120)).date()))["Close"]; bd.index = bd.index.tz_localize(None).normalize()
         if len(bd) < 200: raise RuntimeError("Bitcoin history too short for the 50 day split")
         evid = build_evidence(e, d, bd)
         if not (len(site["series"]) >= 200 and len(res["weekly"]) >= 50 and 0.2 < res["now"]["premium"] < 6): raise RuntimeError("outputs failed their checks")
     except Exception as ex:
         print("build failed (%s); nothing written" % ex); return 1
-    if added: d.to_csv(D("mstr-daily.csv"), index=False, lineterminator="\n")
-    json.dump(site, open(D("mstr-model.json"), "w", encoding="utf-8", newline="\n"), indent=0)
-    json.dump(res, open(D("mnav-history.json"), "w", encoding="utf-8", newline="\n"), indent=1)
-    json.dump(evid, open(D("evidence.json"), "w", encoding="utf-8", newline="\n"), indent=1)
+    if added: atomic_text(D("mstr-daily.csv"), d.to_csv(index=False, lineterminator="\n"))
+    atomic_text(D("mstr-model.json"), json.dumps(site, indent=0, allow_nan=False))
+    atomic_text(D("mnav-history.json"), json.dumps(res, indent=1, allow_nan=False))
+    atomic_text(D("evidence.json"), json.dumps(evid, indent=1, allow_nan=False))
     print("rows added %d; daily file ends %s; model %d rows; history through %s, mNAV %.3f" % (added, d["d"].iloc[-1], len(e), res["as_of"], res["now"]["premium"]))
     return 0
 

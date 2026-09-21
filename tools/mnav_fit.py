@@ -110,14 +110,13 @@ def main():
             if path is None:
                 continue
             config = json.loads(path.read_text(encoding='utf-8-sig'))
-            config.update(fit=fit, premium={k: v for k, v in premium.items() if k not in ("average", "from", "to")}, cheap_threshold=cheap, rich_threshold=rich,
-                          btc_slope_per_2500=fit['b'], gap_centre=0, gap_half_life_days=28,
+            config.update(fit=fit, premium={**config.get("premium", {}), **{k: v for k, v in premium.items() if k not in ("average", "from", "to")}}, cheap_threshold=cheap, rich_threshold=rich,
+                          btc_slope_per_2500=fit['b'], gap_centre=0,
                           updated=fit['fitted_on'],
                           note='Fair value uses a fitted Bitcoin line and a nonpositive STRC shortfall term below par. '
                                'Fair value carries the last 10 completed sessions average premium. '
                                'Cheap and Rich are excess premium quartiles in MSTR terms. '
-                               'MSTX alert thresholds are twice these values. The lag signal is unchanged.',
-                          lookup_note='Projected uses the fitted line capped at mNAV 2. Best estimate carries today\'s gap with a 28 calendar day half life.')
+                               'MSTX alert thresholds are twice these values. The lag signal is unchanged.')
             atomic_text(path, json.dumps(config, indent=2, allow_nan=False) + '\n')
 
 

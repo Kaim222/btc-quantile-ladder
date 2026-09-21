@@ -14,14 +14,6 @@
   "lag_watch": -0.01,
   "lag_slope": 0.0125,
   "rich_gate": false,
-  "convex_fit": {
-    "b1": 0.0123,
-    "b2": 0.0014,
-    "cap": 2.0
-  },
-  "mstr_vol": 0.75,
-  "lookup_note": "Projected uses the fitted line capped at mNAV 2. Best estimate carries today's gap with a 28 calendar day half life.",
-  "gap_half_life_days": 28,
   "fit": {
     "a": 0.9349260602738632,
     "b": 0.030355691245129924,
@@ -83,6 +75,111 @@
     "p90": 0.05963410756517092,
     "median_abs_pct": 3.6501377255718115,
     "mean_abs_pct": 4.4862809777598445,
-    "sessions": 277
+    "sessions": 277,
+    "dated_fair_value": [
+      {
+        "n": 10,
+        "horizon": 5,
+        "sample": "all",
+        "fair_value": {
+          "count": 162,
+          "median": 5.698280593804872,
+          "mean": 9.217199232111746
+        },
+        "old_lookup": {
+          "count": 162,
+          "median": 3.671195367397573,
+          "mean": 6.408306408215471
+        },
+        "median_delta": 2.0270852264072996
+      },
+      {
+        "n": 10,
+        "horizon": 5,
+        "sample": "last120",
+        "fair_value": {
+          "count": 115,
+          "median": 5.525752561528718,
+          "mean": 6.989710087364221
+        },
+        "old_lookup": {
+          "count": 115,
+          "median": 3.255197250355668,
+          "mean": 4.930020665909248
+        },
+        "median_delta": 2.2705553111730503
+      },
+      {
+        "n": 10,
+        "horizon": 20,
+        "sample": "all",
+        "fair_value": {
+          "count": 147,
+          "median": 7.8543946968767875,
+          "mean": 13.091910358382798
+        },
+        "old_lookup": {
+          "count": 147,
+          "median": 10.06786571239795,
+          "mean": 13.454436346916342
+        },
+        "median_delta": -2.2134710155211623
+      },
+      {
+        "n": 10,
+        "horizon": 20,
+        "sample": "last120",
+        "fair_value": {
+          "count": 100,
+          "median": 7.622006341414556,
+          "mean": 10.046004124758545
+        },
+        "old_lookup": {
+          "count": 100,
+          "median": 10.56220796824987,
+          "mean": 11.509241243490887
+        },
+        "median_delta": -2.9402016268353144
+      },
+      {
+        "n": 10,
+        "horizon": 40,
+        "sample": "all",
+        "fair_value": {
+          "count": 127,
+          "median": 14.869687436117584,
+          "mean": 17.35814786878102
+        },
+        "old_lookup": {
+          "count": 127,
+          "median": 17.20588677953878,
+          "mean": 18.98772321934328
+        },
+        "median_delta": -2.336199343421196
+      },
+      {
+        "n": 10,
+        "horizon": 40,
+        "sample": "last120",
+        "fair_value": {
+          "count": 80,
+          "median": 19.169846299967297,
+          "mean": 18.403684834487528
+        },
+        "old_lookup": {
+          "count": 80,
+          "median": 19.034362246519564,
+          "mean": 17.909758858420368
+        },
+        "median_delta": 0.1354840534477333
+      }
+    ],
+    "dated_gate": {
+      "passed": true,
+      "worse_horizons": [
+        5
+      ]
+    },
+    "dated_note": "Walk forward using at least 120 strictly earlier sessions. Average premium uses 10 sessions before origin with origin fit. Origin BPS frozen. Destination Bitcoin and STRC given. Fitted line cap 2 before premium multiplication. Absolute miss divided by actual MSTR close. Last120 selects origin dates. Old lookup carries origin gap with 28 calendar day half life and final mNAV cap 2."
   }
 }

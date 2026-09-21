@@ -4582,6 +4582,110 @@
       "mean": 19.66156716726195
     }
   ],
+  "dated_fair_value": [
+    {
+      "n": 10,
+      "horizon": 5,
+      "sample": "all",
+      "fair_value": {
+        "count": 162,
+        "median": 5.698280593804872,
+        "mean": 9.217199232111746
+      },
+      "old_lookup": {
+        "count": 162,
+        "median": 3.671195367397573,
+        "mean": 6.408306408215471
+      },
+      "median_delta": 2.0270852264072996
+    },
+    {
+      "n": 10,
+      "horizon": 5,
+      "sample": "last120",
+      "fair_value": {
+        "count": 115,
+        "median": 5.525752561528718,
+        "mean": 6.989710087364221
+      },
+      "old_lookup": {
+        "count": 115,
+        "median": 3.255197250355668,
+        "mean": 4.930020665909248
+      },
+      "median_delta": 2.2705553111730503
+    },
+    {
+      "n": 10,
+      "horizon": 20,
+      "sample": "all",
+      "fair_value": {
+        "count": 147,
+        "median": 7.8543946968767875,
+        "mean": 13.091910358382798
+      },
+      "old_lookup": {
+        "count": 147,
+        "median": 10.06786571239795,
+        "mean": 13.454436346916342
+      },
+      "median_delta": -2.2134710155211623
+    },
+    {
+      "n": 10,
+      "horizon": 20,
+      "sample": "last120",
+      "fair_value": {
+        "count": 100,
+        "median": 7.622006341414556,
+        "mean": 10.046004124758545
+      },
+      "old_lookup": {
+        "count": 100,
+        "median": 10.56220796824987,
+        "mean": 11.509241243490887
+      },
+      "median_delta": -2.9402016268353144
+    },
+    {
+      "n": 10,
+      "horizon": 40,
+      "sample": "all",
+      "fair_value": {
+        "count": 127,
+        "median": 14.869687436117584,
+        "mean": 17.35814786878102
+      },
+      "old_lookup": {
+        "count": 127,
+        "median": 17.20588677953878,
+        "mean": 18.98772321934328
+      },
+      "median_delta": -2.336199343421196
+    },
+    {
+      "n": 10,
+      "horizon": 40,
+      "sample": "last120",
+      "fair_value": {
+        "count": 80,
+        "median": 19.169846299967297,
+        "mean": 18.403684834487528
+      },
+      "old_lookup": {
+        "count": 80,
+        "median": 19.034362246519564,
+        "mean": 17.909758858420368
+      },
+      "median_delta": 0.1354840534477333
+    }
+  ],
+  "dated_gate": {
+    "passed": true,
+    "worse_horizons": [
+      5
+    ]
+  },
   "lines": {
     "3": {
       "n": 3,

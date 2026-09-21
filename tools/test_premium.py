@@ -84,3 +84,36 @@ def test_lookup_gate_requires_both_metrics_samples_and_two_horizons():
     row['mean']=12
     assert not lookup_gate(rows,10)['changed']
     assert lookup_gate(rows,10)['winning_horizons']['10']==[5]
+
+
+def test_dated_gate_requires_strict_point_and_shared_horizons():
+    from premium_test import dated_gate
+    rows = [dict(horizon=h, sample=sample, median_delta=1.0)
+            for h in (5,20,40) for sample in ('all','last120')]
+    assert dated_gate(rows)['passed']
+    for r in rows:
+        if r['horizon'] in (5,20): r['median_delta'] = 1.01
+    assert not dated_gate(rows)['passed']
+    rows[3]['median_delta'] = 1.0
+    assert dated_gate(rows)['passed']
+
+
+def test_dated_prices_use_prior_average_without_final_cap():
+    f = panel(-.003)
+    f['mstr'] *= 1 + .2*np.sin(np.arange(len(f))/9)
+    btc = pd.Series(90000.0,index=pd.date_range('2024-01-01','2026-01-01'))
+    result = study(f,btc)
+    for row in result['dated_fair_value']:
+        h = row['horizon']
+        errors = []
+        for i in range(max(120,len(f)-120 if row['sample']=='last120' else 120),len(f)-h):
+            fit = coefficients(f.iloc[:i])
+            avg = premiums(f.iloc[:i],fit).tail(10).mean()
+            end = f.iloc[i+h]
+            fair = end.btc*f.iloc[i].bps*target(end.btc,end.strc,fit)*(1+avg)
+            errors.append(100*abs(fair/end.mstr-1))
+        assert row['fair_value']['median'] == pytest.approx(np.median(errors))
+        assert row['fair_value']['mean'] == pytest.approx(np.mean(errors))
+        old = next(r for r in result['forecasts'] if r['n']==10 and r['half']=='static'
+                   and r['horizon']==h and r['sample']==row['sample'])
+        assert row['old_lookup']['median'] == old['median']

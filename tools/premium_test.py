@@ -58,6 +58,14 @@ def lookup_gate(rows, n):
     return dict(changed=any(len(v)>=2 for v in wins.values()), winning_horizons=wins)
 
 
+def dated_gate(rows):
+    """Stop when median miss worsens by over one point at two shared horizons."""
+    horizons = [h for h in (5, 20, 40) if all(
+        next(r for r in rows if r['horizon'] == h and r['sample'] == sample)['median_delta'] > 1
+        for sample in ('all', 'last120'))]
+    return dict(passed=len(horizons) < 2, worse_horizons=horizons)
+
+
 def study(frame, btc_daily):
     frame = frame.reset_index(drop=True)
     size = len(frame)
@@ -69,7 +77,7 @@ def study(frame, btc_daily):
     if regime.isna().any():
         raise ValueError('Daily BTC regime data does not cover every source session')
     regimes = np.where(regime.to_numpy(), 'above', 'below')
-    out = dict(sessions=size, start=frame.d.iloc[0], end=frame.d.iloc[-1], same_day=[], shrinkage=[], forecasts=[])
+    out = dict(sessions=size, start=frame.d.iloc[0], end=frame.d.iloc[-1], same_day=[], shrinkage=[], forecasts=[], dated_fair_value=[])
     vintages = {i: coefficients(frame.iloc[:i]) for i in range(120, size)}
     series = {}
     for mode in ('full', 'walk'):
@@ -116,6 +124,7 @@ def study(frame, btc_daily):
         for h in (5,20,40):
             errs = {str(k): [] for k in ('static',)+HALVES}
             origins = []
+            dated_errors = []
             for i in range(120,size-h):
                 f = vintages[i]
                 a,b = frame.iloc[i],frame.iloc[i+h]
@@ -123,6 +132,7 @@ def study(frame, btc_daily):
                 avg, gap = float(p.iloc[i-n:i].mean()),float(p.iloc[i])
                 line = b.btc*a.bps*target(b.btc,b.strc,f)
                 days = (pd.Timestamp(b.d)-pd.Timestamp(a.d)).days
+                dated_errors.append(100*abs(line*(1+avg)/b.mstr-1))
                 predictions = {'static': min(2*b.btc*a.bps, line*(1+gap*2**(-days/28)))}
                 predictions.update({str(k): min(2*b.btc*a.bps,line*(1+avg+(gap-avg)*2**(-h/k))) for k in HALVES})
                 for k, price in predictions.items():
@@ -130,8 +140,15 @@ def study(frame, btc_daily):
                 origins.append(i)
             for sample in ('all','last120'):
                 mask = np.array(origins) >= (0 if sample == 'all' else size-120)
+                if n == CHOSEN_N:
+                    fair_stats = stats(np.array(dated_errors)[mask])
+                    old_stats = stats(np.array(errs['static'])[mask])
+                    out['dated_fair_value'].append(dict(n=n, horizon=h, sample=sample,
+                        fair_value=fair_stats, old_lookup=old_stats,
+                        median_delta=fair_stats['median']-old_stats['median']))
                 for k,values in errs.items():
                     out['forecasts'].append(dict(n=n,horizon=h,half=k,sample=sample,**stats(np.array(values)[mask])))
+    out['dated_gate'] = dated_gate(out['dated_fair_value'])
     out['lines'] = {str(n): premium_object(frame,full,n) for n in WINDOWS}
     excess20 = series['full',20]
     active20 = excess20 >= .04
@@ -159,6 +176,19 @@ def main():
     btc = pd.read_csv(args.btc_daily, index_col=0, parse_dates=True).btc
     result = study(frame, btc)
     atomic_text(ROOT/'data/premium-study.json', json.dumps(result,indent=2,allow_nan=False)+'\n')
+    config_path = ROOT/'data/mstr-config.json'
+    config = json.loads(config_path.read_text(encoding='utf-8-sig'))
+    config['premium']['dated_fair_value'] = result['dated_fair_value']
+    config['premium']['dated_gate'] = result['dated_gate']
+    config['premium']['dated_note'] = ('Walk forward using at least 120 strictly earlier sessions. '
+        'Average premium uses 10 sessions before origin with origin fit. Origin BPS frozen. '
+        'Destination Bitcoin and STRC given. Fitted line cap 2 before premium multiplication. '
+        'Absolute miss divided by actual MSTR close. Last120 selects origin dates. '
+        'Old lookup carries origin gap with 28 calendar day half life and final mNAV cap 2.')
+    atomic_text(config_path, json.dumps(config,indent=2,allow_nan=False)+'\n')
+    for row in result['dated_fair_value']:
+        print('DATED FAIR VALUE VS OLD LOOKUP', row)
+    print('DATED GATE', result['dated_gate'])
     for row in result['same_day']:
         print('MISS',row)
     for row in result['shrinkage']:

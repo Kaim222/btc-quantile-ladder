@@ -101,18 +101,21 @@ def main():
     if len(frame) <= 160 or not np.isfinite(frame[['btc', 'strc', 'bps', 'mstr']]).all().all() or (frame[['btc', 'bps', 'mstr']] <= 0).any().any():
         raise ValueError('Invalid or insufficient source rows')
     fit = measure(frame)
-    cheap, rich = [float(np.round(fit[k] / 0.5) * 0.005) for k in ('p25', 'p75')]
-    print(json.dumps(dict(fit=fit, cheap_threshold=cheap, rich_threshold=rich), indent=2, allow_nan=False))
+    from premium_test import premium_object, CHOSEN_N
+    premium = premium_object(frame, fit, CHOSEN_N)
+    cheap, rich = premium['p25'], premium['p75']
+    print(json.dumps(dict(fit=fit, premium=premium, cheap_threshold=cheap, rich_threshold=rich), indent=2, allow_nan=False))
     if args.write:
         for path in [args.config, args.monitor_config]:
             if path is None:
                 continue
             config = json.loads(path.read_text(encoding='utf-8-sig'))
-            config.update(fit=fit, cheap_threshold=cheap, rich_threshold=rich,
+            config.update(fit=fit, premium={k: v for k, v in premium.items() if k not in ("average", "from", "to")}, cheap_threshold=cheap, rich_threshold=rich,
                           btc_slope_per_2500=fit['b'], gap_centre=0, gap_half_life_days=28,
                           updated=fit['fitted_on'],
                           note='Fair value uses a fitted Bitcoin line and a nonpositive STRC shortfall term below par. '
-                               'Cheap and Rich are the fitted gap quartiles rounded to half a percent in MSTR terms. '
+                               'Fair value carries the last 10 completed sessions average premium. '
+                               'Cheap and Rich are excess premium quartiles in MSTR terms. '
                                'MSTX alert thresholds are twice these values. The lag signal is unchanged.',
                           lookup_note='Projected uses the fitted line capped at mNAV 2. Best estimate carries today\'s gap with a 28 calendar day half life.')
             atomic_text(path, json.dumps(config, indent=2, allow_nan=False) + '\n')

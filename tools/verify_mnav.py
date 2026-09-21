@@ -47,15 +47,32 @@ def main():
                         inputs.nth(i).fill(value)
                     page.wait_for_timeout(100)
                     snapshots = {'81526.74': card.inner_text()}
+                    # Check the actual card prices against the source data, including the 2x link.
+                    cfg = json.loads((ROOT/'data/mstr-config.json').read_text())
+                    model = json.loads((ROOT/'data/mstr-model.json').read_text())
+                    def check_card(bitcoin):
+                        body = card.inner_text()
+                        nav = float(re.search(r'that mNAV times \$([\d,.]+)', body)[1].replace(',', ''))
+                        fit = cfg['fit']
+                        base = min(2, fit['a']+fit['b']*(bitcoin-75000)/2500+fit['c']*(100-98.7))
+                        want = nav*base*(1+model['premium']['average'])
+                        actual = float(re.search(r'FAIR VALUE MSTR\n\$([\d,.]+)',body)[1].replace(',', ''))
+                        fund = float(re.search(r'FAIR VALUE MSTX\n\$([\d,.]+)',body)[1].replace(',', ''))
+                        assert abs(actual-want)<.02, (actual,want)
+                        assert abs(fund-19.2*(1+2*(actual/155.77-1)))<.01
+                        return re.search(r'VERDICT\n(\w+)',body)[1]
+                    verdict = check_card(81526.74)
                     for value in ('85000', '150000'):
                         inputs.nth(0).fill(value)
                         snapshots[value] = card.inner_text()
+                        assert check_card(float(value)) == verdict
                     inputs.nth(0).fill('200000')
                     assert 'Fair value mNAV 2.00' in card.inner_text()
                     cap_text = card.inner_text()
                     cap_price = float(re.search(r'FAIR VALUE MSTR\n\$([\d,.]+)', cap_text)[1].replace(',', ''))
                     cap_nav = float(re.search(r'that mNAV times \$([\d,.]+)', cap_text)[1].replace(',', ''))
-                    assert abs(cap_price - 2*cap_nav) <= .015
+                    premium = json.loads((ROOT/'data/mstr-model.json').read_text())['premium']
+                    assert abs(cap_price - 2*cap_nav*(1+premium['average'])) <= .02
                     inputs.nth(0).fill('')
                     keys = []
                     for digit in '150000':
@@ -82,11 +99,13 @@ def main():
                         hits = [line for line in text.splitlines() if re.search(r'rule|formula|0\.90|0\.025', line, re.I)]
                         punctuation = [line for line in text.splitlines() if re.search(r'[;()]|(?<!\d):(?!\d)|(?<!\d)[\-\u2010-\u2015\u2212](?!\$?\d)', line)]
                         size = page.evaluate('({width:innerWidth, scroll:document.documentElement.scrollWidth})')
-                        tabs[label] = dict(size=size, hits=hits, punctuation=punctuation)
+                        sentences = [line for line in text.splitlines() if line.endswith('.')]
+                        prose = [line for line in sentences if len(line.split()) > 20 or len(re.findall(r'(?<!\d),|,(?!\d)', line)) > 1]
+                        tabs[label] = dict(size=size, hits=hits, punctuation=punctuation, prose=prose)
                         page.screenshot(path=str(OUT / f'{width}-{label}.png'), full_page=True)
                     report['widths'][str(width)] = dict(cards=snapshots, keys=keys, tabs=tabs)
                     assert all(t['size']['scroll'] <= width for t in tabs.values()), tabs
-                    assert all(not t['hits'] and not t['punctuation'] for t in tabs.values()), tabs
+                    assert all(not t['hits'] and not t['punctuation'] and not t['prose'] for t in tabs.values()), tabs
                     assert max(keys) < .3, keys
                     page.close()
                 assert not report['errors'], report['errors']

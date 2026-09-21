@@ -15,6 +15,7 @@ import datetime as dt, json, os, sys, urllib.request
 import numpy as np, pandas as pd, yfinance as yf
 from zoneinfo import ZoneInfo
 from mnav_fit import target, atomic_text
+from premium_test import premium_object
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 D = lambda f: os.path.join(ROOT, "data", f)
@@ -58,11 +59,15 @@ def append_days(d):
     return d, len(rows)
 
 
-def build_model(d, fit, cheap):
+def build_model(d, fit, cheap, n=10):
     e = d[d["strc"].notna()].reset_index(drop=True).copy()
     e["target"] = target(e["btc"], e["strc"], fit)
     e["proj"] = e["bps"] * e["btc"] * e["target"]; e["gap"] = e["mstr"] / e["proj"] - 1; e["mnav"] = e["mstr"] / (e["btc"] * e["bps"])
-    sig = (e["gap"] * 100 <= cheap).values; eps, i = [], 0
+    e["premium_average"] = e["gap"].shift(1).rolling(n).mean()
+    e["excess"] = e["gap"] - e["premium_average"]
+    premium = premium_object(e, fit, n)
+    cheap = 100 * premium["p25"]
+    sig = (e["excess"] * 100 <= cheap).values; eps, i = [], 0
     while i < len(e):
         if sig[i]:
             j = i
@@ -71,19 +76,22 @@ def build_model(d, fit, cheap):
         else: i += 1
     rows = []
     for a, b in eps:
-        s, z = e.iloc[a], e.iloc[b]; worst = int(e.iloc[a:b + 1]["gap"].idxmin()); w = e.loc[worst]
-        out = {"start": s["d"], "end": z["d"], "days": int(b - a + 1), "worst_gap": round(100 * w["gap"], 1), "worst_date": w["d"],
-               "mstr_at_worst": round(w["mstr"], 2), "proj_at_worst": round(w["proj"], 2), "btc_at_worst": int(round(w["btc"]))}
+        s, z = e.iloc[a], e.iloc[b]; worst = int(e.iloc[a:b + 1]["excess"].idxmin()); w = e.loc[worst]
+        out = {"start": s["d"], "end": z["d"], "days": int(b - a + 1), "worst_gap": round(100 * w["excess"], 1), "worst_date": w["d"],
+               "mstr_at_worst": round(w["mstr"], 2), "proj_at_worst": round(w["proj"]*(1+w["premium_average"]), 2), "btc_at_worst": int(round(w["btc"]))}
         for h in (5, 10):
             f = e.iloc[worst + h] if worst + h < len(e) else None
             out["mstr_%dd" % h] = None if f is None else round(100 * (f["mstr"] / w["mstr"] - 1), 1); out["btc_%dd" % h] = None if f is None else round(100 * (f["btc"] / w["btc"] - 1), 1)
-            out["proj_%dd" % h] = None if f is None else round(100 * (f["proj"] / w["proj"] - 1), 1); out["gap_%dd" % h] = None if f is None else round(100 * f["gap"], 1)
+            out["proj_%dd" % h] = None if f is None else round(100 * (f["proj"] / w["proj"] - 1), 1); out["gap_%dd" % h] = None if f is None else round(100 * f["excess"], 1)
         rows.append(out)
     old = json.load(open(D("mstr-model.json"), encoding="utf-8"))
     site = {"as_of": e["d"].iloc[-1], "model": dict(slope=fit["b"], fit=fit, target_description="Fitted Bitcoin line with STRC shortfall below par and mNAV capped at 2",
                                                     btc_per_share_note="Bitcoin per share %.7f on the last row, live from strategy.com when the row was added" % float(e["bps"].iloc[-1])),
             "series": [{"d": r.d, "mstr": round(r.mstr, 2), "mstx": (None if pd.isna(r.mstx) else round(r.mstx, 2)), "btc": int(round(r.btc)), "strc": round(r.strc, 2),
-                        "bps": float(r.bps), "mnav": round(r.mnav, 4), "target": round(r.target, 4), "proj": round(r.proj, 2), "gap": round(100 * r.gap, 2)} for r in e.itertuples()],
+                        "bps": float(r.bps), "mnav": round(r.mnav, 4), "target": round(r.target, 4), "proj": round(r.proj, 2), "gap": round(100 * r.gap, 2),
+                        "excess": None if pd.isna(r.excess) else float(100*r.excess),
+                        "fair": None if pd.isna(r.premium_average) else float(r.proj*(1+r.premium_average))} for r in e.itertuples()],
+            "premium": premium,
             "episodes": rows, "factors": old.get("factors"), "backtest": old.get("backtest"), "regime": old.get("regime")}
     return e, site
 
@@ -98,7 +106,7 @@ def build_history(d, e, rich):
     x["miss"] = (x["target"] / x["prem"] - 1).abs()
     days = pd.Series(x.index, index=x.index).diff(5).dt.days
     x["best"] = np.minimum(2.0, x["target"] * (1 + x["gap"].shift(5) * 0.5 ** (days / HALF_LIFE))); x["miss_best"] = (x["best"] / x["prem"] - 1).abs()
-    x["gap_x"] = (x["mstx"] / (x["mstx"].shift(1) * (1 + 2 * (x["proj"] / x["mstr"].shift(1) - 1))) - 1) * 100
+    x["gap_x"] = 200 * x["excess"]
     def block(f, name):
         return {"name": name, "days": int(len(f)), "median": round(float(f.prem.median()), 2), "low": round(float(f.prem.quantile(0.25)), 2),
                 "high": round(float(f.prem.quantile(0.75)), 2), "min": round(float(f.prem.min()), 2), "max": round(float(f.prem.max()), 2)}
@@ -107,14 +115,14 @@ def build_history(d, e, rich):
         return {"name": name, "days": int(len(f)), "scored": int(len(g)), "median_premium": round(float(f.prem.median()), 2), "bias_projected": round(float(f.gap.mean()) * 100, 1),
                 "err_projected": round(float(g.miss.mean()) * 100, 1), "err_best": round(float(g.miss_best.mean()) * 100, 1)}
     cal = lambda n: round(float(h.prem[h.index > h.index[-1] - pd.Timedelta(days=n)].mean()), 3)
-    gx = x.dropna(subset=["gap_x"]).iloc[1:]
+    gx = x.dropna(subset=["gap_x"])
     res = {"as_of": str(h.index[-1].date()), "from": str(h.index[0].date()), "strc_from": str(x.index[0].date()),
            "all": [block(h[h.bull], "bull"), block(h[~h.bull], "bear")], "era": [era(x[x.bull], "bull"), era(x[~x.bull], "bear"), era(x, "all")],
            "now": {"premium": round(float(h.prem.iloc[-1]), 3), "avg30": cal(30), "avg90": cal(90), "avg365": cal(365), "avg_all": round(float(h.prem.mean()), 3), "target": round(float(x.target.iloc[-1]), 3)},
            "gap_mstx": {"all": round(float(gx.gap_x.median()), 1), "bull": round(float(gx[gx.bull].gap_x.median()), 1), "bear": round(float(gx[~gx.bull].gap_x.median()), 1),
                         "last60": round(float(gx.gap_x.tail(60).median()), 1), "rich_share": int(round(100 * float((gx.gap_x >= rich * 200).mean()))),
-                        "rich_share_last60": int(round(100 * float((gx.gap_x.tail(60) >= rich * 200).mean())))}, "gap_mstr": {"rich_share": int(round(100 * float((x.gap >= rich).mean()))),
-                        "rich_share_last60": int(round(100 * float((x.gap.tail(60) >= rich).mean())))}, "periods": []}
+                        "rich_share_last60": int(round(100 * float((gx.gap_x.tail(60) >= rich * 200).mean())))}, "gap_mstr": {"rich_share": int(round(100 * float((x.excess.dropna() >= rich).mean()))),
+                        "rich_share_last60": int(round(100 * float((x.excess.dropna().tail(60) >= rich).mean())))}, "periods": []}
     for a, z, lab in (("2024-09", "2024-12", "late 2024"), ("2025-01", "2025-06", "early 2025"), ("2025-07", "2025-12", "late 2025"), ("2026-01", "2026-06", "early 2026"),
                       ("2026-07", "2026-12", "since July 2026"), ("2027-01", "2027-06", "early 2027"), ("2027-07", "2027-12", "late 2027")):
         q = h.loc[a:z]
@@ -205,8 +213,8 @@ def main():
     if len(d) < n0 or d["d"].duplicated().any() or not d["d"].is_monotonic_increasing:
         print("daily file failed its checks; nothing written"); return 1
     try:                       # build everything in memory first; one failure publishes nothing
-        e, site = build_model(d, fit, cheap)
-        res = build_history(d, e, float(cfg["rich_threshold"]))
+        e, site = build_model(d, fit, cheap, int(cfg["premium"]["n"]))
+        res = build_history(d, e, site["premium"]["p75"])
         bd = yf.Ticker("BTC-USD").history(start=str((pd.Timestamp(d["d"].iloc[0]) - pd.Timedelta(days=120)).date()))["Close"]; bd.index = bd.index.tz_localize(None).normalize()
         if len(bd) < 200: raise RuntimeError("Bitcoin history too short for the 50 day split")
         evid = build_evidence(e, d, bd)

@@ -86,4 +86,4 @@ def test_checked_in_fit_matches_source():
     assert cfg['gap_centre'] == 0
     assert cfg['btc_slope_per_2500'] == cfg['fit']['b']
     for key, quantile in [('cheap_threshold','p25'), ('rich_threshold','p75')]:
-        assert cfg[key] == pytest.approx(round(result[quantile]/.5)*.005)
+        assert cfg[key] == pytest.approx(cfg['premium'][quantile])

@@ -60,16 +60,16 @@
   "target": 1.005
  },
  "gap_mstx": {
-  "all": -2.2,
-  "bull": 0.9,
-  "bear": -3.6,
-  "last60": -10.7,
-  "rich_share": 27,
-  "rich_share_last60": 0
+  "all": -2.0,
+  "bull": -2.8,
+  "bear": -1.6,
+  "last60": 1.2,
+  "rich_share": 25,
+  "rich_share_last60": 23
  },
  "gap_mstr": {
   "rich_share": 25,
-  "rich_share_last60": 0
+  "rich_share_last60": 23
  },
  "periods": [
   {

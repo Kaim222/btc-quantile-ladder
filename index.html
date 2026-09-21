@@ -1483,7 +1483,11 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
     <div style={VIS_CARD}><div style={BODY}>{errors.includes("data/mstr-config.json")
       ? "Pricing settings failed to load." : "Waiting for complete pricing settings."}</div></div>);
   const fit = msFit(cfg), centre = 0;
-  const cheap = (centre+nm(cfg.cheap_threshold))*200, rich = (centre+nm(cfg.rich_threshold))*200, lagLine = nm(cfg.lag_threshold)*200;
+  const premium = dat && isObj(dat.premium) ? dat.premium : null;
+  const premiumAvg = premium && nm(premium.average) > -1 ? nm(premium.average) : null;
+  const premiumN = premium && nm(premium.n);
+  const premiumMiss = premium && nm(premium.median_abs_pct);
+  const cheap = (nm(premium && premium.p25) ?? nm(cfg.cheap_threshold))*200, rich = (nm(premium && premium.p75) ?? nm(cfg.rich_threshold))*200, lagLine = nm(cfg.lag_threshold)*200;
   const verdict = gap => !Number.isFinite(gap) ? UNK : gap <= cheap ? "CHEAP" : gap >= rich ? "RICH" : "FAIR";
   const gapColor = gap => msGapCol(gap, -cheap, rich);
   const open = msOpen(new Date(nowTs)), barTs = msTs(st.last_bar);
@@ -1519,7 +1523,7 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
     ? bps*referenceBtc*(msTarget(referenceBtc,strcI,fit)) : null;
   const rawGap0 = referenceRule > 0 && mstrI > 0 ? mstrI/referenceRule-1 : null;
   const gap0 = rawGap0 != null && rawGap0 > -0.75 && rawGap0 < 3 ? rawGap0 : null;
-  const projectedMstr = fair;
+  const projectedMstr = fair > 0 && premiumAvg != null ? fair*(1+premiumAvg) : null;
   const projectedMstx = projectedMstr > 0 && mstrI > 0 && mstxI > 0
     ? Math.max(0, mstxI*(1+2*(projectedMstr/mstrI-1))) : null;
   const cardPct = value => value < -0.05 ? "down "+Math.abs(value).toFixed(1)+"%" : "+"+Math.max(0,value).toFixed(1)+"%";
@@ -1532,13 +1536,14 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
   const whatPrice = dayMstx(fair, prevRow);
   // The level. Off hours the monitor's projected price was computed at its last bar's Bitcoin, so with a live Bitcoin price
   // the card recomputes it the way the PROJECTED PRICE card does. The typed boxes never move the level.
-  const seedFair = bps > 0 && seeds.btc > 0 && seeds.strc > 0 ? bps*seeds.btc*(msTarget(seeds.btc,seeds.strc,fit)) : null;
+  const seedFair = bps > 0 && seeds.btc > 0 && seeds.strc > 0 && premiumAvg != null ? bps*seeds.btc*msTarget(seeds.btc,seeds.strc,fit)*(1+premiumAvg) : null;
   const liveProj = dayMstx(seedFair, prevRow);
   const monitorLevel = nm(st.gap_mstx) != null && nm(st.proj_mstx) > 0;
   const projected = liveProj > 0 ? liveProj : dayMstx(nm(last.proj), ser[ser.length-2]);
-  const gap = projected > 0 && nm(prices.mstx) > 0 ? (nm(prices.mstx)/projected-1)*100 : null;
+  const seedLine = seedFair > 0 ? seedFair/(1+premiumAvg) : null;
+  const gap = seedLine > 0 && nm(prices.mstr) > 0 ? 200*(nm(prices.mstr)/seedLine-1-premiumAvg) : null;
   const whatGap = whatPrice > 0 && mstxI > 0 ? (mstxI/whatPrice-1)*100 : null;
-  const verdictGap = rawGap0 == null ? null : rawGap0*200;
+  const verdictGap = rawGap0 == null || premiumAvg == null ? null : (rawGap0-premiumAvg)*200;
   // Best estimate ahead at live prices and unchanged Bitcoin: the fitted line carrying today's gap, which fades by half every
   // gap_half_life_days (walk-forward test, 2026-09-19). MSTX = MSTX now x (MSTR ratio) squared, less 2x decay.
   const gf = evd && isObj(evd.gap_fade) ? evd.gap_fade : null;
@@ -1559,9 +1564,9 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
     if (!(ruleNow > 0) || !(ruleAt(fb) > 0)) return null;
     return px*Math.pow(Math.min(2*bps*fb,ruleAt(fb)*(1+(pm/ruleNow-1)*Math.pow(0.5, days/halfLifeD)))/pm, 2)*Math.exp(-dragK*days/365); };
   const levelRead = word === "STALE" ? "Monitor overdue. These are its last numbers." : verdict(gap) === "RICH"
-    ? "Above the fitted Rich line. Rich is not a sell on its own."
+    ? "Above the recent premium Rich line. Rich is not a sell on its own."
     : verdict(gap) === "CHEAP" ? "Behind projected. Cheap is the add only with Bitcoin above its 50 day."
-    : verdict(gap) === "FAIR" ? "Cheap is under "+usd2(projected*(1+cheap/100))+" and Rich is over "+usd2(projected*(1+rich/100))+"." : "";
+    : verdict(gap) === "FAIR" ? "Cheap is under "+usd2(dayMstx(seedLine*(1+premiumAvg+cheap/200),prevRow))+" and Rich is over "+usd2(dayMstx(seedLine*(1+premiumAvg+rich/200),prevRow))+"." : "";
   const SC = {background:"#070f1f",border:"1px solid #0f2035",borderRadius:6,padding:narrow ? "10px 8px" : "12px 14px"};
   const FT = {fontSize:TYPE.secondary,color:GRY,lineHeight:1.5,marginTop:9};
   const labTxt = t => String(t).split("mNAV").flatMap((part,i) => i ? [<span key={i} style={{textTransform:"none"}}>mNAV</span>, part] : [part]);
@@ -1578,8 +1583,7 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
       : nm(r.mstr_60m) != null && nm(r.btc_60m) != null ? msPct(nm(r.mstr_60m)-nm(r.btc_60m)) : "pending")];
   // Square-root gap scale, in MSTX terms throughout.
   const W = narrow ? 440 : 880, H = narrow ? 270 : 200, P = {l:narrow ? 34 : 48,r:10,t:16,b:24}, cw = W-P.l-P.r, ch = H-P.t-P.b;   // taller on a phone
-  const gapsProj = ser.map((r,i) => { const p = dayMstx(nm(r.proj), ser[i-1]);
-    return p > 0 && nm(r.mstx) > 0 ? (nm(r.mstx)/p-1)*100 : null; });
+  const gapsProj = ser.map(r => nm(r.excess) == null ? null : 2*nm(r.excess));
   // Carry the origin's gap forward, compounding MSTX from that same origin.
   const gapsBest = ser.map((r,i) => { const a = ser[i-5];
     if (!(a && nm(a.mstx) > 0 && nm(a.mstr) > 0 && nm(a.proj) > 0 && nm(r.proj) > 0 && nm(r.mstx) > 0)) return null;
@@ -1620,9 +1624,10 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
         +" Bitcoin at "+usd0(btcI)+(btcI >= 75000 ? " adds " : " takes ")+Math.abs(fit.b*(btcI-75000)/2500).toFixed(2)+"."
         +" STRC at "+usd2(strcI)+" takes "+Math.abs(fit.c*Math.max(0,fit.par-strcI)).toFixed(2)+"."
         +(target >= 2 ? " Fair value mNAV is capped at 2.00." : "")
-        +" Fair value MSTR is that mNAV times "+usd2(bps*btcI)+" of Bitcoin per share."
-        +" The line was fitted on "+fit.sessions+" sessions through "+new Date(fit.to+"T12:00:00").toLocaleDateString("en-US")+"."
-        +" MSTR sat within "+fit.median_abs_gap_pct.toFixed(1)+"% of it on half of those days."
+        +" The fitted line is that mNAV times "+usd2(bps*btcI)+" of Bitcoin per share."
+        +(premiumAvg != null ? " MSTR has averaged "+Math.abs(premiumAvg*100).toFixed(1)+"% "+(premiumAvg < 0 ? "under" : "over")+" that line over the last "+premiumN+" sessions."
+          +" Fair value carries that forward."
+          +" MSTR has sat within "+premiumMiss.toFixed(1)+"% of this fair value on a typical day." : " Recent premium is unavailable.")
         +(holdings && holdings.ops > 0 ? " Paper value is that Bitcoin per share less "+usd2(holdings.ops)+" of debt and preferred." : "")
       }</Sentences></div>}
       <div style={{...ROW,marginTop:12}}><button style={GST} onClick={() => { touched.current={}; seed(); }}>reset to live</button>
@@ -1643,8 +1648,8 @@ function MstrTab({ liveBtc, modelA=JV_A, modelB=JV_B }) {
       {tiles([["GAP MSTX",msPct(gap),(barTs ? "MSTX at "+msWhen(barTs)+" ET" : UNK),gapColor(gap)], ["PROJECTED MSTX",msUsd(projected),"","#22d3ee"],
         ["BEST ESTIMATE 1 WEEK",msUsd(aheadMstx(7)),"1 month "+msUsd(aheadMstx(28)),"#e2e8f0"],
         ["BTC VS 50 DAY",st.regime || UNK,"",NEU]])}
-      <div style={FT}><More hide>{"Projected uses the fitted line at "+(liveProj > 0 ? "the live" : "the monitor's last")+" Bitcoin price. The gap is MSTX against projected. Best estimate is where MSTX likely trades later. "+fadeLine
-        +" The one week and one month estimates hold Bitcoin flat and "+(dragK > 0 ? "include decay of "+lossPct(dragK)+"% a year." : "include no decay.")+" Alerts use the monitor's projected MSTX."
+      <div style={FT}><More hide>{"Projected carries the recent premium at "+(liveProj > 0 ? "the live" : "the monitor's last")+" Bitcoin price. The gap is twice MSTR excess above its recent premium. Best estimate is where MSTX likely trades later. "+fadeLine
+        +" The one week and one month estimates hold Bitcoin flat and "+(dragK > 0 ? "include decay of "+lossPct(dragK)+"% a year." : "include no decay.")+" Alerts compare that excess with the Cheap and Rich lines."
         +(hist && hist.gap_mstx ? " Typical gap is "+msPct(hist.gap_mstx.last60)+" over the last 60 sessions. Since STRC began it is "+msPct(hist.gap_mstx.all)+". Bear markets run "+msPct(hist.gap_mstx.bear)+" and bull markets "+msPct(hist.gap_mstx.bull)+". MSTX sat at Rich on "+hist.gap_mstx.rich_share+"% of all days. It sat there on "+hist.gap_mstx.rich_share_last60+"% of the last 60." : "")}</More></div>
     </div>
     <div style={VIS_CARD}>

@@ -1,31 +1,31 @@
 {
- "as_of": "2026-09-21",
+ "as_of": "2026-09-22",
  "from": "2025-07-30",
  "horizon_sessions": 10,
- "start_days": 277,
+ "start_days": 278,
  "gap_fade": {
   "recent_days": 120,
-  "recent_after20": 35,
-  "recent_after40": 3,
-  "earlier_after20": 63,
+  "recent_after20": 34,
+  "recent_after40": 1,
+  "earlier_after20": 62,
   "earlier_after40": -6
  },
  "mstx_drag": {
-  "k_1y": 0.982,
-  "k_all": 1.317,
-  "loss_1y_pct": 63,
-  "k_above50": 0.866,
+  "k_1y": 0.977,
+  "k_all": 1.315,
+  "loss_1y_pct": 62,
+  "k_above50": 0.859,
   "k_below50": 1.092,
   "k_calm": 0.787,
-  "windows": 443,
-  "up20_loss_pct": 73,
+  "windows": 444,
+  "up20_loss_pct": 72,
   "down20_loss_pct": 60,
   "mstr_vol_1y": 0.81
  },
  "guides": {
   "today": 19.7,
   "projected": 26.5,
-  "best": 18.5
+  "best": 18.6
  },
  "gap_signal": {
   "over": {
@@ -33,8 +33,8 @@
    "median_vs_btc": -10.1
   },
   "within": {
-   "days": 75,
-   "median_vs_btc": -12.7
+   "days": 76,
+   "median_vs_btc": -11.8
   },
   "under": {
    "days": 100,

@@ -1,11 +1,11 @@
 {
- "as_of": "2026-09-21",
- "mstx": 22.3,
- "unit_now": 19.74,
- "position_now": 19189,
- "sessions_to_settle": 9,
+ "as_of": "2026-09-22",
+ "mstx": 22.0,
+ "unit_now": 19.85,
+ "position_now": 19955,
+ "sessions_to_settle": 8,
  "sessions_phase2": 54,
- "history_rows": 526,
+ "history_rows": 527,
  "routes": [
   {
    "route": "Hold to 10/2 · LEAPS 10/5",
@@ -25,15 +25,15 @@
  ],
  "verdict": {
   "say": "CLOSE",
-  "hold_wins_pct": 25,
+  "hold_wins_pct": 23,
   "hold_units": 5,
   "phase2_units": 4,
   "close_units": 8,
   "settle": "10/2"
  },
  "hold_beats_close_pct": {
-  "market": 25,
-  "thesis": 22
+  "market": 23,
+  "thesis": 20
  },
- "note": "Holding to 10/2 wins more units in 25% of market paths. On your view it wins in 22%. Model averages count whole units at the model mid. Units are bought the session after each settlement at the settlement close. A real fill buys fewer. Priced at the 9/21 close. MSTX $22.30 and unit $19.74. No cash is counted. Market view is MSTX's own history. It uses every 9 session and 54 session move since listing. Drift is removed. Your view is the same prices one dollar higher. Phase 1 is marked at 100% vol at the 10/2 close. Closing now uses 135% vol, with the position about $19,200. Phase 2 uses 120% vol off the plan's strikes with 30% held as cash. Averages hide the spread. Phase 1 pays most between $16 and $18. It pays little outside $15 to $19. Closing deducts five cents across 450 calendars and fixes the unit count."
+ "note": "Holding to 10/2 wins more units in 23% of market paths. On your view it wins in 20%. Model averages count whole units at the model mid. Units are bought the session after each settlement at the settlement close. A real fill buys fewer. Priced at the 9/22 close. MSTX $22.00 and unit $19.85. No cash is counted. Market view is MSTX's own history. It uses every 8 session and 54 session move since listing. Drift is removed. Your view is the same prices one dollar higher. Phase 1 is marked at 100% vol at the 10/2 close. Closing now uses 135% vol, with the position about $20,000. Phase 2 uses 120% vol off the plan's strikes with 30% held as cash. Averages hide the spread. Phase 1 pays most between $16 and $18. It pays little outside $15 to $19. Closing deducts five cents across 450 calendars and fixes the unit count."
 }

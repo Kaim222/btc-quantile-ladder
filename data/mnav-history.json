@@ -1,11 +1,11 @@
 {
- "as_of": "2026-09-21",
+ "as_of": "2026-09-22",
  "from": "2024-09-18",
  "strc_from": "2025-07-30",
  "all": [
   {
    "name": "bull",
-   "days": 264,
+   "days": 265,
    "median": 1.94,
    "low": 1.53,
    "high": 2.24,
@@ -25,12 +25,12 @@
  "era": [
   {
    "name": "bull",
-   "days": 87,
-   "scored": 82,
+   "days": 88,
+   "scored": 83,
    "median_premium": 1.43,
-   "bias_projected": 2.2,
-   "err_projected": 7.8,
-   "err_best": 4.8
+   "bias_projected": 2.1,
+   "err_projected": 7.7,
+   "err_best": 4.7
   },
   {
    "name": "bear",
@@ -43,27 +43,27 @@
   },
   {
    "name": "all",
-   "days": 288,
-   "scored": 283,
+   "days": 289,
+   "scored": 284,
    "median_premium": 0.98,
-   "bias_projected": 0.2,
+   "bias_projected": 0.1,
    "err_projected": 9.8,
    "err_best": 4.9
   }
  ],
  "now": {
-  "premium": 1.031,
-  "avg30": 0.905,
-  "avg90": 0.785,
-  "avg365": 0.971,
-  "avg_all": 1.575,
-  "target": 1.077
+  "premium": 1.032,
+  "avg30": 0.911,
+  "avg90": 0.79,
+  "avg365": 0.969,
+  "avg_all": 1.574,
+  "target": 1.069
  },
  "gap_mstx": {
   "all": -1.9,
   "bull": -2.7,
   "bear": -1.6,
-  "last60": 1.2,
+  "last60": 1.8,
   "rich_share": 25,
   "rich_share_last60": 23
  },
@@ -95,7 +95,7 @@
   {
    "name": "since July 2026",
    "median": 0.76,
-   "bull_pct": 40
+   "bull_pct": 41
   }
  ],
  "weekly": [
@@ -941,10 +941,10 @@
   },
   {
    "d": "2026-09-25",
-   "p": 1.031,
-   "a": 0.785,
-   "t": 1.077,
-   "btc": 86990,
+   "p": 1.032,
+   "a": 0.79,
+   "t": 1.069,
+   "btc": 86263,
    "bull": true
   }
  ],

@@ -1,26 +1,26 @@
 {
-  "generated_at": "2026-09-21T22:31:40Z",
-  "as_of_run_date": "2026-09-21",
+  "generated_at": "2026-09-22T13:24:07Z",
+  "as_of_run_date": "2026-09-22",
   "inputs": {
     "btc_above_200d": {
       "value": true,
       "pass": true,
       "source": "yahoo_daily",
-      "as_of": "2026-09-21",
+      "as_of": "2026-09-22",
       "error": null,
-      "btc_close": 86375.257812,
-      "sma_200d": 70581.985586,
-      "gap_pct": 22.375783
+      "btc_close": 85936.75,
+      "sma_200d": 70672.125156,
+      "gap_pct": 21.599216
     },
     "btc_above_200w": {
       "value": true,
       "pass": true,
       "source": "yahoo_weekly",
-      "as_of": "2026-09-21 price vs week ending 2026-09-20",
+      "as_of": "2026-09-22 price vs week ending 2026-09-20",
       "error": null,
-      "btc_close": 86375.257812,
+      "btc_close": 85936.75,
       "sma_200w": 65494.065166,
-      "gap_pct": 31.882572,
+      "gap_pct": 31.213034,
       "weeks": 560,
       "note": "SMA over completed calendar weeks only"
     },
@@ -135,23 +135,23 @@
       "note": "MACD 8,21,5 uses the same completed Monday to Sunday UTC weekly closes as the histogram rising row. EMA is seeded on the first value. The last complete histogram bar must be above zero. At least one of the three preceding bars must be at or below zero. This marks a bullish cross inside the last three weekly bars. cross_bar_date is the first bar after the most recent bar at or below zero. Entry timing, not a hold condition."
     },
     "ladder_quantile": {
-      "value": 14.736069,
+      "value": 14.451204,
       "pass": true,
       "source": "site formula, model v2",
-      "as_of": "2026-09-21",
+      "as_of": "2026-09-22",
       "error": null,
       "band": "10 to 60",
-      "value_model_v1": 14.446102,
-      "btc_close": 86375.257812,
-      "fair_value": 121196.784949,
-      "days_since_clock": 6470.0,
+      "value_model_v1": 14.150482,
+      "btc_close": 85936.75,
+      "fair_value": 121302.571609,
+      "days_since_clock": 6471.0,
       "note": "the page's own priceToQuantile under model v2, ported into this script. The centre line is 10 ** (5.645315 * log10(days since 2009-01-03) - 16.430264) and the lines are offsets c * exp(-age / T) in log10(price / centre). Passes is judged on model v1's quantile, not above its 85th band, because the 9/13 research measured that line. It is not the ladder's 75 sell line."
     },
     "btc_price": {
-      "value": 86375.257812,
+      "value": 85936.75,
       "pass": null,
       "source": "yahoo_daily",
-      "as_of": "2026-09-21",
+      "as_of": "2026-09-22",
       "error": null,
       "note": "Yahoo daily close, not a live quote. The page's own live feed is separate."
     },
@@ -216,42 +216,42 @@
       "note": "Yahoo daily close, delayed. Not a live quote."
     },
     "mstr_atm_iv_30d": {
-      "value": 0.736056,
+      "value": 0.003916,
       "pass": null,
       "source": "yahoo_option_chain",
-      "as_of": "2026-09-21",
+      "as_of": "2026-09-22",
       "error": null,
       "expiry": "2026-10-23",
-      "dte": 32,
+      "dte": 31,
       "strike": 170.0,
-      "call_iv": 0.755862,
-      "put_iv": 0.71625,
+      "call_iv": 0.007822,
+      "put_iv": 1e-05,
       "spot": 168.5,
       "note": "mid of the ATM call and put impliedVolatility Yahoo reports, nearest expiry to 30 days"
     },
     "iv_rank": {
-      "value": 13.769703,
+      "value": 26.895942,
       "pass": null,
       "source": "alphaquery_iv_mean_30d",
-      "as_of": "2026-09-18",
+      "as_of": "2026-09-21",
       "error": null,
       "stale": false,
-      "as_of_fetch": "2026-09-21",
-      "n_days": 67,
-      "iv": 0.696263,
+      "as_of_fetch": "2026-09-22",
+      "n_days": 68,
+      "iv": 0.748934,
       "iv_min": 0.64101,
       "iv_max": 1.042275,
       "window_first": "2026-06-15",
-      "window_last": "2026-09-18",
-      "rank_label": "rank over 67 days, not 52 weeks",
+      "window_last": "2026-09-21",
+      "rank_label": "rank over 68 days, not 52 weeks",
       "is_52w_rank": false,
-      "note": "rank = (current - window min) / (window max - window min). The window is the trailing 67 trading days of AlphaQuery 30-day mean IV out of 67 on file. 252 days would make it a 52-week rank."
+      "note": "rank = (current - window min) / (window max - window min). The window is the trailing 68 trading days of AlphaQuery 30-day mean IV out of 68 on file. 252 days would make it a 52-week rank."
     },
     "days_to_next_event": {
-      "value": 23,
+      "value": 22,
       "pass": null,
       "source": "tools/events.json",
-      "as_of": "2026-09-21",
+      "as_of": "2026-09-22",
       "error": null,
       "event": {
         "date": "2026-10-14",
@@ -260,14 +260,14 @@
         "verified": true,
         "source": "https://www.bls.gov/schedule/news_release/cpi.htm",
         "note": null,
-        "days_to": 23
+        "days_to": 22
       },
       "all_verified": false,
       "note": "hand-maintained calendar. verified=false rows are placeholders, confirm before sizing on them."
     }
   },
   "iv": {
-    "as_of_run": "2026-09-21",
+    "as_of_run": "2026-09-22",
     "source": "AlphaQuery option-statistic chart endpoint, keyless, 30-day mean IV. Free tier returns about 63 trading days per call; data/iv-ledger.json accumulates.",
     "errors": null,
     "reference": {
@@ -281,14 +281,14 @@
       "note": "single source, un-cross-checked. Only the current level is corroborated (AlphaQuery 68.3% the same day)."
     },
     "mstr": {
-      "iv_30d": 0.696263,
-      "as_of": "2026-09-18",
-      "rank": 13.769703,
+      "iv_30d": 0.748934,
+      "as_of": "2026-09-21",
+      "rank": 26.895942,
       "rank_3m": {
-        "value": 13.769703,
+        "value": 26.895942,
         "n_days": 63,
-        "first": "2026-06-22",
-        "last": "2026-09-18",
+        "first": "2026-06-23",
+        "last": "2026-09-21",
         "min": 0.64101,
         "max": 1.042275,
         "label": "3-month rank over 63 days",
@@ -296,44 +296,44 @@
         "max_days": 63,
         "error": null
       },
-      "rank_label": "rank over 67 days, not 52 weeks",
+      "rank_label": "rank over 68 days, not 52 weeks",
       "is_52w_rank": false,
       "window": {
-        "n_days": 67,
+        "n_days": 68,
         "first": "2026-06-15",
-        "last": "2026-09-18",
+        "last": "2026-09-21",
         "min": 0.64101,
         "max": 1.042275,
         "source": "alphaquery_iv_mean_30d",
         "max_days": 252,
-        "n_ledger_entries": 67,
-        "other_source_entries_excluded": 5
+        "n_ledger_entries": 68,
+        "other_source_entries_excluded": 6
       },
-      "note": "rank = (current - window min) / (window max - window min). The window is the trailing 67 trading days of AlphaQuery 30-day mean IV out of 67 on file. 252 days would make it a 52-week rank.",
+      "note": "rank = (current - window min) / (window max - window min). The window is the trailing 68 trading days of AlphaQuery 30-day mean IV out of 68 on file. 252 days would make it a 52-week rank.",
       "error": null,
-      "as_of_fetch": "2026-09-21",
+      "as_of_fetch": "2026-09-22",
       "stale": false,
       "rank_52w": {
-        "value": 24.411765,
-        "printed": 24.0,
-        "iv_30d": 0.692,
+        "value": 32.205882,
+        "printed": 32.0,
+        "iv_30d": 0.745,
         "low_52w": 0.526,
         "high_52w": 1.206,
-        "percentile": 40.0,
-        "as_of": "2026-09-18",
+        "percentile": 64.0,
+        "as_of": "2026-09-21",
         "source": "projectoption.com, single source",
         "error": null
       }
     },
     "mstx": {
-      "iv_30d": 1.376233,
-      "as_of": "2026-09-18",
-      "rank": 13.893992,
+      "iv_30d": 1.477584,
+      "as_of": "2026-09-21",
+      "rank": 27.494374,
       "rank_3m": {
-        "value": 13.893992,
+        "value": 27.494374,
         "n_days": 63,
-        "first": "2026-06-22",
-        "last": "2026-09-18",
+        "first": "2026-06-23",
+        "last": "2026-09-21",
         "min": 1.272694,
         "max": 2.017901,
         "label": "3-month rank over 63 days",
@@ -341,33 +341,33 @@
         "max_days": 63,
         "error": null
       },
-      "rank_label": "rank over 67 days, not 52 weeks",
+      "rank_label": "rank over 68 days, not 52 weeks",
       "is_52w_rank": false,
       "window": {
-        "n_days": 67,
+        "n_days": 68,
         "first": "2026-06-15",
-        "last": "2026-09-18",
+        "last": "2026-09-21",
         "min": 1.272694,
         "max": 2.017901,
         "source": "alphaquery_iv_mean_30d",
         "max_days": 252,
-        "n_ledger_entries": 67,
+        "n_ledger_entries": 68,
         "other_source_entries_excluded": 0
       },
-      "note": "rank = (current - window min) / (window max - window min). The window is the trailing 67 trading days of AlphaQuery 30-day mean IV out of 67 on file. 252 days would make it a 52-week rank.",
+      "note": "rank = (current - window min) / (window max - window min). The window is the trailing 68 trading days of AlphaQuery 30-day mean IV out of 68 on file. 252 days would make it a 52-week rank.",
       "error": null,
-      "as_of_fetch": "2026-09-21",
+      "as_of_fetch": "2026-09-22",
       "stale": false
     },
     "ibit": {
-      "iv_30d": 0.370477,
-      "as_of": "2026-09-18",
-      "rank": 35.800543,
+      "iv_30d": 0.398022,
+      "as_of": "2026-09-21",
+      "rank": 56.760541,
       "rank_3m": {
-        "value": 35.800543,
+        "value": 56.760541,
         "n_days": 63,
-        "first": "2026-06-22",
-        "last": "2026-09-18",
+        "first": "2026-06-23",
+        "last": "2026-09-21",
         "min": 0.323429,
         "max": 0.454846,
         "label": "3-month rank over 63 days",
@@ -375,28 +375,28 @@
         "max_days": 63,
         "error": null
       },
-      "rank_label": "rank over 67 days, not 52 weeks",
+      "rank_label": "rank over 68 days, not 52 weeks",
       "is_52w_rank": false,
       "window": {
-        "n_days": 67,
+        "n_days": 68,
         "first": "2026-06-15",
-        "last": "2026-09-18",
+        "last": "2026-09-21",
         "min": 0.323429,
         "max": 0.454846,
         "source": "alphaquery_iv_mean_30d",
         "max_days": 252,
-        "n_ledger_entries": 67,
+        "n_ledger_entries": 68,
         "other_source_entries_excluded": 0
       },
-      "note": "rank = (current - window min) / (window max - window min). The window is the trailing 67 trading days of AlphaQuery 30-day mean IV out of 67 on file. 252 days would make it a 52-week rank.",
+      "note": "rank = (current - window min) / (window max - window min). The window is the trailing 68 trading days of AlphaQuery 30-day mean IV out of 68 on file. 252 days would make it a 52-week rank.",
       "error": null,
-      "as_of_fetch": "2026-09-21",
+      "as_of_fetch": "2026-09-22",
       "stale": false
     },
     "stale": false,
     "mstx_mstr_iv_ratio": {
-      "value": 1.976599,
-      "as_of": "2026-09-18",
+      "value": 1.972916,
+      "as_of": "2026-09-21",
       "error": null,
       "note": "MSTX 30-day IV divided by MSTR 30-day IV, both AlphaQuery. Computed only when the two readings carry the same observation date, null otherwise."
     }
@@ -409,7 +409,7 @@
       "verified": true,
       "source": "https://www.bls.gov/schedule/news_release/cpi.htm",
       "note": null,
-      "days_to": 23
+      "days_to": 22
     },
     {
       "date": "2026-10-28",
@@ -418,7 +418,7 @@
       "verified": true,
       "source": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
       "note": null,
-      "days_to": 37
+      "days_to": 36
     },
     {
       "date": "2026-11-04",
@@ -427,7 +427,7 @@
       "verified": false,
       "source": "https://www.tipranks.com/stocks/mstr/earnings",
       "note": "third-party calendar; confirm on the IR page",
-      "days_to": 44
+      "days_to": 43
     }
   ],
   "events_upcoming": [
@@ -438,7 +438,7 @@
       "verified": true,
       "source": "https://www.bls.gov/schedule/news_release/cpi.htm",
       "note": null,
-      "days_to": 23
+      "days_to": 22
     },
     {
       "date": "2026-10-28",
@@ -447,7 +447,7 @@
       "verified": true,
       "source": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
       "note": null,
-      "days_to": 37
+      "days_to": 36
     },
     {
       "date": "2026-11-04",
@@ -456,7 +456,7 @@
       "verified": false,
       "source": "https://www.tipranks.com/stocks/mstr/earnings",
       "note": "third-party calendar; confirm on the IR page",
-      "days_to": 44
+      "days_to": 43
     },
     {
       "date": "2026-11-10",
@@ -465,7 +465,7 @@
       "verified": true,
       "source": "https://www.bls.gov/schedule/news_release/cpi.htm",
       "note": null,
-      "days_to": 50
+      "days_to": 49
     },
     {
       "date": "2026-12-09",
@@ -474,7 +474,7 @@
       "verified": true,
       "source": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
       "note": null,
-      "days_to": 79
+      "days_to": 78
     },
     {
       "date": "2026-12-10",
@@ -483,7 +483,7 @@
       "verified": true,
       "source": "https://www.bls.gov/schedule/news_release/cpi.htm",
       "note": null,
-      "days_to": 80
+      "days_to": 79
     }
   ],
   "rules": {

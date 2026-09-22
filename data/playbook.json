@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-22T21:29:43Z",
+  "generated_at": "2026-09-22T22:30:42Z",
   "as_of_run_date": "2026-09-22",
   "inputs": {
     "btc_above_200d": {
@@ -8,9 +8,9 @@
       "source": "yahoo_daily",
       "as_of": "2026-09-22",
       "error": null,
-      "btc_close": 86242.453125,
-      "sma_200d": 70673.653672,
-      "gap_pct": 22.029142
+      "btc_close": 86178.101562,
+      "sma_200d": 70673.331914,
+      "gap_pct": 21.938643
     },
     "btc_above_200w": {
       "value": true,
@@ -18,9 +18,9 @@
       "source": "yahoo_weekly",
       "as_of": "2026-09-22 price vs week ending 2026-09-20",
       "error": null,
-      "btc_close": 86242.453125,
+      "btc_close": 86178.101562,
       "sma_200w": 65494.065166,
-      "gap_pct": 31.679799,
+      "gap_pct": 31.581543,
       "weeks": 560,
       "note": "SMA over completed calendar weeks only"
     },
@@ -135,20 +135,20 @@
       "note": "MACD 8,21,5 uses the same completed Monday to Sunday UTC weekly closes as the histogram rising row. EMA is seeded on the first value. The last complete histogram bar must be above zero. At least one of the three preceding bars must be at or below zero. This marks a bullish cross inside the last three weekly bars. cross_bar_date is the first bar after the most recent bar at or below zero. Entry timing, not a hold condition."
     },
     "ladder_quantile": {
-      "value": 14.619606,
+      "value": 14.584206,
       "pass": true,
       "source": "site formula, model v2",
       "as_of": "2026-09-22",
       "error": null,
       "band": "10 to 60",
-      "value_model_v1": 14.325756,
-      "btc_close": 86242.453125,
+      "value_model_v1": 14.288912,
+      "btc_close": 86178.101562,
       "fair_value": 121302.571609,
       "days_since_clock": 6471.0,
       "note": "the page's own priceToQuantile under model v2, ported into this script. The centre line is 10 ** (5.645315 * log10(days since 2009-01-03) - 16.430264) and the lines are offsets c * exp(-age / T) in log10(price / centre). Passes is judged on model v1's quantile, not above its 85th band, because the 9/13 research measured that line. It is not the ladder's 75 sell line."
     },
     "btc_price": {
-      "value": 86242.453125,
+      "value": 86178.101562,
       "pass": null,
       "source": "yahoo_daily",
       "as_of": "2026-09-22",
@@ -234,9 +234,9 @@
       "pass": null,
       "source": "alphaquery_iv_mean_30d",
       "as_of": "2026-09-21",
-      "error": null,
-      "stale": false,
-      "as_of_fetch": "2026-09-22",
+      "error": "HTTPError: HTTP Error 503: Service Unavailable",
+      "stale": true,
+      "as_of_fetch": null,
       "n_days": 68,
       "iv": 0.748934,
       "iv_min": 0.64101,
@@ -245,7 +245,7 @@
       "window_last": "2026-09-21",
       "rank_label": "rank over 68 days, not 52 weeks",
       "is_52w_rank": false,
-      "note": "rank = (current - window min) / (window max - window min). The window is the trailing 68 trading days of AlphaQuery 30-day mean IV out of 68 on file. 252 days would make it a 52-week rank."
+      "note": "today's fetch failed, so this reading is the newest the ledger holds. rank = (current - window min) / (window max - window min). The window is the trailing 68 trading days of AlphaQuery 30-day mean IV out of 68 on file. 252 days would make it a 52-week rank."
     },
     "days_to_next_event": {
       "value": 22,
@@ -269,7 +269,11 @@
   "iv": {
     "as_of_run": "2026-09-22",
     "source": "AlphaQuery option-statistic chart endpoint, keyless, 30-day mean IV. Free tier returns about 63 trading days per call; data/iv-ledger.json accumulates.",
-    "errors": null,
+    "errors": {
+      "MSTR": "HTTPError: HTTP Error 503: Service Unavailable",
+      "MSTX": "HTTPError: HTTP Error 503: Service Unavailable",
+      "IBIT": "HTTPError: HTTP Error 503: Service Unavailable"
+    },
     "reference": {
       "source": "https://projectoption.com/stocks/mstr/implied-volatility",
       "as_of": "2026-09-11",
@@ -309,10 +313,10 @@
         "n_ledger_entries": 68,
         "other_source_entries_excluded": 6
       },
-      "note": "rank = (current - window min) / (window max - window min). The window is the trailing 68 trading days of AlphaQuery 30-day mean IV out of 68 on file. 252 days would make it a 52-week rank.",
-      "error": null,
-      "as_of_fetch": "2026-09-22",
-      "stale": false,
+      "note": "today's fetch failed, so this reading is the newest the ledger holds. rank = (current - window min) / (window max - window min). The window is the trailing 68 trading days of AlphaQuery 30-day mean IV out of 68 on file. 252 days would make it a 52-week rank.",
+      "error": "HTTPError: HTTP Error 503: Service Unavailable",
+      "as_of_fetch": null,
+      "stale": true,
       "rank_52w": {
         "value": 32.205882,
         "printed": 32.0,
@@ -354,10 +358,10 @@
         "n_ledger_entries": 68,
         "other_source_entries_excluded": 0
       },
-      "note": "rank = (current - window min) / (window max - window min). The window is the trailing 68 trading days of AlphaQuery 30-day mean IV out of 68 on file. 252 days would make it a 52-week rank.",
-      "error": null,
-      "as_of_fetch": "2026-09-22",
-      "stale": false
+      "note": "today's fetch failed, so this reading is the newest the ledger holds. rank = (current - window min) / (window max - window min). The window is the trailing 68 trading days of AlphaQuery 30-day mean IV out of 68 on file. 252 days would make it a 52-week rank.",
+      "error": "HTTPError: HTTP Error 503: Service Unavailable",
+      "as_of_fetch": null,
+      "stale": true
     },
     "ibit": {
       "iv_30d": 0.398022,
@@ -388,12 +392,12 @@
         "n_ledger_entries": 68,
         "other_source_entries_excluded": 0
       },
-      "note": "rank = (current - window min) / (window max - window min). The window is the trailing 68 trading days of AlphaQuery 30-day mean IV out of 68 on file. 252 days would make it a 52-week rank.",
-      "error": null,
-      "as_of_fetch": "2026-09-22",
-      "stale": false
+      "note": "today's fetch failed, so this reading is the newest the ledger holds. rank = (current - window min) / (window max - window min). The window is the trailing 68 trading days of AlphaQuery 30-day mean IV out of 68 on file. 252 days would make it a 52-week rank.",
+      "error": "HTTPError: HTTP Error 503: Service Unavailable",
+      "as_of_fetch": null,
+      "stale": true
     },
-    "stale": false,
+    "stale": true,
     "mstx_mstr_iv_ratio": {
       "value": 1.972916,
       "as_of": "2026-09-21",
@@ -611,5 +615,9 @@
     "ladder_quantile": "The page's own priceToQuantile ported into this script, scored at the Yahoo daily close and its own date. Not a second model, the same formula the ladder tab draws.",
     "rule": "No field is ever a fabricated number. A source that fails is written as null with an error string."
   },
-  "errors": []
+  "errors": [
+    "alphaquery_iv[MSTR] -> HTTPError: HTTP Error 503: Service Unavailable",
+    "alphaquery_iv[MSTX] -> HTTPError: HTTP Error 503: Service Unavailable",
+    "alphaquery_iv[IBIT] -> HTTPError: HTTP Error 503: Service Unavailable"
+  ]
 }

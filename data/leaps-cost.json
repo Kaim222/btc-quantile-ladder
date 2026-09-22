@@ -1,5 +1,5 @@
 {
- "updated": "2026-09-22 21:29",
+ "updated": "2026-09-22 22:30",
  "units": 50,
  "unit": "long Jun 16 2028 $345 call, short Jan 21 2028 $500 call",
  "underlying": "MSTR",
@@ -14,7 +14,7 @@
   "px_last": 167.33,
   "mstr_last": 167.33,
   "mstx_last": 22.0,
-  "drag_k": 0.982,
+  "drag_k": 0.977,
   "asof": "2026-09-22",
   "long": {
    "k": 345.0,

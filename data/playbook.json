@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-23T21:29:36Z",
+  "generated_at": "2026-09-23T22:30:09Z",
   "as_of_run_date": "2026-09-23",
   "inputs": {
     "btc_above_200d": {
@@ -8,9 +8,9 @@
       "source": "yahoo_daily",
       "as_of": "2026-09-23",
       "error": null,
-      "btc_close": 84414.1875,
-      "sma_200d": 70759.010781,
-      "gap_pct": 19.298145
+      "btc_close": 84448.0,
+      "sma_200d": 70759.179844,
+      "gap_pct": 19.345646
     },
     "btc_above_200w": {
       "value": true,
@@ -18,9 +18,9 @@
       "source": "yahoo_weekly",
       "as_of": "2026-09-23 price vs week ending 2026-09-20",
       "error": null,
-      "btc_close": 84414.1875,
+      "btc_close": 84448.0,
       "sma_200w": 65494.065166,
-      "gap_pct": 28.8883,
+      "gap_pct": 28.939927,
       "weeks": 560,
       "note": "SMA over completed calendar weeks only"
     },
@@ -135,20 +135,20 @@
       "note": "MACD 8,21,5 uses the same completed Monday to Sunday UTC weekly closes as the histogram rising row. EMA is seeded on the first value. The last complete histogram bar must be above zero. At least one of the three preceding bars must be at or below zero. This marks a bullish cross inside the last three weekly bars. cross_bar_date is the first bar after the most recent bar at or below zero. Entry timing, not a hold condition."
     },
     "ladder_quantile": {
-      "value": 13.559811,
+      "value": 13.578806,
       "pass": true,
       "source": "site formula, model v2",
       "as_of": "2026-09-23",
       "error": null,
       "band": "10 to 60",
-      "value_model_v1": 13.223743,
-      "btc_close": 84414.1875,
+      "value_model_v1": 13.24351,
+      "btc_close": 84448.0,
       "fair_value": 121408.434237,
       "days_since_clock": 6472.0,
       "note": "the page's own priceToQuantile under model v2, ported into this script. The centre line is 10 ** (5.645315 * log10(days since 2009-01-03) - 16.430264) and the lines are offsets c * exp(-age / T) in log10(price / centre). Passes is judged on model v1's quantile, not above its 85th band, because the 9/13 research measured that line. It is not the ladder's 75 sell line."
     },
     "btc_price": {
-      "value": 84414.1875,
+      "value": 84448.0,
       "pass": null,
       "source": "yahoo_daily",
       "as_of": "2026-09-23",

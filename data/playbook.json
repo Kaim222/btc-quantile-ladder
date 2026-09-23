@@ -1,26 +1,26 @@
 {
-  "generated_at": "2026-09-22T22:30:42Z",
-  "as_of_run_date": "2026-09-22",
+  "generated_at": "2026-09-23T13:23:40Z",
+  "as_of_run_date": "2026-09-23",
   "inputs": {
     "btc_above_200d": {
       "value": true,
       "pass": true,
       "source": "yahoo_daily",
-      "as_of": "2026-09-22",
+      "as_of": "2026-09-23",
       "error": null,
-      "btc_close": 86178.101562,
-      "sma_200d": 70673.331914,
-      "gap_pct": 21.938643
+      "btc_close": 85437.203125,
+      "sma_200d": 70764.125859,
+      "gap_pct": 20.735192
     },
     "btc_above_200w": {
       "value": true,
       "pass": true,
       "source": "yahoo_weekly",
-      "as_of": "2026-09-22 price vs week ending 2026-09-20",
+      "as_of": "2026-09-23 price vs week ending 2026-09-20",
       "error": null,
-      "btc_close": 86178.101562,
+      "btc_close": 85437.203125,
       "sma_200w": 65494.065166,
-      "gap_pct": 31.581543,
+      "gap_pct": 30.450298,
       "weeks": 560,
       "note": "SMA over completed calendar weeks only"
     },
@@ -135,31 +135,31 @@
       "note": "MACD 8,21,5 uses the same completed Monday to Sunday UTC weekly closes as the histogram rising row. EMA is seeded on the first value. The last complete histogram bar must be above zero. At least one of the three preceding bars must be at or below zero. This marks a bullish cross inside the last three weekly bars. cross_bar_date is the first bar after the most recent bar at or below zero. Entry timing, not a hold condition."
     },
     "ladder_quantile": {
-      "value": 14.584206,
+      "value": 14.131162,
       "pass": true,
       "source": "site formula, model v2",
-      "as_of": "2026-09-22",
+      "as_of": "2026-09-23",
       "error": null,
       "band": "10 to 60",
-      "value_model_v1": 14.288912,
-      "btc_close": 86178.101562,
-      "fair_value": 121302.571609,
-      "days_since_clock": 6471.0,
+      "value_model_v1": 13.818331,
+      "btc_close": 85437.203125,
+      "fair_value": 121408.434237,
+      "days_since_clock": 6472.0,
       "note": "the page's own priceToQuantile under model v2, ported into this script. The centre line is 10 ** (5.645315 * log10(days since 2009-01-03) - 16.430264) and the lines are offsets c * exp(-age / T) in log10(price / centre). Passes is judged on model v1's quantile, not above its 85th band, because the 9/13 research measured that line. It is not the ladder's 75 sell line."
     },
     "btc_price": {
-      "value": 86178.101562,
+      "value": 85437.203125,
       "pass": null,
       "source": "yahoo_daily",
-      "as_of": "2026-09-22",
+      "as_of": "2026-09-23",
       "error": null,
       "note": "Yahoo daily close, not a live quote. The page's own live feed is separate."
     },
     "mstr_price": {
-      "value": 167.330002,
+      "value": 168.5,
       "pass": null,
       "source": "yahoo_daily",
-      "as_of": "2026-09-22",
+      "as_of": "2026-09-21",
       "error": null,
       "note": "Yahoo daily close, delayed. Not a live quote."
     },
@@ -178,7 +178,7 @@
       "value": false,
       "pass": false,
       "source": "yahoo_daily",
-      "as_of": "2026-09-22",
+      "as_of": "2026-09-21",
       "error": null,
       "matches": [],
       "n_matches": 0,
@@ -188,12 +188,12 @@
       "value": false,
       "pass": false,
       "source": "yahoo_daily",
-      "as_of": "2026-09-22",
+      "as_of": "2026-09-21",
       "error": null,
-      "width_pct": 65.47619,
-      "width": 0.379561,
-      "upper": 162.216485,
-      "lower": 110.466517,
+      "width_pct": 61.904762,
+      "width": 0.331831,
+      "upper": 156.356838,
+      "lower": 111.856163,
       "n_obs": 252,
       "note": "20-day, 2 sigma, width = (upper - lower) / mid, percentile over trailing 252 days, tight = below 20"
     },
@@ -201,57 +201,57 @@
       "value": 92.063492,
       "pass": null,
       "source": "yahoo_daily",
-      "as_of": "2026-09-22",
+      "as_of": "2026-09-21",
       "error": null,
-      "rv_20d_annualized": 1.096245,
+      "rv_20d_annualized": 1.093741,
       "n_obs": 252,
       "note": "20-day realized vol, annualized at 252, percentile over trailing 252 days. A proxy for IV rank, not IV rank."
     },
     "mstx_price": {
-      "value": 22.0,
+      "value": 22.299999,
       "pass": null,
       "source": "yahoo_daily",
-      "as_of": "2026-09-22",
+      "as_of": "2026-09-21",
       "error": null,
       "note": "Yahoo daily close, delayed. Not a live quote."
     },
     "mstr_atm_iv_30d": {
-      "value": 0.689945,
+      "value": 0.007822,
       "pass": null,
       "source": "yahoo_option_chain",
-      "as_of": "2026-09-22",
+      "as_of": "2026-09-23",
       "error": null,
       "expiry": "2026-10-23",
-      "dte": 31,
-      "strike": 165.0,
-      "call_iv": 0.708377,
-      "put_iv": 0.671512,
-      "spot": 167.330002,
+      "dte": 30,
+      "strike": 170.0,
+      "call_iv": 0.015635,
+      "put_iv": 1e-05,
+      "spot": 168.5,
       "note": "mid of the ATM call and put impliedVolatility Yahoo reports, nearest expiry to 30 days"
     },
     "iv_rank": {
-      "value": 26.895942,
+      "value": 15.958033,
       "pass": null,
       "source": "alphaquery_iv_mean_30d",
-      "as_of": "2026-09-21",
-      "error": "HTTPError: HTTP Error 503: Service Unavailable",
-      "stale": true,
-      "as_of_fetch": null,
-      "n_days": 68,
-      "iv": 0.748934,
+      "as_of": "2026-09-22",
+      "error": null,
+      "stale": false,
+      "as_of_fetch": "2026-09-23",
+      "n_days": 69,
+      "iv": 0.705044,
       "iv_min": 0.64101,
       "iv_max": 1.042275,
       "window_first": "2026-06-15",
-      "window_last": "2026-09-21",
-      "rank_label": "rank over 68 days, not 52 weeks",
+      "window_last": "2026-09-22",
+      "rank_label": "rank over 69 days, not 52 weeks",
       "is_52w_rank": false,
-      "note": "today's fetch failed, so this reading is the newest the ledger holds. rank = (current - window min) / (window max - window min). The window is the trailing 68 trading days of AlphaQuery 30-day mean IV out of 68 on file. 252 days would make it a 52-week rank."
+      "note": "rank = (current - window min) / (window max - window min). The window is the trailing 69 trading days of AlphaQuery 30-day mean IV out of 69 on file. 252 days would make it a 52-week rank."
     },
     "days_to_next_event": {
-      "value": 22,
+      "value": 21,
       "pass": null,
       "source": "tools/events.json",
-      "as_of": "2026-09-22",
+      "as_of": "2026-09-23",
       "error": null,
       "event": {
         "date": "2026-10-14",
@@ -260,20 +260,16 @@
         "verified": true,
         "source": "https://www.bls.gov/schedule/news_release/cpi.htm",
         "note": null,
-        "days_to": 22
+        "days_to": 21
       },
       "all_verified": false,
       "note": "hand-maintained calendar. verified=false rows are placeholders, confirm before sizing on them."
     }
   },
   "iv": {
-    "as_of_run": "2026-09-22",
+    "as_of_run": "2026-09-23",
     "source": "AlphaQuery option-statistic chart endpoint, keyless, 30-day mean IV. Free tier returns about 63 trading days per call; data/iv-ledger.json accumulates.",
-    "errors": {
-      "MSTR": "HTTPError: HTTP Error 503: Service Unavailable",
-      "MSTX": "HTTPError: HTTP Error 503: Service Unavailable",
-      "IBIT": "HTTPError: HTTP Error 503: Service Unavailable"
-    },
+    "errors": null,
     "reference": {
       "source": "https://projectoption.com/stocks/mstr/implied-volatility",
       "as_of": "2026-09-11",
@@ -285,14 +281,14 @@
       "note": "single source, un-cross-checked. Only the current level is corroborated (AlphaQuery 68.3% the same day)."
     },
     "mstr": {
-      "iv_30d": 0.748934,
-      "as_of": "2026-09-21",
-      "rank": 26.895942,
+      "iv_30d": 0.705044,
+      "as_of": "2026-09-22",
+      "rank": 15.958033,
       "rank_3m": {
-        "value": 26.895942,
+        "value": 15.958033,
         "n_days": 63,
-        "first": "2026-06-23",
-        "last": "2026-09-21",
+        "first": "2026-06-24",
+        "last": "2026-09-22",
         "min": 0.64101,
         "max": 1.042275,
         "label": "3-month rank over 63 days",
@@ -300,44 +296,44 @@
         "max_days": 63,
         "error": null
       },
-      "rank_label": "rank over 68 days, not 52 weeks",
+      "rank_label": "rank over 69 days, not 52 weeks",
       "is_52w_rank": false,
       "window": {
-        "n_days": 68,
+        "n_days": 69,
         "first": "2026-06-15",
-        "last": "2026-09-21",
+        "last": "2026-09-22",
         "min": 0.64101,
         "max": 1.042275,
         "source": "alphaquery_iv_mean_30d",
         "max_days": 252,
-        "n_ledger_entries": 68,
-        "other_source_entries_excluded": 6
+        "n_ledger_entries": 69,
+        "other_source_entries_excluded": 7
       },
-      "note": "today's fetch failed, so this reading is the newest the ledger holds. rank = (current - window min) / (window max - window min). The window is the trailing 68 trading days of AlphaQuery 30-day mean IV out of 68 on file. 252 days would make it a 52-week rank.",
-      "error": "HTTPError: HTTP Error 503: Service Unavailable",
-      "as_of_fetch": null,
-      "stale": true,
+      "note": "rank = (current - window min) / (window max - window min). The window is the trailing 69 trading days of AlphaQuery 30-day mean IV out of 69 on file. 252 days would make it a 52-week rank.",
+      "error": null,
+      "as_of_fetch": "2026-09-23",
+      "stale": false,
       "rank_52w": {
-        "value": 32.205882,
-        "printed": 32.0,
-        "iv_30d": 0.745,
+        "value": 25.735294,
+        "printed": 26.0,
+        "iv_30d": 0.701,
         "low_52w": 0.526,
         "high_52w": 1.206,
-        "percentile": 64.0,
-        "as_of": "2026-09-21",
+        "percentile": 45.0,
+        "as_of": "2026-09-22",
         "source": "projectoption.com, single source",
         "error": null
       }
     },
     "mstx": {
-      "iv_30d": 1.477584,
-      "as_of": "2026-09-21",
-      "rank": 27.494374,
+      "iv_30d": 1.39716,
+      "as_of": "2026-09-22",
+      "rank": 16.702205,
       "rank_3m": {
-        "value": 27.494374,
+        "value": 16.702205,
         "n_days": 63,
-        "first": "2026-06-23",
-        "last": "2026-09-21",
+        "first": "2026-06-24",
+        "last": "2026-09-22",
         "min": 1.272694,
         "max": 2.017901,
         "label": "3-month rank over 63 days",
@@ -345,33 +341,33 @@
         "max_days": 63,
         "error": null
       },
-      "rank_label": "rank over 68 days, not 52 weeks",
+      "rank_label": "rank over 69 days, not 52 weeks",
       "is_52w_rank": false,
       "window": {
-        "n_days": 68,
+        "n_days": 69,
         "first": "2026-06-15",
-        "last": "2026-09-21",
+        "last": "2026-09-22",
         "min": 1.272694,
         "max": 2.017901,
         "source": "alphaquery_iv_mean_30d",
         "max_days": 252,
-        "n_ledger_entries": 68,
+        "n_ledger_entries": 69,
         "other_source_entries_excluded": 0
       },
-      "note": "today's fetch failed, so this reading is the newest the ledger holds. rank = (current - window min) / (window max - window min). The window is the trailing 68 trading days of AlphaQuery 30-day mean IV out of 68 on file. 252 days would make it a 52-week rank.",
-      "error": "HTTPError: HTTP Error 503: Service Unavailable",
-      "as_of_fetch": null,
-      "stale": true
+      "note": "rank = (current - window min) / (window max - window min). The window is the trailing 69 trading days of AlphaQuery 30-day mean IV out of 69 on file. 252 days would make it a 52-week rank.",
+      "error": null,
+      "as_of_fetch": "2026-09-23",
+      "stale": false
     },
     "ibit": {
-      "iv_30d": 0.398022,
-      "as_of": "2026-09-21",
-      "rank": 56.760541,
+      "iv_30d": 0.386232,
+      "as_of": "2026-09-22",
+      "rank": 47.789099,
       "rank_3m": {
-        "value": 56.760541,
+        "value": 47.789099,
         "n_days": 63,
-        "first": "2026-06-23",
-        "last": "2026-09-21",
+        "first": "2026-06-24",
+        "last": "2026-09-22",
         "min": 0.323429,
         "max": 0.454846,
         "label": "3-month rank over 63 days",
@@ -379,28 +375,28 @@
         "max_days": 63,
         "error": null
       },
-      "rank_label": "rank over 68 days, not 52 weeks",
+      "rank_label": "rank over 69 days, not 52 weeks",
       "is_52w_rank": false,
       "window": {
-        "n_days": 68,
+        "n_days": 69,
         "first": "2026-06-15",
-        "last": "2026-09-21",
+        "last": "2026-09-22",
         "min": 0.323429,
         "max": 0.454846,
         "source": "alphaquery_iv_mean_30d",
         "max_days": 252,
-        "n_ledger_entries": 68,
+        "n_ledger_entries": 69,
         "other_source_entries_excluded": 0
       },
-      "note": "today's fetch failed, so this reading is the newest the ledger holds. rank = (current - window min) / (window max - window min). The window is the trailing 68 trading days of AlphaQuery 30-day mean IV out of 68 on file. 252 days would make it a 52-week rank.",
-      "error": "HTTPError: HTTP Error 503: Service Unavailable",
-      "as_of_fetch": null,
-      "stale": true
+      "note": "rank = (current - window min) / (window max - window min). The window is the trailing 69 trading days of AlphaQuery 30-day mean IV out of 69 on file. 252 days would make it a 52-week rank.",
+      "error": null,
+      "as_of_fetch": "2026-09-23",
+      "stale": false
     },
-    "stale": true,
+    "stale": false,
     "mstx_mstr_iv_ratio": {
-      "value": 1.972916,
-      "as_of": "2026-09-21",
+      "value": 1.981664,
+      "as_of": "2026-09-22",
       "error": null,
       "note": "MSTX 30-day IV divided by MSTR 30-day IV, both AlphaQuery. Computed only when the two readings carry the same observation date, null otherwise."
     }
@@ -413,7 +409,7 @@
       "verified": true,
       "source": "https://www.bls.gov/schedule/news_release/cpi.htm",
       "note": null,
-      "days_to": 22
+      "days_to": 21
     },
     {
       "date": "2026-10-28",
@@ -422,7 +418,7 @@
       "verified": true,
       "source": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
       "note": null,
-      "days_to": 36
+      "days_to": 35
     },
     {
       "date": "2026-11-04",
@@ -431,7 +427,7 @@
       "verified": false,
       "source": "https://www.tipranks.com/stocks/mstr/earnings",
       "note": "third-party calendar; confirm on the IR page",
-      "days_to": 43
+      "days_to": 42
     }
   ],
   "events_upcoming": [
@@ -442,7 +438,7 @@
       "verified": true,
       "source": "https://www.bls.gov/schedule/news_release/cpi.htm",
       "note": null,
-      "days_to": 22
+      "days_to": 21
     },
     {
       "date": "2026-10-28",
@@ -451,7 +447,7 @@
       "verified": true,
       "source": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
       "note": null,
-      "days_to": 36
+      "days_to": 35
     },
     {
       "date": "2026-11-04",
@@ -460,7 +456,7 @@
       "verified": false,
       "source": "https://www.tipranks.com/stocks/mstr/earnings",
       "note": "third-party calendar; confirm on the IR page",
-      "days_to": 43
+      "days_to": 42
     },
     {
       "date": "2026-11-10",
@@ -469,7 +465,7 @@
       "verified": true,
       "source": "https://www.bls.gov/schedule/news_release/cpi.htm",
       "note": null,
-      "days_to": 49
+      "days_to": 48
     },
     {
       "date": "2026-12-09",
@@ -478,7 +474,7 @@
       "verified": true,
       "source": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
       "note": null,
-      "days_to": 78
+      "days_to": 77
     },
     {
       "date": "2026-12-10",
@@ -487,7 +483,7 @@
       "verified": true,
       "source": "https://www.bls.gov/schedule/news_release/cpi.htm",
       "note": null,
-      "days_to": 79
+      "days_to": 78
     }
   ],
   "rules": {
@@ -615,9 +611,5 @@
     "ladder_quantile": "The page's own priceToQuantile ported into this script, scored at the Yahoo daily close and its own date. Not a second model, the same formula the ladder tab draws.",
     "rule": "No field is ever a fabricated number. A source that fails is written as null with an error string."
   },
-  "errors": [
-    "alphaquery_iv[MSTR] -> HTTPError: HTTP Error 503: Service Unavailable",
-    "alphaquery_iv[MSTX] -> HTTPError: HTTP Error 503: Service Unavailable",
-    "alphaquery_iv[IBIT] -> HTTPError: HTTP Error 503: Service Unavailable"
-  ]
+  "errors": []
 }

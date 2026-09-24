@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-24T13:23:45Z",
+  "generated_at": "2026-09-24T21:29:21Z",
   "as_of_run_date": "2026-09-24",
   "inputs": {
     "btc_above_200d": {
@@ -8,9 +8,9 @@
       "source": "yahoo_daily",
       "as_of": "2026-09-24",
       "error": null,
-      "btc_close": 83781.09375,
-      "sma_200d": 70847.911445,
-      "gap_pct": 18.254853
+      "btc_close": 84409.632812,
+      "sma_200d": 70851.054141,
+      "gap_pct": 19.136735
     },
     "btc_above_200w": {
       "value": true,
@@ -18,9 +18,9 @@
       "source": "yahoo_weekly",
       "as_of": "2026-09-24 price vs week ending 2026-09-20",
       "error": null,
-      "btc_close": 83781.09375,
+      "btc_close": 84409.632812,
       "sma_200w": 65494.065166,
-      "gap_pct": 27.921658,
+      "gap_pct": 28.881346,
       "weeks": 560,
       "note": "SMA over completed calendar weeks only"
     },
@@ -135,20 +135,20 @@
       "note": "MACD 8,21,5 uses the same completed Monday to Sunday UTC weekly closes as the histogram rising row. EMA is seeded on the first value. The last complete histogram bar must be above zero. At least one of the three preceding bars must be at or below zero. This marks a bullish cross inside the last three weekly bars. cross_bar_date is the first bar after the most recent bar at or below zero. Entry timing, not a hold condition."
     },
     "ladder_quantile": {
-      "value": 13.15906,
+      "value": 13.513607,
       "pass": true,
       "source": "site formula, model v2",
       "as_of": "2026-09-24",
       "error": null,
       "band": "10 to 60",
-      "value_model_v1": 12.807778,
-      "btc_close": 83781.09375,
+      "value_model_v1": 13.176697,
+      "btc_close": 84409.632812,
       "fair_value": 121514.372876,
       "days_since_clock": 6473.0,
       "note": "the page's own priceToQuantile under model v2, ported into this script. The centre line is 10 ** (5.645315 * log10(days since 2009-01-03) - 16.430264) and the lines are offsets c * exp(-age / T) in log10(price / centre). Passes is judged on model v1's quantile, not above its 85th band, because the 9/13 research measured that line. It is not the ladder's 75 sell line."
     },
     "btc_price": {
-      "value": 83781.09375,
+      "value": 84409.632812,
       "pass": null,
       "source": "yahoo_daily",
       "as_of": "2026-09-24",
@@ -156,10 +156,10 @@
       "note": "Yahoo daily close, not a live quote. The page's own live feed is separate."
     },
     "mstr_price": {
-      "value": 162.199997,
+      "value": 161.610001,
       "pass": null,
       "source": "yahoo_daily",
-      "as_of": "2026-09-23",
+      "as_of": "2026-09-24",
       "error": null,
       "note": "Yahoo daily close, delayed. Not a live quote."
     },
@@ -178,7 +178,7 @@
       "value": false,
       "pass": false,
       "source": "yahoo_daily",
-      "as_of": "2026-09-23",
+      "as_of": "2026-09-24",
       "error": null,
       "matches": [],
       "n_matches": 0,
@@ -188,35 +188,35 @@
       "value": false,
       "pass": false,
       "source": "yahoo_daily",
-      "as_of": "2026-09-23",
+      "as_of": "2026-09-24",
       "error": null,
-      "width_pct": 67.063492,
-      "width": 0.402526,
-      "upper": 165.906458,
-      "lower": 110.313543,
+      "width_pct": 67.857143,
+      "width": 0.409939,
+      "upper": 168.733106,
+      "lower": 111.328895,
       "n_obs": 252,
       "note": "20-day, 2 sigma, width = (upper - lower) / mid, percentile over trailing 252 days, tight = below 20"
     },
     "realized_vol_rank": {
-      "value": 92.063492,
+      "value": 91.666667,
       "pass": null,
       "source": "yahoo_daily",
-      "as_of": "2026-09-23",
+      "as_of": "2026-09-24",
       "error": null,
-      "rv_20d_annualized": 1.106121,
+      "rv_20d_annualized": 1.097128,
       "n_obs": 252,
       "note": "20-day realized vol, annualized at 252, percentile over trailing 252 days. A proxy for IV rank, not IV rank."
     },
     "mstx_price": {
-      "value": 20.639999,
+      "value": 20.459999,
       "pass": null,
       "source": "yahoo_daily",
-      "as_of": "2026-09-23",
+      "as_of": "2026-09-24",
       "error": null,
       "note": "Yahoo daily close, delayed. Not a live quote."
     },
     "mstr_atm_iv_30d": {
-      "value": 0.007822,
+      "value": 0.655216,
       "pass": null,
       "source": "yahoo_option_chain",
       "as_of": "2026-09-24",
@@ -224,9 +224,9 @@
       "expiry": "2026-10-23",
       "dte": 29,
       "strike": 160.0,
-      "call_iv": 1e-05,
-      "put_iv": 0.015635,
-      "spot": 162.199997,
+      "call_iv": 0.674076,
+      "put_iv": 0.636356,
+      "spot": 161.610001,
       "note": "mid of the ATM call and put impliedVolatility Yahoo reports, nearest expiry to 30 days"
     },
     "iv_rank": {

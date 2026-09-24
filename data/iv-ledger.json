@@ -413,6 +413,12 @@
         "iv": 0.386232,
         "source": "alphaquery_iv_mean_30d"
       }
+    },
+    "2026-09-23": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.383948,
+        "source": "alphaquery_iv_mean_30d"
+      }
     }
   },
   "MSTR": {
@@ -885,6 +891,10 @@
       }
     },
     "2026-09-23": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 0.686423,
+        "source": "alphaquery_iv_mean_30d"
+      },
       "yahoo_option_chain": {
         "iv": 0.007822,
         "source": "yahoo_option_chain",
@@ -892,6 +902,16 @@
         "dte": 30,
         "strike": 170.0,
         "spot": 168.5
+      }
+    },
+    "2026-09-24": {
+      "yahoo_option_chain": {
+        "iv": 0.007822,
+        "source": "yahoo_option_chain",
+        "expiry": "2026-10-23",
+        "dte": 29,
+        "strike": 160.0,
+        "spot": 162.199997
       }
     }
   },
@@ -1307,6 +1327,12 @@
     "2026-09-22": {
       "alphaquery_iv_mean_30d": {
         "iv": 1.39716,
+        "source": "alphaquery_iv_mean_30d"
+      }
+    },
+    "2026-09-23": {
+      "alphaquery_iv_mean_30d": {
+        "iv": 1.354711,
         "source": "alphaquery_iv_mean_30d"
       }
     }

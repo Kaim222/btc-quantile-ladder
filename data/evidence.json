@@ -1,31 +1,31 @@
 {
- "as_of": "2026-09-24",
+ "as_of": "2026-09-25",
  "from": "2025-07-30",
  "horizon_sessions": 10,
- "start_days": 280,
+ "start_days": 281,
  "gap_fade": {
   "recent_days": 120,
-  "recent_after20": 30,
+  "recent_after20": 31,
   "recent_after40": -6,
   "earlier_after20": 64,
   "earlier_after40": -1
  },
  "mstx_drag": {
   "k_1y": 0.983,
-  "k_all": 1.313,
+  "k_all": 1.312,
   "loss_1y_pct": 63,
-  "k_above50": 0.851,
-  "k_below50": 1.104,
+  "k_above50": 0.848,
+  "k_below50": 1.099,
   "k_calm": 0.788,
-  "windows": 446,
-  "up20_loss_pct": 72,
+  "windows": 447,
+  "up20_loss_pct": 70,
   "down20_loss_pct": 60,
   "mstr_vol_1y": 0.81
  },
  "guides": {
-  "today": 19.8,
+  "today": 19.9,
   "projected": 26.5,
-  "best": 19.0
+  "best": 19.3
  },
  "gap_signal": {
   "over": {
@@ -37,29 +37,29 @@
    "median_vs_btc": -11.8
   },
   "under": {
-   "days": 102,
-   "median_vs_btc": -4.1
+   "days": 103,
+   "median_vs_btc": -3.5
   }
  },
  "calendars": {
   "vol_pct": 120,
   "today": {
-   "trades": 56,
+   "trades": 57,
    "won_pct": 39,
-   "median_pct": -51,
-   "average_pct": -7
-  },
-  "projected": {
-   "trades": 56,
-   "won_pct": 27,
-   "median_pct": -75,
+   "median_pct": -56,
    "average_pct": -8
   },
+  "projected": {
+   "trades": 57,
+   "won_pct": 26,
+   "median_pct": -74,
+   "average_pct": -9
+  },
   "best": {
-   "trades": 56,
+   "trades": 57,
    "won_pct": 32,
-   "median_pct": -38,
-   "average_pct": -11
+   "median_pct": -39,
+   "average_pct": -13
   }
  },
  "note": "Every start day since STRC began. Guides are scored on MSTX ten sessions later. The gap bands use MSTR 5% from projected, about 10% on MSTX. Calendars are two week model trades opened every five sessions at 120% vol with no bid and ask. One market era only."
